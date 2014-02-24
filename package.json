@@ -1,0 +1,30 @@
+{
+  "name": "tst",
+  "description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
+  "keywords": [
+    "typescript",
+    "type",
+    "javascript"
+  ],
+  "version": "0.1.0",
+  "author": "Fyodor Soikin <fsoikin@erecruit.com> (http://erecruit.com)",
+  "bin": {
+    "tst": "./bin/tstc.js"
+  },
+  "main": "./bin/tst-node.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/erecruit/tst.git"
+  },
+  "preferGlobal": true,
+  "dependencies": {
+    "optimist": "0.2.x"
+  },
+  "devDependencies": {
+    "typescript": "0.9.x",
+    "jake": "0.7.x"
+  },
+  "engines": {
+    "node": "*"
+  }
+}

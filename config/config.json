@@ -1,0 +1,5 @@
+{
+	RootDir: 'C:/Work/HRNet/MVC/content/js',
+	Class: { ".": "@./class.cs.tpl"	},
+	Type: { ".": "@./type.cs.tpl" }
+}
