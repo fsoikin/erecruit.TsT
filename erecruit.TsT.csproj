@@ -58,10 +58,11 @@
   </PropertyGroup>
   <ItemGroup>
     <TypeScriptCompile Include="build\jakefile.ts" />
+    <None Include="jakefile" />
     <TypeScriptCompile Include="lib\jake\jake.d.ts" />
     <TypeScriptCompile Include="lib\node\node.d.ts" />
     <TypeScriptCompile Include="lib\typescript\typescript.d.ts" />
-    <TypeScriptCompile Include="node\tst-node.ts" />
+    <TypeScriptCompile Include="node\tstc.ts" />
     <TypeScriptCompile Include="src\config.ts" />
     <TypeScriptCompile Include="src\dust-bootstrap.ts" />
     <TypeScriptCompile Include="lib\dust\dust.d.ts" />
