@@ -1,4 +1,4 @@
-declare module Dust {
+declare module dust {
 	function compileFn( source: string ): RenderFn;
 	function makeBase( obj: any ): Context;
 

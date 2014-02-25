@@ -13,6 +13,7 @@ declare module TsT {
     interface Config extends FileConfig {
         Extension?: string;
         RootDir?: string;
+        ConfigDir?: string;
         File?: {
             [regex: string]: FileConfig;
         };

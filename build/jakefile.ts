@@ -11,46 +11,72 @@ import fs = require( "fs" );
 var sources = new jake.FileList();
 sources.include( ["src/*.ts", "lib/**/*.ts"] );
 
-var lib = new jake.FileList();
-lib.include( "lib/**/*.js" );
-
 var nodeModule = toOutDir( 'tst-node.js' );
 var nodeModuleTypings = toOutDir( 'tst-node.d.ts' );
 var freeModule = toOutDir( 'tst.js' );
 var freeModuleTypings = toOutDir( 'tst.d.ts' );
 var executableModule = toOutDir( 'tstc.js' );
+var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule];
 
-desc( "Compile all" );
-task( 'default', [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule], () => { });
+var lib = wrapLibs();
 
-compileTs( freeModule, sources.toArray(), lib.toArray() );
-compileTs( executableModule, ['node/tstc.ts'], [freeModule], true );
-wrapFile( freeModule, nodeModule, "(function(TsT){", "})( module.exports )" );
+desc( "Build" ); task( 'default', outputs );
+desc( "Clean" ); task( 'clean', [], () => outputs.concat( lib ).forEach( f => fs.existsSync( f ) && fs.unlink( f ) ) );
+desc( "Rebuild" ); task( 'rebuild', ['clean', 'default'] );
+desc( "Compile tstc" ); task( 'c', executableModule );
+desc( "Compile NodeJS module" ); task( 'node', [nodeModule, nodeModuleTypings] );
+desc( "Compile free module" ); task( 'free', [freeModule, freeModuleTypings] );
+
+compileTs( freeModule, sources.toArray(), lib, false, true );
+compileTs( executableModule, ['node/tstc.ts'], [freeModule], true, false );
+wrapFile( freeModule, nodeModule, "(function(TsT){", "})( module.exports );" );
 wrapFile( freeModuleTypings, nodeModuleTypings, "", "declare module 'tst' { var _: typeof TsT; export = _; }" );
+
+function wrapLibs() {
+	var raw = new jake.FileList(); raw.include( "lib/**/*.js" ); raw.exclude( "lib/wrapped/**/*" );
+	var wrapped = raw.toArray().map( ( f ) => ( {
+		raw: f,
+		wrapped: path.relative( '.', path.resolve( "lib/wrapped", path.relative( "lib", f ) ) )
+	}) );
+	wrapped.forEach( w => wrapFile( w.raw, w.wrapped,
+		"(function(__root__,module,exports,global,define,require) {",
+		"  if ( typeof TypeScript !== 'undefined' ) __root__.TypeScript = TypeScript;\
+		 })( typeof global === 'undefined' ? this : global );" ) );
+
+	return wrapped.map( w => w.wrapped );
+}
 
 function wrapFile( sourceFile: string, outFile: string, prefix: string, suffix: string ) {
 	file( outFile, [sourceFile], () => {
 		console.log( "Building " + outFile );
 		var enc = { encoding: 'utf8' };
+		jake.mkdirP( path.dirname( outFile ) );
 		fs.writeFileSync( outFile, prefix, enc );
-		fs.writeFileSync( outFile, fs.readFileSync( sourceFile, enc ), enc );
+		fs.appendFileSync( outFile, fs.readFileSync( sourceFile, enc ), enc );
 		fs.appendFileSync( outFile, suffix, enc );
 	});
 }
 
-function compileTs( outFile: string, sources: string[], prefixes: string[], disableTypings?: boolean ) {
+function compileTs( outFile: string, sources: string[], prefixes: string[], disableTypings?: boolean, mergeOutput: boolean = true ) {
 	file( outFile, sources.concat( prefixes ), () => {
 		console.log( "Building " + outFile );
-		jake.mkdirP( outDir );
+		jake.mkdirP( path.dirname( outFile ) );
+		if ( !mergeOutput ) jake.mkdirP( "temp.tmp" );
+
 		var cmd = typescriptHost + " " + typescriptPath +
 			" -removeComments -propagateEnumConstants -noImplicitAny --module commonjs " +
 			( disableTypings ? "" : "-declaration " ) +
-			sources.join( " " ) + " -out " + outFile;
+			sources.join( " " ) +
+			( mergeOutput ? ( " -out " + outFile ) : (" -outDir temp.tmp") );
 
 		var ex = jake.createExec( [cmd] );
 		ex.addListener( "stdout", (o: any) => process.stdout.write( o ) );
 		ex.addListener( "stderr", (e: any) => process.stderr.write( e ) );
 		ex.addListener( "cmdEnd", () => {
+			if ( !mergeOutput ) {
+				jake.cpR( path.resolve( "temp.tmp", path.dirname( sources[0] ), path.basename( sources[0], ".ts" ) + ".js" ), outFile );
+				jake.rmRf( "temp.tmp" );
+			}
 			if ( fs.existsSync( outFile ) ) prepend( prefixes, outFile );
 			complete();
 		});
@@ -68,14 +94,15 @@ function prepend( prefixFiles: string[], destinationFile: string ) {
 		fail( destinationFile + " failed to be created!" );
 	}
 
-	var destinationContent = fs.readFileSync( destinationFile );
+	var enc = { encoding: 'utf8' };
+	var destinationContent = fs.readFileSync( destinationFile, enc );
 
-	fs.writeFileSync( destinationFile, '', { encoding: 'utf8' });
+	fs.writeFileSync( destinationFile, '', enc);
 	prefixFiles
 		.filter( f => fs.existsSync( f ) )
-		.forEach( f => fs.appendFileSync( destinationFile, fs.readFileSync( f, { encoding: 'utf8' }) ) );
+		.forEach( f => fs.appendFileSync( destinationFile, fs.readFileSync( f, enc ) ) );
 
-	fs.appendFileSync( destinationFile, destinationContent );
+	fs.appendFileSync( destinationFile, destinationContent, enc );
 }
 
 function toOutDir( file: string ) {

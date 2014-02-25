@@ -24,7 +24,7 @@ module TsT {
 	export function Emit( cfg: Config, files: File[], host: ITsTHost ): Rx.IObservable<FileContent> {
 		var config = cacheConfig( cfg,
 			tpl => !tpl ? null :
-				Dust.compileFn( tpl[0] == '@' ? host.FetchFile( host.ResolveRelativePath( cfg.RootDir, tpl.substring( 1 ) ) ) : tpl ) );
+				dust.compileFn( tpl[0] == '@' ? host.FetchFile( host.ResolveRelativePath( tpl.substring( 1 ), cfg.ConfigDir ) ) : tpl ) );
 		var e = new Extractor( host );
 
 		return Rx.Observable
@@ -32,7 +32,7 @@ module TsT {
 			.selectMany( f => {
 				var fileConfig = getFileConfig( config, f.FullPath );
 				var mod = e.GetModule( f.FullPath );
-				var ctx = Dust.makeBase( { File: f });
+				var ctx = dust.makeBase( { File: f });
 				var classes = formatTemplate( mod.Classes, fileConfig.Class, ctx, c => c.Name );
 				var types = formatTemplate( mod.Types, fileConfig.Type, ctx, typeName );
 				return classes.merge( types )
@@ -43,7 +43,7 @@ module TsT {
 					});
 			});
 
-		function formatTemplate<TObject>( objects: TObject[], config: CachedConfigPart<Dust.RenderFn>[], baseCtx: Dust.Context, objectName: ( o: TObject ) => string )
+		function formatTemplate<TObject>( objects: TObject[], config: CachedConfigPart<dust.RenderFn>[], baseCtx: dust.Context, objectName: ( o: TObject ) => string )
 			: Rx.IObservable<string> {
 			return Rx.Observable
 				.fromArray( config )

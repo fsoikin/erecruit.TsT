@@ -8,9 +8,11 @@ var args = require( "optimist" )
 	.demand( "c" ).alias( "c", "config" ).describe( "c", "Configuration file." )
 	.argv;
 
+console.log( "A" );
 main();
 
 function main() {
+	console.log( "A" );
 	var files = loadFiles();
 
 	var host: TsT.ITsTHost = {
@@ -22,7 +24,9 @@ function main() {
 
 	var configPath = args.c;
 	var config: TsT.Config = eval( "(" + readFile( configPath ) + ")" );
-	config.RootDir = config.RootDir ? path.resolve( path.dirname( configPath ), config.RootDir ) : path.dirname( configPath );
+	config.ConfigDir = path.dirname( configPath );
+	config.RootDir = config.RootDir ? path.resolve( '.', config.RootDir ) : path.resolve( '.' );
+	console.log( "A" );
 
 	var tstFiles = files.map( f => <TsT.File>{
 		FullPath: f.replace( '\\', '/' ),
