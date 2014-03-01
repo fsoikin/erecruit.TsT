@@ -25,13 +25,14 @@ module erecruit.TsT.Tests {
 			file = "export interface X { A: string; B: number; }";
 			var mod = e.GetModule( fileName );
 			expect( mod.Types ).toEqual( [{
-				Interface: {
+				Module: jasmine.any(Object),
+				Interface: jasmine.objectContaining({
 					Name: 'X',
 					Properties: [
-						{ Name: 'A', Type: { Primitive: PrimitiveType.String } },
-						{ Name: 'B', Type: { Primitive: PrimitiveType.Number } }
+						{ Name: 'A', Type: jasmine.objectContaining({ PrimitiveType: PrimitiveType.String }) },
+						{ Name: 'B', Type: jasmine.objectContaining({ PrimitiveType: PrimitiveType.Number }) }
 					]
-				}
+				})
 			}] );
 		});
 
