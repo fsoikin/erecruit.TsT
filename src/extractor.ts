@@ -72,7 +72,7 @@ module erecruit.TsT {
 
 			this.EnsureResolved( type );
 			if ( type.getElementType() ) cached.Array = this.GetType( mod )( type.getElementType() )
-		else if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
+			else if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
 			else if ( type.isEnum() ) cached.Enum = this.GetEnum( type );
 			else if ( type.isTypeParameter() ) cached.GenericParameter = this.GetGenericParameter( mod, type );
 			else cached.Interface = this.GetInterface( mod )( type );
@@ -127,7 +127,11 @@ module erecruit.TsT {
 		private GetEnum( type: TypeScript.PullTypeSymbol ): Enum {
 			return <Enum>{
 				Name: type.name,
-				Values: type.getMembers().map( ( m ) => ( { Name: m.name, Value: ( <TypeScript.PullEnumElementDecl>m.getDeclarations()[0] ).constantValue }) )
+				Values: Enumerable.from( type.getDeclarations() )
+					.selectMany( d => d.getChildDecls() )
+					.where( d => d.kind == TypeScript.PullElementKind.EnumMember )
+					.select( ( d ) => ( { Name: d.name, Value: ( <TypeScript.PullEnumElementDecl>d ).constantValue }) )
+					.toArray()
 			};
 		}
 
