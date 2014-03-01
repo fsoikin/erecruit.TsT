@@ -57,9 +57,12 @@
     <TypeScriptModuleKind>AMD</TypeScriptModuleKind>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="package.json" />
+    <Content Include="README.md" />
     <TypeScriptCompile Include="build\jakefile.ts" />
     <None Include="jakefile" />
     <TypeScriptCompile Include="lib\jake\jake.d.ts" />
+    <TypeScriptCompile Include="lib\jasmine\jasmine.d.ts" />
     <TypeScriptCompile Include="lib\node\node.d.ts" />
     <TypeScriptCompile Include="lib\typescript\typescript.d.ts" />
     <TypeScriptCompile Include="node\tstc.ts" />
@@ -71,11 +74,12 @@
     <TypeScriptCompile Include="lib\linq\linq.d.ts" />
     <TypeScriptCompile Include="lib\rx\rx.d.ts" />
     <TypeScriptCompile Include="src\emitter.ts" />
+    <TypeScriptCompile Include="src\preprocessors\csharp.ts" />
+    <TypeScriptCompile Include="tests\extractor.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="config\class.cs.tpl" />
     <Content Include="config\config.json" />
-    <Content Include="config\type.cs.tpl" />
+    <Content Include="config\csharp\type.cs.tpl" />
     <Content Include="lib\dust\dust-full.js" />
     <Content Include="lib\dust\dust-helpers.js" />
     <Content Include="lib\linq\linq.js" />

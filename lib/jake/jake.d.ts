@@ -283,7 +283,9 @@ declare module jake{
 		/**
 	 	 * Get rid of any current exclusion rules
       	 */
-  		clearExclude(): void;
+		clearExclude(): void;
+
+		static clone( list: FileList, items?: string[] ): FileList;
 	}
 
 	export class PackageTask{

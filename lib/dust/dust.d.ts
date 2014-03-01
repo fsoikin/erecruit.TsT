@@ -21,6 +21,7 @@ declare module dust {
 	interface Chunk {
 		data: string[];
 		write( data: string ): Chunk;
+		render( block: any, context: Context ): Chunk;
 	}
 
 	interface Stream {
@@ -36,3 +37,5 @@ declare module dust {
 		[key: string]: any; //( chunk: Chunk, ctx: Context, bodies: { [key: string]: Chunk }, params: { [key: string]: string } ) => Chunk;
 	}
 }
+
+declare module "dust-helpers" { }

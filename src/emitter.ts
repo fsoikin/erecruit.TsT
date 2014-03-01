@@ -1,38 +1,39 @@
 /// <reference path="../lib/rx/rx.d.ts" />
 /// <reference path="../lib/linq/linq.d.ts" />
 /// <reference path="../lib/dust/dust.d.ts" />
-/// <reference path="./dust-bootstrap.ts" />
-/// <reference path="./extractor.ts" />
-/// <reference path="./interfaces.ts" />
-/// <reference path="./config.ts" />
+/// <reference path="interfaces.ts" />
+/// <reference path="extractor.ts" />
+/// <reference path="config.ts" />
+/// <reference path="dust-bootstrap.ts" />
 
-module TsT {
-	export interface File {
-		FullPath: string;
-		Directory: string;
-		RelativeDir: string;
-		Name: string;
-		NameWithoutExtension: string;
-		Extension: string;
+module erecruit.TsT {
+	export module Config {
+		var configDustContextKey = "{18EEB707-DE72-499F-B9BE-F584A368EBB7}";
+
+		export function fromDustContext( context: dust.Context ): CachedConfig {
+			return context.get( configDustContextKey );
+		}
+		export function toDustContext( config: CachedConfig ) {
+			var c = {}; c[configDustContextKey] = config;
+			return dust.makeBase( c );
+		}
 	}
 
 	export interface FileContent {
-		File: File;
+		File: string;
 		Content: string;
 	}
 
-	export function Emit( cfg: Config, files: File[], host: ITsTHost ): Rx.IObservable<FileContent> {
-		var config = cacheConfig( cfg,
-			tpl => !tpl ? null :
-				dust.compileFn( tpl[0] == '@' ? host.FetchFile( host.ResolveRelativePath( tpl.substring( 1 ), cfg.ConfigDir ) ) : tpl ) );
+	export function Emit( cfg: Config, files: string[], host: ITsTHost ): Rx.IObservable<FileContent> {
+		var config = cacheConfig( host, cfg );
 		var e = new Extractor( host );
 
 		return Rx.Observable
 			.fromArray( files )
 			.selectMany( f => {
-				var fileConfig = getFileConfig( config, f.FullPath );
-				var mod = e.GetModule( f.FullPath );
-				var ctx = dust.makeBase( { File: f });
+				var fileConfig = getFileConfig( config, f );
+				var mod = e.GetModule( f );
+				var ctx = Config.toDustContext( config );
 				var classes = formatTemplate( mod.Classes, fileConfig.Class, ctx, c => c.Name );
 				var types = formatTemplate( mod.Types, fileConfig.Type, ctx, typeName );
 				return classes.merge( types )
@@ -43,7 +44,7 @@ module TsT {
 					});
 			});
 
-		function formatTemplate<TObject>( objects: TObject[], config: CachedConfigPart<dust.RenderFn>[], baseCtx: dust.Context, objectName: ( o: TObject ) => string )
+		function formatTemplate<TObject>( objects: TObject[], config: CachedConfigPart[], baseCtx: dust.Context, objectName: ( o: TObject ) => string )
 			: Rx.IObservable<string> {
 			return Rx.Observable
 				.fromArray( config )

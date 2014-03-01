@@ -1,43 +1,17 @@
 /// <reference path="../lib/linq/linq.d.ts" />
-/// <reference path="../lib/typescript/typescript.d.ts" />
 /// <reference path="../lib/dust/dust.d.ts" />
+/// <reference path="../lib/typescript/typescript.d.ts" />
 /// <reference path="../lib/rx/rx.d.ts" />
-declare module TsT {
-    interface ConfigPart {
-        [regex: string]: string;
+declare module erecruit.TsT {
+    interface ITsTHost {
+        FetchFile(fileName: string): string;
+        ResolveRelativePath(path: string, directory: string): string;
+        MakeRelativePath(from: string, to: string): string;
+        DirectoryExists(path: string): boolean;
+        GetParentDirectory(path: string): string;
     }
-    interface FileConfig {
-        Class?: ConfigPart;
-        Type?: ConfigPart;
-    }
-    interface Config extends FileConfig {
-        Extension?: string;
-        RootDir?: string;
-        ConfigDir?: string;
-        File?: {
-            [regex: string]: FileConfig;
-        };
-    }
-    interface CachedConfigPart<TTemplate> {
-        match: (name: string) => boolean;
-        template: TTemplate;
-    }
-    interface CachedFileConfig<TTemplate> {
-        Class: CachedConfigPart<TTemplate>[];
-        Type: CachedConfigPart<TTemplate>[];
-    }
-    interface CachedConfig<TTemplate> {
-        Original: Config;
-        File: {
-            match: (fileName: string) => boolean;
-            config: CachedFileConfig<TTemplate>;
-        }[];
-    }
-    function getFileConfig<TTemplate>(config: CachedConfig<TTemplate>, fileName: string): CachedFileConfig<TTemplate>;
-    function cacheConfig<TTemplate>(config: Config, resolveTemplate: (str: string) => TTemplate): CachedConfig<TTemplate>;
-}
-declare module TsT {
     interface Module {
+        Path: string;
         Classes: Class[];
         Types: Type[];
     }
@@ -48,10 +22,12 @@ declare module TsT {
         Number = 3,
     }
     interface Type {
+        Module: Module;
         PrimitiveType?: PrimitiveType;
         Enum?: Enum;
         Interface?: Interface;
         GenericParameter?: GenericParameter;
+        Array?: Type;
     }
     function typeName(t: Type): string;
     interface GenericParameter {
@@ -91,52 +67,75 @@ declare module TsT {
         Constructors: CallSignature[];
     }
 }
-declare module TsT {
-    interface ITsTHost {
-        FetchFile(fileName: string): string;
-        ResolveRelativePath(path: string, directory: string): string;
-        DirectoryExists(path: string): boolean;
-        GetParentDirectory(path: string): string;
+declare module erecruit.TsT {
+    interface ConfigPart {
+        [regex: string]: string;
     }
+    interface FileConfig {
+        Class?: ConfigPart;
+        Type?: ConfigPart;
+    }
+    interface Config extends FileConfig {
+        Extension?: string;
+        RootDir?: string;
+        ConfigDir?: string;
+        File?: {
+            [regex: string]: FileConfig;
+        };
+    }
+    interface CachedConfigPart {
+        match: (name: string) => boolean;
+        template: dust.RenderFn;
+    }
+    interface CachedFileConfig {
+        Class: CachedConfigPart[];
+        Type: CachedConfigPart[];
+    }
+    interface CachedConfig {
+        Original: Config;
+        Host: TsT.ITsTHost;
+        File: {
+            match: (fileName: string) => boolean;
+            config: CachedFileConfig;
+        }[];
+    }
+    function getFileConfig(config: CachedConfig, fileName: string): CachedFileConfig;
+    function cacheConfig(host: ITsTHost, config: Config): CachedConfig;
+}
+declare module erecruit.TsT {
     interface ExtractorOptions {
         UseCaseSensitiveFileResolution?: boolean;
     }
-    class Extractor implements TypeScript.IReferenceResolverHost {
+    class Extractor {
         private _host;
         private _options;
-        constructor(_host: ITsTHost, _options?: ExtractorOptions);
+        constructor(_host: TsT.ITsTHost, _options?: ExtractorOptions);
         public GetModule(fileName: string): TsT.Module;
         private GetType;
         private GetCallSignature;
         private GetPrimitiveType(type);
-        private GetBaseTypes(type);
-        private GetInterface(type);
+        private GetBaseTypes;
+        private GetInterface;
         private GetEnum(type);
-        private GetMethod(type);
-        private GetGenericParameter(type);
+        private GetMethod;
+        private GetGenericParameter(mod, type);
         private EnsureResolved(s);
         private _compiler;
         private _typeCache;
         private _snapshots;
-        public getScriptSnapshot(fileName: string): TypeScript.IScriptSnapshot;
-        public resolveRelativePath(path: string, directory: string): string;
-        public fileExists(path: string): boolean;
-        public directoryExists(path: string): boolean;
-        public getParentDirectory(path: string): string;
+        private _tsHost;
     }
 }
-declare module TsT {
-    interface File {
-        FullPath: string;
-        Directory: string;
-        RelativeDir: string;
-        Name: string;
-        NameWithoutExtension: string;
-        Extension: string;
+declare module erecruit.TsT {
+    module Config {
+        function fromDustContext(context: dust.Context): TsT.CachedConfig;
+        function toDustContext(config: TsT.CachedConfig): dust.Context;
     }
     interface FileContent {
-        File: File;
+        File: string;
         Content: string;
     }
-    function Emit(cfg: Config, files: File[], host: ITsTHost): Rx.IObservable<FileContent>;
+    function Emit(cfg: Config, files: string[], host: ITsTHost): Rx.IObservable<FileContent>;
+}
+declare module erecruit.TsT.CSharp {
 }

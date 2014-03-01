@@ -8,15 +8,21 @@ var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
 import path = require( "path" );
 import fs = require( "fs" );
 
+var sourceFiles = ["src/**/*.ts", "lib/**/*.ts"];
 var sources = new jake.FileList();
-sources.include( ["src/*.ts", "lib/**/*.ts"] );
+sources.include( sourceFiles );
+
+var tests = new jake.FileList();
+tests.include( sourceFiles );
+tests.include( ["tests/**/*.ts"] );
 
 var nodeModule = toOutDir( 'tst-node.js' );
 var nodeModuleTypings = toOutDir( 'tst-node.d.ts' );
 var freeModule = toOutDir( 'tst.js' );
 var freeModuleTypings = toOutDir( 'tst.d.ts' );
 var executableModule = toOutDir( 'tstc.js' );
-var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule];
+var testsModule = toOutDir( 'tests/tstSpec.js' );
+var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule, testsModule];
 
 var lib = wrapLibs();
 
@@ -27,10 +33,23 @@ desc( "Compile tstc" ); task( 'c', executableModule );
 desc( "Compile NodeJS module" ); task( 'node', [nodeModule, nodeModuleTypings] );
 desc( "Compile free module" ); task( 'free', [freeModule, freeModuleTypings] );
 
-compileTs( freeModule, sources.toArray(), lib, false, true );
-compileTs( executableModule, ['node/tstc.ts'], [freeModule], true, false );
-wrapFile( freeModule, nodeModule, "(function(TsT){", "})( module.exports );" );
-wrapFile( freeModuleTypings, nodeModuleTypings, "", "declare module 'tst' { var _: typeof TsT; export = _; }" );
+compileTs( freeModule, sources.toArray(), lib, /* disableTypings */ false, /* mergeOutput */ true );
+compileTs( executableModule, ['node/tstc.ts'], [freeModule], /* disableTypings */ true, /* mergeOutput */ false );
+compileTs( testsModule, tests.toArray(), lib, /* disableTypings */ true, /* mergeOutput */ true );
+wrapFile( freeModule, nodeModule, "(function(erecruit){", "})( { TsT: module.exports } );" );
+
+file( nodeModuleTypings, [freeModuleTypings], () => {
+	console.log( "Building " + nodeModuleTypings );
+	var enc = { encoding: 'utf8' };
+	jake.mkdirP( path.dirname( nodeModuleTypings ) );
+
+	var content: string = <any>fs.readFileSync( freeModuleTypings, enc );
+	content = content
+		.replace( 'declare module erecruit.TsT', 'declare module "tst"' )
+		.replace( /}\s*declare module erecruit\.TsT([^\s\{])*\s*\{/g, '' )
+		.replace( /TsT\./g, '' );
+	fs.writeFileSync( nodeModuleTypings, content, enc );
+});
 
 function wrapLibs() {
 	var raw = new jake.FileList(); raw.include( "lib/**/*.js" ); raw.exclude( "lib/wrapped/**/*" );

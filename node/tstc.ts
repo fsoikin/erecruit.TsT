@@ -1,5 +1,7 @@
-/// <reference path="../src/emitter.ts" />
 /// <reference path="../lib/node/node.d.ts" />
+/// <reference path="../src/config.ts" />
+/// <reference path="../src/emitter.ts" />
+/// <reference path="../src/interfaces.ts" />
 
 import fs = require( 'fs' );
 import path = require( 'path' );
@@ -8,37 +10,26 @@ var args = require( "optimist" )
 	.demand( "c" ).alias( "c", "config" ).describe( "c", "Configuration file." )
 	.argv;
 
-console.log( "A" );
 main();
 
 function main() {
-	console.log( "A" );
 	var files = loadFiles();
 
-	var host: TsT.ITsTHost = {
+	var host: erecruit.TsT.ITsTHost = {
 		FetchFile: fileName => fs.existsSync( fileName ) && fs.statSync( fileName ).isFile() ? readFile( fileName ) : null,
 		DirectoryExists: path => fs.existsSync( path ) && fs.statSync( path ).isDirectory(),
 		GetParentDirectory: name => { var d = path.dirname( name ); return d === name ? null : d; },
-		ResolveRelativePath: ( relPath, dir ) => path.resolve( dir, relPath )
+		ResolveRelativePath: ( relPath, dir ) => path.resolve( dir, relPath ),
+		MakeRelativePath: ( from, to ) => path.relative( from, to ),
 	};
 
 	var configPath = args.c;
-	var config: TsT.Config = eval( "(" + readFile( configPath ) + ")" );
+	var config: erecruit.TsT.Config = eval( "(" + readFile( configPath ) + ")" );
 	config.ConfigDir = path.dirname( configPath );
 	config.RootDir = config.RootDir ? path.resolve( '.', config.RootDir ) : path.resolve( '.' );
-	console.log( "A" );
 
-	var tstFiles = files.map( f => <TsT.File>{
-		FullPath: f.replace( '\\', '/' ),
-		Directory: path.dirname( f ).replace( '\\', '/' ),
-		RelativeDir: path.relative( config.RootDir, path.dirname( f ) ).replace( '\\', '/' ),
-		Name: path.basename( f ),
-		NameWithoutExtension: path.basename( f, path.extname( f ) ),
-		Extension: ( path.extname( f ) || ' ' ).substring( 1 )
-	});
-
-	TsT.Emit( config, tstFiles, host )
-		.subscribe( c => console.log( c.File.FullPath + ":\r\n\t" + c.Content ) );
+	erecruit.TsT.Emit( config, files, host )
+		.subscribe( c => console.log( c.File + ":\r\n\t" + c.Content ) );
 }
 
 function readFile( f: string ): string {

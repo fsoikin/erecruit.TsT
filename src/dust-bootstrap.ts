@@ -1,7 +1,5 @@
 /// <reference path="../lib/dust/dust.d.ts" />
-/// <reference path="./extractor.ts" />
-/// <reference path="./interfaces.ts" />
-/// <reference path="./config.ts" />
+/// <reference path="interfaces.ts" />
 
 dust.optimizers.format = ( _, node ) => node;
 
@@ -14,8 +12,8 @@ dust.helpers['replace'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, p
 };
 
 dust.helpers['typeName'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { path: string }) => {
-	var path = dust.helpers.tap( params.path, chunk, ctx );
-	var type = params.path && ctx.get( params.path );
-	if ( type ) return chunk.write( TsT.typeName( type ) );
+	var path = params.path && dust.helpers.tap( params.path, chunk, ctx );
+	var type = path && ctx.get( path.toString() );
+	if ( type ) return chunk.write( erecruit.TsT.typeName( type ) );
 	else return chunk;
 };

@@ -22,7 +22,8 @@
   },
   "devDependencies": {
     "typescript": "0.9.x",
-    "jake": "0.7.x"
+    "jake": "0.7.x",
+		"jasmine-node": "1.13.x"
   },
   "engines": {
     "node": "*"

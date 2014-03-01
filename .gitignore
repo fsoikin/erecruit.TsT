@@ -2,5 +2,7 @@
 /**/*.map
 *.suo
 *.user
+*.dll
+*.pdb
 obj
 node_modules

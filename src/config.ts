@@ -1,6 +1,8 @@
 /// <reference path="../lib/linq/linq.d.ts" />
+/// <reference path="../lib/dust/dust.d.ts" />
+/// <reference path="interfaces.ts" />
 
-module TsT {
+module erecruit.TsT {
 	export interface ConfigPart {
 		[regex: string]: string
 	}
@@ -17,37 +19,39 @@ module TsT {
 		File?: { [regex: string]: FileConfig };
 	}
 
-	export interface CachedConfigPart<TTemplate> {
+	export interface CachedConfigPart {
 		match: ( name: string ) => boolean;
-		template: TTemplate;
+		template: dust.RenderFn;
 	}
 
-	export interface CachedFileConfig<TTemplate> {
-		Class: CachedConfigPart<TTemplate>[];
-		Type: CachedConfigPart<TTemplate>[];
+	export interface CachedFileConfig {
+		Class: CachedConfigPart[];
+		Type: CachedConfigPart[];
 	}
 
-	export interface CachedConfig<TTemplate> {
+	export interface CachedConfig {
 		Original: Config;
+		Host: ITsTHost;
 		File: {
 			match: ( fileName: string ) => boolean;
-			config: CachedFileConfig<TTemplate>;
+			config: CachedFileConfig;
 		}[];
 	}
 
-	export function getFileConfig<TTemplate>( config: CachedConfig<TTemplate>, fileName: string ) {
+	export function getFileConfig( config: CachedConfig, fileName: string ) {
 		return Enumerable
 			.from( config.File )
 			.where( c => c.match( fileName ) )
-			.aggregate( <CachedFileConfig<TTemplate>>{}, ( a, b ) => ( {
+			.aggregate( <CachedFileConfig>{}, ( a, b ) => ( {
 				Class: ( a.Class || [] ).concat( b.config.Class || [] ),
 				Type: ( a.Type || [] ).concat( b.config.Type || [] )
 			}) );
 	}
 
-	export function cacheConfig<TTemplate>( config: Config, resolveTemplate: ( str: string ) => TTemplate ): CachedConfig<TTemplate> {
+	export function cacheConfig( host: ITsTHost, config: Config ): CachedConfig {
 		return {
 			Original: config,
+			Host: host,
 			File: Enumerable
 				.from( config.File )
 				.concat( [{ key: '.', value: <FileConfig>config }] )
@@ -56,26 +60,27 @@ module TsT {
 					var regex = new RegExp( x.key );
 					return {
 						match: ( fileName: string ) => { var res = regex.test( fileName ); regex.test( '' ); return res; },
-						config: cacheConfig( x.value )
+						config: cacheConfig( config, host, x.value )
 					};
 				})
 				.toArray()
 		};
 
-		function cacheConfigPart( c: ConfigPart ): CachedConfigPart<TTemplate>[] {
+		function cacheConfigPart( cfg: Config, host: ITsTHost, c: ConfigPart ): CachedConfigPart[] {
 			return Enumerable.from( c ).where( c => !!c.key && !!c.value )
 				.select( x => {
 					var regex = new RegExp( x.key );
 					return {
 						match: ( name: string ) => { var res = regex.test( name ); regex.test( '' ); return res; },
-						template: resolveTemplate( x.value )
+						template: !x.value ? null :
+						dust.compileFn( x.value[0] == '@' ? host.FetchFile( host.ResolveRelativePath( x.value.substring( 1 ), cfg.ConfigDir ) ) : x.value )
 					};
 				})
 				.toArray();
 		}
 
-		function cacheConfig( c: FileConfig ): CachedFileConfig<TTemplate> {
-			return { Class: cacheConfigPart( c.Class ), Type: cacheConfigPart( c.Type ) };
+		function cacheConfig( cfg: Config, host: ITsTHost, c: FileConfig ): CachedFileConfig {
+			return { Class: cacheConfigPart( cfg, host, c.Class ), Type: cacheConfigPart( cfg, host, c.Type ) };
 		}
 	}
 }

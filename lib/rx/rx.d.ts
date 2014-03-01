@@ -1,92 +1,92 @@
 ﻿declare module Rx {
 	var Disposable: {
-		new ( action: () => void ): Rx.Disposable;
-		create( action: () => void ): Rx.Disposable;
+		new ( action: () => void ): Disposable;
+		create( action: () => void ): Disposable;
 	};
-	var CompositeDisposable: { new ( ...disposables: Rx.IDisposable[] ): Rx.CompositeDisposable; };
-	var SingleAssignmentDisposable: { new (): Rx.SingleAssignmentDisposable; };
-	var SerialDisposable: { new (): Rx.SerialDisposable; };
-	var RefCountDisposable: { new ( disposable: Rx.IDisposable ): Rx.RefCountDisposable; };
+	var CompositeDisposable: { new ( ...disposables: IDisposable[] ): CompositeDisposable; };
+	var SingleAssignmentDisposable: { new (): SingleAssignmentDisposable; };
+	var SerialDisposable: { new (): SerialDisposable; };
+	var RefCountDisposable: { new ( disposable: IDisposable ): RefCountDisposable; };
 
 	var Scheduler: {
 		new ( now: () => number,
-			schedule: ( state: any, action: ( scheduler: Rx.IScheduler, state: any ) => Rx.IDisposable ) => Rx.IDisposable,
-			scheduleRelative: ( state: any, dueTime: number, action: ( scheduler: Rx.IScheduler, state: any ) => Rx.IDisposable ) => Rx.IDisposable,
-			scheduleAbsolute: ( state: any, dueTime: number, action: ( scheduler: Rx.IScheduler, state: any ) => Rx.IDisposable ) => Rx.IDisposable
-			): Rx.IScheduler;
+			schedule: ( state: any, action: ( scheduler: IScheduler, state: any ) => IDisposable ) => IDisposable,
+			scheduleRelative: ( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => IDisposable ) => IDisposable,
+			scheduleAbsolute: ( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => IDisposable ) => IDisposable
+			): IScheduler;
 
 		now(): number;
 		normalize( timeSpan: number ): number;
 
-		immediate: Rx.IScheduler;
-		currentThread: Rx.ICurrentScheduler;
-		timeout: Rx.IScheduler;
+		immediate: IScheduler;
+		currentThread: ICurrentScheduler;
+		timeout: IScheduler;
 	};
 
 	var Notification: {
-		createOnNext<T>( value: T ): Rx.Notification<T>;
-		createOnError<T>( exception: any ): Rx.Notification<T>;
-		createOnCompleted<T>(): Rx.Notification<T>;
+		createOnNext<T>( value: T ): Notification<T>;
+		createOnError<T>( exception: any ): Notification<T>;
+		createOnCompleted<T>(): Notification<T>;
 	};
 
 	var Observer: {
-		create<T>( onNext: ( value: T ) => void , onError?: ( exception: any ) => void , onCompleted?: () => void ): Rx.IObserver<T>;
-		fromNotifier<T>( handler: ( notification: Rx.Notification<T> ) => void ): Rx.IObserver<T>;
+		create<T>( onNext: ( value: T ) => void , onError?: ( exception: any ) => void , onCompleted?: () => void ): IObserver<T>;
+		fromNotifier<T>( handler: ( notification: Notification<T> ) => void ): IObserver<T>;
 	};
 
 	var AnonymousObserver: {
-		new <T>( onNext: ( value: T ) => void , onError: ( exception: any ) => void , onCompleted: () => void ): Rx.IAnonymousObserver<T>;
+		new <T>( onNext: ( value: T ) => void , onError: ( exception: any ) => void , onCompleted: () => void ): IAnonymousObserver<T>;
 	};
 
 	var Observable: {
-		new <T>( subscribe: ( observer: Rx.IObserver<T> ) => Rx.IDisposable ): Rx.IObservable<T>;
+		new <T>( subscribe: ( observer: IObserver<T> ) => IDisposable ): IObservable<T>;
 
-		start<T>( func: () => T, scheduler?: Rx.IScheduler, context?: any ): Rx.IObservable<T>;
-		toAsync( func: Function, scheduler?: Rx.IScheduler, context?: any ): ( ...arguments: any[] ) => Rx.IObservable<any>;
-		create<T>( subscribe: ( o: Rx.IObserver<T> ) => () => void ): Rx.IObservable<T>;
-		createWithDisposable<T>( subscribe: ( o: Rx.IObserver<T> ) => Rx.IDisposable ): Rx.IObservable<T>;
-		defer<T>( observableFactory: () => Rx.IObservable<T> ): Rx.IObservable<T>;
-		empty<T>( scheduler?: Rx.IScheduler ): Rx.IObservable<T>;
-		fromArray<T>( array: T[], scheduler?: Rx.IScheduler ): Rx.IObservable<T>;
-		fromArray<T>( array: { length: number;[index: number]: T; }, scheduler?: Rx.IScheduler ): Rx.IObservable<T>;
-		generate<TState, T>( initialState: TState, condition: ( state: TState ) => boolean, iterate: ( state: TState ) => TState, resultSelector: ( state: TState ) => T, scheduler?: Rx.IScheduler ): Rx.IObservable<T>;
-		never<T>(): Rx.IObservable<T>;
-		range( start: number, count: number, scheduler?: Rx.IScheduler ): Rx.IObservable<number>;
-		repeat<T>( value: T, repeatCount?: number, scheduler?: Rx.IScheduler ): Rx.IObservable<T>;
-		returnValue<T>( value: T, scheduler?: Rx.IScheduler ): Rx.IObservable<T>;
-		throwException<T>( exception: any, scheduler?: Rx.IScheduler ): Rx.IObservable<T>;
-		using<TResource extends Rx.IDisposable, T>( resourceFactory: () => TResource, observableFactory: ( resource: TResource ) => Rx.IObservable<T> ): Rx.IObservable<T>;
-		amb<T>( ...sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		catchException<T>( sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		catchException<T>( ...sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		concat<T>( ...sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		concat<T>( sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		merge<T>( ...sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		merge<T>( sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		merge<T>( scheduler: Rx.IScheduler, ...sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		merge<T>( scheduler: Rx.IScheduler, sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		onErrorResumeNext<T>( ...sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
-		onErrorResumeNext<T>( sources: Rx.IObservable<T>[] ): Rx.IObservable<T>;
+		start<T>( func: () => T, scheduler?: IScheduler, context?: any ): IObservable<T>;
+		toAsync( func: Function, scheduler?: IScheduler, context?: any ): ( ...arguments: any[] ) => IObservable<any>;
+		create<T>( subscribe: ( o: IObserver<T> ) => () => void ): IObservable<T>;
+		createWithDisposable<T>( subscribe: ( o: IObserver<T> ) => IDisposable ): IObservable<T>;
+		defer<T>( observableFactory: () => IObservable<T> ): IObservable<T>;
+		empty<T>( scheduler?: IScheduler ): IObservable<T>;
+		fromArray<T>( array: T[], scheduler?: IScheduler ): IObservable<T>;
+		fromArray<T>( array: { length: number;[index: number]: T; }, scheduler?: IScheduler ): IObservable<T>;
+		generate<TState, T>( initialState: TState, condition: ( state: TState ) => boolean, iterate: ( state: TState ) => TState, resultSelector: ( state: TState ) => T, scheduler?: IScheduler ): IObservable<T>;
+		never<T>(): IObservable<T>;
+		range( start: number, count: number, scheduler?: IScheduler ): IObservable<number>;
+		repeat<T>( value: T, repeatCount?: number, scheduler?: IScheduler ): IObservable<T>;
+		returnValue<T>( value: T, scheduler?: IScheduler ): IObservable<T>;
+		throwException<T>( exception: any, scheduler?: IScheduler ): IObservable<T>;
+		using<TResource extends IDisposable, T>( resourceFactory: () => TResource, observableFactory: ( resource: TResource ) => IObservable<T> ): IObservable<T>;
+		amb<T>( ...sources: IObservable<T>[] ): IObservable<T>;
+		catchException<T>( sources: IObservable<T>[] ): IObservable<T>;
+		catchException<T>( ...sources: IObservable<T>[] ): IObservable<T>;
+		concat<T>( ...sources: IObservable<T>[] ): IObservable<T>;
+		concat<T>( sources: IObservable<T>[] ): IObservable<T>;
+		merge<T>( ...sources: IObservable<T>[] ): IObservable<T>;
+		merge<T>( sources: IObservable<T>[] ): IObservable<T>;
+		merge<T>( scheduler: IScheduler, ...sources: IObservable<T>[] ): IObservable<T>;
+		merge<T>( scheduler: IScheduler, sources: IObservable<T>[] ): IObservable<T>;
+		onErrorResumeNext<T>( ...sources: IObservable<T>[] ): IObservable<T>;
+		onErrorResumeNext<T>( sources: IObservable<T>[] ): IObservable<T>;
 
-		interval( period: number, scheduler?: Rx.IScheduler ): IObservable<any>;
-		timer( dueTime: number, period: number, scheduler?: Rx.IScheduler ): IObservable<any>;
-		timer( dueTime: number, scheduler?: Rx.IScheduler ): IObservable<any>;
-		timer( dueTime: Date, period: number, scheduler?: Rx.IScheduler ): IObservable<any>;
-		timer( dueTime: Date, scheduler?: Rx.IScheduler ): IObservable<any>;
+		interval( period: number, scheduler?: IScheduler ): IObservable<any>;
+		timer( dueTime: number, period: number, scheduler?: IScheduler ): IObservable<any>;
+		timer( dueTime: number, scheduler?: IScheduler ): IObservable<any>;
+		timer( dueTime: Date, period: number, scheduler?: IScheduler ): IObservable<any>;
+		timer( dueTime: Date, scheduler?: IScheduler ): IObservable<any>;
 	};
 
 	var Subject: {
-		new <T>(): Rx.Subject<T>;
-		create<T>( observer: Rx.IObserver<T>, observable: Rx.IObservable<T> ): Rx.Subject<T>;
+		new <T>(): Subject<T>;
+		create<T>( observer: IObserver<T>, observable: IObservable<T> ): Subject<T>;
 	};
-	var AsyncSubject: { new <T>(): Rx.AsyncSubject<T>; };
+	var AsyncSubject: { new <T>(): AsyncSubject<T>; };
 
 	module Internals {
 		var ScheduledObserver: {
-			new <T>( scheduler: Rx.IScheduler, observer: Rx.IObserver<T> ): Rx.Internals.IScheduledObserver<T>;
+			new <T>( scheduler: IScheduler, observer: IObserver<T> ): Internals.IScheduledObserver<T>;
 		};
 		var AnonymousObservable: {
-			new <T>( subscribe: ( observer: Rx.IObserver<T> ) => Rx.IDisposable ): Rx.Internals.IAnonymousObservable<T>;
+			new <T>( subscribe: ( observer: IObserver<T> ) => IDisposable ): Internals.IAnonymousObservable<T>;
 		};
 	}
 
@@ -95,52 +95,52 @@
 		dispose(): void;
 	}
 
-	export interface Disposable extends Rx.IDisposable {
+	export interface Disposable extends IDisposable {
 		isDisposed: boolean;
 		action: () => void;
 	}
 
 	export interface CompositeDisposable {
-		disposables: Rx.IDisposable[];
+		disposables: IDisposable[];
 		isDisposed: boolean;
 		length: number;
 
 		dispose(): void;
-		add( item: Rx.IDisposable ): void;
-		remove( item: Rx.IDisposable ): boolean;
+		add( item: IDisposable ): void;
+		remove( item: IDisposable ): boolean;
 		clear(): void;
-		contains( item: Rx.IDisposable ): boolean;
-		toArray(): Rx.IDisposable[];
+		contains( item: IDisposable ): boolean;
+		toArray(): IDisposable[];
 	}
 
 	export interface SingleAssignmentDisposable {
 		isDisposed: boolean;
-		current: Rx.IDisposable;
+		current: IDisposable;
 
 		dispose(): void;
-		disposable( value?: Rx.IDisposable ): Rx.IDisposable;
-		getDisposable(): Rx.IDisposable;
-		setDisposable( value: Rx.IDisposable ): void;
+		disposable( value?: IDisposable ): IDisposable;
+		getDisposable(): IDisposable;
+		setDisposable( value: IDisposable ): void;
 	}
 
 	export interface SerialDisposable {
 		isDisposed: boolean;
-		current: Rx.IDisposable;
+		current: IDisposable;
 
 		dispose(): void;
-		getDisposable(): Rx.IDisposable;
-		setDisposable( value: Rx.IDisposable ): void;
-		disposable( value?: Rx.IDisposable ): Rx.IDisposable;
+		getDisposable(): IDisposable;
+		setDisposable( value: IDisposable ): void;
+		disposable( value?: IDisposable ): IDisposable;
 	}
 
 	export interface RefCountDisposable {
-		underlyingDisposable: Rx.IDisposable;
+		underlyingDisposable: IDisposable;
 		isDisposed: boolean;
 		isPrimaryDisposed: boolean;
 		count: number;
 
 		dispose(): void;
-		getDisposable(): Rx.IDisposable;
+		getDisposable(): IDisposable;
 	}
 	//#endregion
 
@@ -164,7 +164,7 @@
 	export interface ScheduledItem {
 		scheduler: IScheduler;
 		state: any;
-		action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable;
+		action: ( scheduler: IScheduler, state: any ) => IDisposable;
 		dueTime: number;
 		comparer: ( x: number, y: number ) => number;
 		disposable: SingleAssignmentDisposable;
@@ -172,36 +172,36 @@
 		invoke(): void;
 		compareTo( other: ScheduledItem ): number;
 		isCancelled(): boolean;
-		invokeCore(): Rx.IDisposable;
+		invokeCore(): IDisposable;
 	}
 
 	export interface IScheduler {
-		_schedule: ( state: any, action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable ) => Rx.IDisposable;
-		_scheduleRelative: ( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable ) => Rx.IDisposable;
-		_scheduleAbsolute: ( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable ) => Rx.IDisposable;
+		_schedule: ( state: any, action: ( scheduler: IScheduler, state: any ) => IDisposable ) => IDisposable;
+		_scheduleRelative: ( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => IDisposable ) => IDisposable;
+		_scheduleAbsolute: ( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => IDisposable ) => IDisposable;
 
 		now(): number;
-		scheduleWithState( state: any, action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable ): Rx.IDisposable;
-		scheduleWithAbsoluteAndState( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable ): Rx.IDisposable;
-		scheduleWithRelativeAndState( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable ): Rx.IDisposable;
+		scheduleWithState( state: any, action: ( scheduler: IScheduler, state: any ) => IDisposable ): IDisposable;
+		scheduleWithAbsoluteAndState( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => IDisposable ): IDisposable;
+		scheduleWithRelativeAndState( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => IDisposable ): IDisposable;
 
 		catchException( handler: ( exception: any ) => boolean ): ICatchScheduler;
-		schedulePeriodic( period: number, action: () => void ): Rx.IDisposable;
-		schedulePeriodicWithState( state: any, period: number, action: ( state: any ) => any ): Rx.IDisposable;//returns {Disposable|SingleAssignmentDisposable}
-		schedule( action: () => void ): Rx.IDisposable;
-		scheduleWithRelative( dueTime: number, action: () => void ): Rx.IDisposable;
-		scheduleWithAbsolute( dueTime: number, action: () => void ): Rx.IDisposable;
-		scheduleRecursive( action: ( action: () => void ) => void ): Rx.IDisposable;
-		scheduleRecursiveWithState( state: any, action: ( state: any, action: ( state: any ) => void ) => void ): Rx.IDisposable;
-		scheduleRecursiveWithRelative( dueTime: number, action: ( action: ( dueTime: number ) => void ) => void ): Rx.IDisposable;
-		scheduleRecursiveWithRelativeAndState( state: any, dueTime: number, action: ( state: any, action: ( state: any, dueTime: number ) => void ) => void ): Rx.IDisposable;
-		scheduleRecursiveWithAbsolute( dueTime: number, action: ( action: ( dueTime: number ) => void ) => void ): Rx.IDisposable;
-		scheduleRecursiveWithAbsoluteAndState( state: any, dueTime: number, action: ( state: any, action: ( state: any, dueTime: number ) => void ) => void ): Rx.IDisposable;
+		schedulePeriodic( period: number, action: () => void ): IDisposable;
+		schedulePeriodicWithState( state: any, period: number, action: ( state: any ) => any ): IDisposable;//returns {Disposable|SingleAssignmentDisposable}
+		schedule( action: () => void ): IDisposable;
+		scheduleWithRelative( dueTime: number, action: () => void ): IDisposable;
+		scheduleWithAbsolute( dueTime: number, action: () => void ): IDisposable;
+		scheduleRecursive( action: ( action: () => void ) => void ): IDisposable;
+		scheduleRecursiveWithState( state: any, action: ( state: any, action: ( state: any ) => void ) => void ): IDisposable;
+		scheduleRecursiveWithRelative( dueTime: number, action: ( action: ( dueTime: number ) => void ) => void ): IDisposable;
+		scheduleRecursiveWithRelativeAndState( state: any, dueTime: number, action: ( state: any, action: ( state: any, dueTime: number ) => void ) => void ): IDisposable;
+		scheduleRecursiveWithAbsolute( dueTime: number, action: ( action: ( dueTime: number ) => void ) => void ): IDisposable;
+		scheduleRecursiveWithAbsoluteAndState( state: any, dueTime: number, action: ( state: any, action: ( state: any, dueTime: number ) => void ) => void ): IDisposable;
 	}
 
 	export interface ICurrentScheduler extends IScheduler {
 		scheduleRequired(): boolean;
-		ensureTrampoline( action: () => Rx.IDisposable ): Rx.IDisposable;
+		ensureTrampoline( action: () => IDisposable ): IDisposable;
 	}
 
 	export interface IVirtualTimeScheduler extends IScheduler {
@@ -212,16 +212,16 @@
 		comparer: ( x: number, y: number ) => number;
 		isEnabled: boolean;
 		queue: IPriorityQueue;
-		scheduleRelativeWithState( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable ): Rx.IDisposable;
-		scheduleRelative( dueTime: number, action: () => void ): Rx.IDisposable;
-		start(): Rx.IDisposable;
+		scheduleRelativeWithState( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => IDisposable ): IDisposable;
+		scheduleRelative( dueTime: number, action: () => void ): IDisposable;
+		start(): IDisposable;
 		stop(): void;
 		advanceTo( time: number ): void;
 		advanceBy( time: number ): void;
 		sleep( time: number ): void;
 		getNext(): ScheduledItem;
 		scheduleAbsolute( dueTime: number, action: () => void ): void;
-		scheduleAbsoluteWithState( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => Rx.IDisposable ): Rx.IDisposable;
+		scheduleAbsoluteWithState( state: any, dueTime: number, action: ( scheduler: IScheduler, state: any ) => IDisposable ): IDisposable;
 	}
 
 	export interface ICatchScheduler extends IScheduler { }
@@ -288,12 +288,12 @@
 	}
 
 	export interface IObservable<T> {
-		_subscribe: ( observer: IObserver<T> ) => Rx.IDisposable;
+		_subscribe: ( observer: IObserver<T> ) => IDisposable;
 
-		subscribe( observer: IObserver<T> ): Rx.IDisposable;
+		subscribe( observer: IObserver<T> ): IDisposable;
 
 		finalValue(): IObservable<T>;
-		subscribe( onNext?: ( value: T ) => void , onError?: ( exception: any ) => void , onCompleted?: () => void ): Rx.IDisposable;
+		subscribe( onNext?: ( value: T ) => void , onError?: ( exception: any ) => void , onCompleted?: () => void ): IDisposable;
 		toArray(): IObservable<T>;
 
 		observeOn( scheduler: IScheduler ): IObservable<T>;
@@ -358,10 +358,10 @@
 		takeWhile( predicate: ( value: T, index?: number ) => boolean ): IObservable<T>;
 		where( predicate: ( value: T, index?: number ) => boolean ): IObservable<T>;
 
-		delay( interval: number, scheduler?: Rx.IScheduler ): IObservable<T>;
-		delay( dueTime: Date, scheduler?: Rx.IScheduler ): IObservable<T>;
+		delay( interval: number, scheduler?: IScheduler ): IObservable<T>;
+		delay( dueTime: Date, scheduler?: IScheduler ): IObservable<T>;
 
-		throttle( interval: number, scheduler?: Rx.IScheduler ): IObservable<T>;
+		throttle( interval: number, scheduler?: IScheduler ): IObservable<T>;
 	}
 
 	//	interface IObservable<T extends Notification<U>> {

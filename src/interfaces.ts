@@ -1,5 +1,14 @@
-module TsT {
+module erecruit.TsT {
+	export interface ITsTHost {
+		FetchFile( fileName: string ): string;
+		ResolveRelativePath( path: string, directory: string ): string;
+		MakeRelativePath( from: string, to: string ): string;
+		DirectoryExists( path: string ): boolean;
+		GetParentDirectory( path: string ): string;
+	}
+
 	export interface Module {
+		Path: string;
 		Classes: Class[];
 		Types: Type[];
 	}
@@ -10,10 +19,12 @@ module TsT {
 
 	// This is supposed to be a type union, but alas, we don't have those in TS yet
 	export interface Type {
+		Module: Module;
 		PrimitiveType?: PrimitiveType;
 		Enum?: Enum;
 		Interface?: Interface;
 		GenericParameter?: GenericParameter;
+		Array?: Type;
 	}
 
 	export function typeName( t: Type ) {

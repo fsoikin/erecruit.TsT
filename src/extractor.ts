@@ -1,94 +1,90 @@
 /// <reference path="../lib/typescript/typescript.d.ts" />
 /// <reference path="../lib/linq/linq.d.ts" />
-/// <reference path="./interfaces.ts" />
+/// <reference path="interfaces.ts" />
 
-module TsT {
-	export interface ITsTHost {
-		FetchFile( fileName: string ): string;
-		ResolveRelativePath( path: string, directory: string ): string;
-		DirectoryExists( path: string ): boolean;
-		GetParentDirectory( path: string ): string;
-	}
-
+module erecruit.TsT {
 	export interface ExtractorOptions {
 		UseCaseSensitiveFileResolution?: boolean;
 	}
 
-	export class Extractor implements TypeScript.IReferenceResolverHost {
+	export class Extractor {
 		constructor( private _host: ITsTHost, private _options: ExtractorOptions = {}) { }
 
 		GetModule( fileName: string ): Module {
 			fileName = fileName.replace( /\\/g, '/' );
 
 			if ( !this._compiler.getDocument( fileName ) ) {
-				var addFile = ( f: string ) => this._compiler.addFile( f, this.getScriptSnapshot( f ), null, 0, false, [] );
+				var addFile = ( f: string ) => this._compiler.addFile( f, this._tsHost.getScriptSnapshot( f ), null, 0, false, [] );
 				addFile( fileName );
 
-				var resolved = TypeScript.ReferenceResolver.resolve( [fileName], <TypeScript.IReferenceResolverHost>this, this._options.UseCaseSensitiveFileResolution );
+				var resolved = TypeScript.ReferenceResolver.resolve( [fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution );
 				Enumerable.from( resolved && resolved.resolvedFiles )
 					.where( f => !this._compiler.getDocument( f.path ) )
 					.forEach( f => addFile( f.path ) );
 			}
 
 			var mod = this._compiler.topLevelDeclaration( fileName );
-			if ( !mod ) return { Classes: [], Types: [] };
+			if ( !mod ) return { Path: fileName, Classes: [], Types: [] };
 
 			var allModuleDecls = Enumerable
 				.from( mod.getChildDecls() )
 				.where( d => d.kind == TypeScript.PullElementKind.DynamicModule )
 				.selectMany( mod => mod.getChildDecls() );
 
-			var classes = allModuleDecls
+			var result: Module = { Path: fileName, Classes: null, Types: null };
+
+			result.Classes = allModuleDecls
 				.where( d => d.kind == TypeScript.PullElementKind.Variable )
 				.select( d => {
 					var variable = this._compiler.getSymbolOfDeclaration( d );
 					this.EnsureResolved( variable );
 					var varType = variable.isType() && ( <TypeScript.PullTypeSymbol>variable );
 					var sigs = variable.type.getConstructSignatures()
-				var ctor = variable.type.getConstructorMethod();
+			var ctor = variable.type.getConstructorMethod();
 					if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
 
 					return <Class> {
 						Name: d.name,
-						Implements: varType && this.GetBaseTypes( varType ),
-						GenericParameters: varType && varType.getTypeParameters().map( this.GetType ),
-						Constructors: sigs.map( this.GetCallSignature )
+						Implements: varType && this.GetBaseTypes( result )( varType ),
+						GenericParameters: varType && varType.getTypeParameters().map( this.GetType( result ) ),
+						Constructors: sigs.map( this.GetCallSignature( result ) )
 					};
 				})
 				.where( c => c.Constructors.length > 0 )
 				.toArray();
 
-			var types = allModuleDecls
+			result.Types = allModuleDecls
 				.where( d => d.kind == TypeScript.PullElementKind.Interface || d.kind == TypeScript.PullElementKind.Enum || d.kind == TypeScript.PullElementKind.Class )
 				.select( d => this._compiler.getSymbolOfDeclaration( d ) )
 				.doAction( this.EnsureResolved )
-				.select( this.GetType )
+				.select( this.GetType( result ) )
 				.toArray();
 
-			return { Classes: classes, Types: types };
+			return result;
 		}
 
-		private GetType = ( type: TypeScript.PullTypeSymbol ) => {
+		private GetType = ( mod: Module ) => ( type: TypeScript.PullTypeSymbol ) => {
 			if ( !type ) return null;
 			var cached = this._typeCache[type.pullSymbolID];
 			if ( cached ) return cached;
 
-			this._typeCache[type.pullSymbolID] = cached = {};
+			this._typeCache[type.pullSymbolID] = cached = { Module: mod };
 
 			this.EnsureResolved( type );
-			if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
+			if ( type.getElementType() ) cached.Array = this.GetType( mod )( type.getElementType() )
+		else if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
 			else if ( type.isEnum() ) cached.Enum = this.GetEnum( type );
-			else if ( type.isTypeParameter() ) cached.GenericParameter = this.GetGenericParameter( type );
-			else cached.Interface = this.GetInterface( type );
+			else if ( type.isTypeParameter() ) cached.GenericParameter = this.GetGenericParameter( mod, type );
+			else cached.Interface = this.GetInterface( mod )( type );
 
 			return cached;
 		};
 
-		private GetCallSignature = ( s: TypeScript.PullSignatureSymbol ) => {
+		private GetCallSignature = ( mod: Module ) => ( s: TypeScript.PullSignatureSymbol ) => {
 			this.EnsureResolved( s );
 			return {
-				GenericParameters: s.getTypeParameters().map( t => this.GetType( t.type ) ),
-				Parameters: s.parameters.map( p => <Identifier>{ Name: p.name, Type: this.GetType( p.type ) })
+				GenericParameters: s.getTypeParameters().map( t => this.GetType( mod )( t.type ) ),
+				Parameters: s.parameters.map( p => <Identifier>{ Name: p.name, Type: this.GetType( mod )( p.type ) })
 			};
 		};
 
@@ -99,37 +95,34 @@ module TsT {
 				: PrimitiveType.Any;
 		}
 
-		private GetBaseTypes( type: TypeScript.PullTypeSymbol ): Type[] {
-			return Enumerable
+		private GetBaseTypes = ( mod: Module ) => ( type: TypeScript.PullTypeSymbol ) =>
+			Enumerable
 				.from( type.getExtendedTypes() )
 				.concat( type.getImplementedTypes() )
 				.concat( type.isClass() ? [type] : [] )
-				.select( this.GetType )
+				.select( this.GetType( mod ) )
 				.where( t => !!t.Interface )
 				.toArray();
-		}
 
-		private GetInterface( type: TypeScript.PullTypeSymbol ): Interface {
-			return {
-				Name: type.name,
-				Extends: this.GetBaseTypes( type ),
-				GenericParameters: Enumerable.from( type.getTypeParameters() ).select( this.GetType ).toArray(),
-				Properties: type.getMembers().filter( m => m.isProperty() ).map( m => {
-					this.EnsureResolved( m );
-					return <Identifier>{ Name: m.name, Type: this.GetType( m.type ) };
-				}),
-				Methods: Enumerable.from( type.getMembers() )
-					.where( m => m.isMethod() )
-					.groupBy( m => m.name, m => m, ( name, ms ) => <Method>{
-						Name: name,
-						Signatures: ms.selectMany( m => {
-							this.EnsureResolved( m );
-							return m.type.getCallSignatures().map( this.GetCallSignature );
-						}).toArray()
-					})
-					.toArray(),
-			};
-		}
+		private GetInterface = ( mod: Module ) => ( type: TypeScript.PullTypeSymbol ) => ( {
+			Name: type.name,
+			Extends: this.GetBaseTypes( mod )( type ),
+			GenericParameters: Enumerable.from( type.getTypeParameters() ).select( this.GetType( mod ) ).toArray(),
+			Properties: type.getMembers().filter( m => m.isProperty() ).map( m => {
+				this.EnsureResolved( m );
+				return <Identifier>{ Name: m.name, Type: this.GetType( mod )( m.type ) };
+			}),
+			Methods: Enumerable.from( type.getMembers() )
+				.where( m => m.isMethod() )
+				.groupBy( m => m.name, m => m, ( name, ms ) => <Method>{
+					Name: name,
+					Signatures: ms.selectMany( m => {
+						this.EnsureResolved( m );
+						return m.type.getCallSignatures().map( this.GetCallSignature( mod ) );
+					}).toArray()
+				})
+				.toArray(),
+		});
 
 		private GetEnum( type: TypeScript.PullTypeSymbol ): Enum {
 			return <Enum>{
@@ -138,16 +131,14 @@ module TsT {
 			};
 		}
 
-		private GetMethod( type: TypeScript.PullTypeSymbol ): Method {
-			return {
-				Name: type.name,
-				Signatures: type.getCallSignatures().map( this.GetCallSignature )
-			};
-		}
+		private GetMethod = ( mod: Module ) => ( type: TypeScript.PullTypeSymbol ) => ( {
+			Name: type.name,
+			Signatures: type.getCallSignatures().map( this.GetCallSignature( mod ) )
+		});
 
-		private GetGenericParameter( type: TypeScript.PullTypeSymbol ): GenericParameter {
+		private GetGenericParameter( mod: Module, type: TypeScript.PullTypeSymbol ): GenericParameter {
 			var g = <TypeScript.PullTypeParameterSymbol> type;
-			return { Name: type.name, Constraint: this.GetType( g.getConstraint() ) };
+			return { Name: type.name, Constraint: this.GetType( mod )( g.getConstraint() ) };
 		}
 
 		private EnsureResolved( s: TypeScript.PullSymbol ) {
@@ -159,16 +150,17 @@ module TsT {
 		private _typeCache: { [pullSymbolId: number]: Type } = {};
 		private _snapshots: { [fileName: number]: TypeScript.IScriptSnapshot } = {};
 
-		/* IReferenceResolverHost */
-		getScriptSnapshot( fileName: string ): TypeScript.IScriptSnapshot {
-			return this._snapshots[fileName] || ( this._snapshots[fileName] = ( () => {
-				var content = this._host.FetchFile( fileName );
-				return content ? TypeScript.ScriptSnapshot.fromString( content ) : null;
-			})() );
-		}
-		resolveRelativePath( path: string, directory: string ): string { return this._host.ResolveRelativePath( path, directory ); }
-		fileExists( path: string ): boolean { return !!this.getScriptSnapshot( path ); }
-		directoryExists( path: string ): boolean { return this._host.DirectoryExists( path ); }
-		getParentDirectory( path: string ): string { return this._host.GetParentDirectory( path ); }
+		private _tsHost: TypeScript.IReferenceResolverHost = {
+			getScriptSnapshot: fileName => {
+				return this._snapshots[fileName] || ( this._snapshots[fileName] = ( () => {
+					var content = this._host.FetchFile( fileName );
+					return content ? TypeScript.ScriptSnapshot.fromString( content ) : null;
+				})() );
+			},
+			resolveRelativePath: ( path, directory ) => this._host.ResolveRelativePath( path, directory ),
+			fileExists: path => !!this._tsHost.getScriptSnapshot( path ),
+			directoryExists: path => this._host.DirectoryExists( path ),
+			getParentDirectory: path => this._host.GetParentDirectory( path )
+		};
 	}
 }
