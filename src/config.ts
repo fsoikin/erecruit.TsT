@@ -4,7 +4,7 @@
 
 module erecruit.TsT {
 	export interface ConfigPart {
-		[regex: string]: string
+		[regex: string]: { FileName: string; Template: string; };
 	}
 
 	export interface FileConfig {
@@ -22,6 +22,7 @@ module erecruit.TsT {
 
 	export interface CachedConfigPart {
 		match: ( name: string ) => boolean;
+		fileName: dust.RenderFn;
 		template: dust.RenderFn;
 	}
 
@@ -68,16 +69,22 @@ module erecruit.TsT {
 		};
 
 		function cacheConfigPart( cfg: Config, host: ITsTHost, c: ConfigPart ): CachedConfigPart[] {
-			return Enumerable.from( c ).where( c => !!c.key && !!c.value )
+			return Enumerable.from( c )
+				.where( c => !!c.key && !!c.value )
 				.select( x => {
 					var regex = new RegExp( x.key );
 					return {
 						match: ( name: string ) => { var res = regex.test( name ); regex.test( '' ); return res; },
-						template: !x.value ? null :
-						dust.compileFn( x.value[0] == '@' ? host.FetchFile( host.ResolveRelativePath( x.value.substring( 1 ), cfg.ConfigDir ) ) : x.value )
+						fileName: compileTemplate( x.value.FileName, cfg ),
+						template: compileTemplate( x.value.Template, cfg )
 					};
 				})
 				.toArray();
+		}
+
+		function compileTemplate( tpl: string, cfg: Config ) {
+			return !tpl ? null :
+				dust.compileFn( tpl[0] == '@' ? host.FetchFile( host.ResolveRelativePath( tpl.substring( 1 ), cfg.ConfigDir ) ) : tpl );
 		}
 
 		function cacheConfig( cfg: Config, host: ITsTHost, c: FileConfig ): CachedFileConfig {

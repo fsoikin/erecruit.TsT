@@ -69,7 +69,10 @@ declare module "tst" {
     }
 
     interface ConfigPart {
-        [regex: string]: string;
+        [regex: string]: {
+            FileName: string;
+            Template: string;
+        };
     }
     interface FileConfig {
         Class?: ConfigPart;
@@ -86,6 +89,7 @@ declare module "tst" {
     }
     interface CachedConfigPart {
         match: (name: string) => boolean;
+        fileName: dust.RenderFn;
         template: dust.RenderFn;
     }
     interface CachedFileConfig {
@@ -133,7 +137,8 @@ declare module "tst" {
         function toDustContext(config: CachedConfig): dust.Context;
     }
     interface FileContent {
-        File: string;
+        SourceFile: string;
+        OutputFile: string;
         Content: string;
     }
     function Emit(cfg: Config, files: string[], host: ITsTHost): Rx.IObservable<FileContent>;

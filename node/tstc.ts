@@ -18,7 +18,7 @@ function main() {
 	var configPath = args.c;
 	var config: erecruit.TsT.Config = eval( "(" + readFile( configPath ) + ")" );
 	config.ConfigDir = path.dirname( configPath );
-	config.RootDir = config.RootDir ? path.resolve( '.', config.RootDir ) : path.resolve( '.' );
+	config.RootDir = path.resolve( config.ConfigDir, config.RootDir || '.' );
 
 	var host: erecruit.TsT.ITsTHost = {
 		FetchFile: fileName => fs.existsSync( fileName ) && fs.statSync( fileName ).isFile() ? readFile( fileName ) : null,
@@ -30,7 +30,10 @@ function main() {
 	};
 
 	erecruit.TsT.Emit( config, files, host )
-		.subscribe( c => console.log( c.File + ":\r\n\t" + c.Content ) );
+		.subscribe( c => {
+			console.log( c.SourceFile + " --> " + c.OutputFile );
+			fs.writeFileSync( c.OutputFile, c.Content, { encoding: 'utf8' });
+		} );
 }
 
 function readFile( f: string ): string {

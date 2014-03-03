@@ -20,7 +20,8 @@ module erecruit.TsT {
 	}
 
 	export interface FileContent {
-		File: string;
+		SourceFile: string;
+		OutputFile: string;
 		Content: string;
 	}
 
@@ -34,29 +35,54 @@ module erecruit.TsT {
 				var fileConfig = getFileConfig( config, f );
 				var mod = e.GetModule( f );
 				var ctx = Config.toDustContext( config );
-				var classes = formatTemplate( mod.Classes, fileConfig.Class, ctx, c => c.Name );
-				var types = formatTemplate( mod.Types, fileConfig.Type, ctx, typeName );
+				var classes = formatTemplate( f, mod.Classes, fileConfig.Class, ctx, c => c.Name );
+				var types = formatTemplate( f, mod.Types, fileConfig.Type, ctx, typeName );
 				return classes.merge( types )
-					.takeLastBuffer( Number.MAX_VALUE )
-					.select( xs => <FileContent>{
-						File: f,
-						Content: xs.join( '\r\n' )
-					});
+					.groupBy( x => x.outputFileName, x => x.content )
+					.selectMany( x => x
+						.takeLastBuffer( Number.MAX_VALUE )
+						.select( xs => <FileContent>{
+							SourceFile: f, 
+							OutputFile: x.key,
+							Content: xs.join( '\r\n' )
+						})
+					);
 			});
 
-		function formatTemplate<TObject>( objects: TObject[], config: CachedConfigPart[], baseCtx: dust.Context, objectName: ( o: TObject ) => string )
-			: Rx.IObservable<string> {
+		function formatTemplate<TObject>( sourceFileName: string, objects: TObject[], config: CachedConfigPart[], baseCtx: dust.Context, objectName: ( o: TObject ) => string )
+			: Rx.IObservable<{ outputFileName: string; content: string }> {
+
 			return Rx.Observable
 				.fromArray( config )
 				.select( cfg => Enumerable
 					.from( objects )
 					.where( obj => cfg.match( objectName( obj ) ) )
-					.select( obj => Rx.Observable.create<string>( or => {
-						cfg.template( baseCtx.push( obj ), ( err, out ) => err ? or.onError( err ) : ( or.onNext( out ), or.onCompleted() ) );
-						return () => { };
-					}) )
+					.select( obj =>
+						Rx.Observable.create<string>( or => {
+							cfg.template( baseCtx.push( obj ), ( err, out ) => err ? or.onError( err ) : ( or.onNext( out ), or.onCompleted() ) );
+							return () => { };
+						}).zip( formatFileName( sourceFileName, host, cfg.fileName ),
+						( content, fileName ) => ( { outputFileName: fileName, content: content }) )
+					)
 				)
 				.selectMany( oos => Rx.Observable.merge( oos.toArray() ) );
+		}
+
+		function formatFileName( sourceFileName: string, host: ITsTHost, template: dust.RenderFn ) {
+			var dir = host.GetParentDirectory( sourceFileName );
+			var name = sourceFileName.substring( dir.length + 1 );
+			var nameParts = name.split( '.' );
+
+			var model = {
+				Path: dir,
+				Name: nameParts.slice( 0, nameParts.length - 1 ).join( '.' ),
+				Extension: nameParts[nameParts.length - 1]
+			};
+
+			return Rx.Observable.create<string>( or => {
+				template( dust.makeBase( model ), ( err, out ) => err ? or.onError( err ) : ( or.onNext( out ), or.onCompleted() ) );
+				return () => { };
+			});
 		}
 	}
 }

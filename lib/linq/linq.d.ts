@@ -22,7 +22,7 @@ declare module linqjs {
 		from(obj: boolean): IEnumerable<boolean>;
 		from(obj: string): IEnumerable<string>;
 		from<T>(obj: { length: number;[x: number]: T; }): IEnumerable<T>;
-		from( obj: { [key: string]: any }): IEnumerable<{ key: string; value: any }>;
+		from<T>( obj: { [key: string]: T }): IEnumerable<{ key: string; value: T }>;
 		make<T>(element: T): IEnumerable<T>;
 		matches<T>(input: string, pattern: RegExp): IEnumerable<T>;
 		matches<T>(input: string, pattern: string, flags?: string): IEnumerable<T>;

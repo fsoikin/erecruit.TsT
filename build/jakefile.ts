@@ -4,6 +4,7 @@
 var outDir = process.env.outDir || "./bin";
 var typescriptPath = process.env.typescriptPath || process.env.tsPath || "./node_modules/typescript/bin/tsc.js";
 var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
+var jasminePath = "./node_modules/jasmine-focused/bin/jasmine-focused";
 
 import path = require( "path" );
 import fs = require( "fs" );
@@ -29,8 +30,9 @@ var lib = wrapLibs();
 
 desc( "Build" ); task( 'default', outputs );
 desc( "Clean" ); task( 'clean', [], () => outputs.concat( lib ).forEach( f => fs.existsSync( f ) && fs.unlink( f ) ) );
-desc( "Rebuild" ); task( 'rebuild', ['clean', 'default'] );
-desc( "Compile tstc" ); task( 'c', executableModule );
+desc( "Clean, then build" ); task( 'rebuild', ['clean', 'default'] );
+desc( "Run tests" ); task( 'test', [testsModule], runJasmine, { async: true } );
+desc( "Compile tstc" ); task( 'tstc', executableModule );
 desc( "Compile NodeJS module" ); task( 'node', [nodeModule, nodeModuleTypings] );
 desc( "Compile free module" ); task( 'free', [freeModule, freeModuleTypings] );
 
@@ -108,6 +110,15 @@ function compileTs( outFile: string, sources: string[], prefixes: string[], disa
 		ex.run();	
 
 	}, { async: true });
+}
+
+function runJasmine() {
+	var ex = jake.createExec( ["node " + jasminePath + " " + path.dirname( testsModule )] );
+	ex.addListener( "stdout", ( o: any ) => process.stdout.write( o ) );
+	ex.addListener( "stderr", ( e: any ) => process.stderr.write( e ) );
+	ex.addListener( "cmdEnd", complete );
+	ex.addListener( "error", complete );
+	ex.run();	
 }
 
 function prepend( prefixFiles: string[], destinationFile: string ) {

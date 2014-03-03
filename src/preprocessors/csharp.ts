@@ -27,6 +27,7 @@ module erecruit.TsT.CSharp {
 
 		var n = TsT.typeName( type );
 		if ( !n ) return "object";
+		if ( type.GenericParameter ) return n;
 
 		var ns = typeNamespace( config, type );
 		if ( ns ) ns += '.';
@@ -36,8 +37,10 @@ module erecruit.TsT.CSharp {
 
 	function typeNamespace( config: CachedConfig, type: Type ) {
 		if ( !type.Module.Path ) return "";
-		return config.Host
-			.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( type.Module.Path ) )
+		var relPath = config.Host.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( type.Module.Path ) );
+		if ( relPath[0] == '.' && relPath[1] == '.' ) return "";
+		return relPath
+			.replace( /[\.\-\+]/, '_' )
 			.replace( /[\/\\]/, '.' );
 	}
 

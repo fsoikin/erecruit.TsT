@@ -70,7 +70,10 @@ declare module erecruit.TsT {
 }
 declare module erecruit.TsT {
     interface ConfigPart {
-        [regex: string]: string;
+        [regex: string]: {
+            FileName: string;
+            Template: string;
+        };
     }
     interface FileConfig {
         Class?: ConfigPart;
@@ -87,6 +90,7 @@ declare module erecruit.TsT {
     }
     interface CachedConfigPart {
         match: (name: string) => boolean;
+        fileName: dust.RenderFn;
         template: dust.RenderFn;
     }
     interface CachedFileConfig {
@@ -136,7 +140,8 @@ declare module erecruit.TsT {
         function toDustContext(config: TsT.CachedConfig): dust.Context;
     }
     interface FileContent {
-        File: string;
+        SourceFile: string;
+        OutputFile: string;
         Content: string;
     }
     function Emit(cfg: Config, files: string[], host: ITsTHost): Rx.IObservable<FileContent>;

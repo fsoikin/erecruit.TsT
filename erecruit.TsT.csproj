@@ -60,6 +60,7 @@
     <Content Include="package.json" />
     <Content Include="README.md" />
     <TypeScriptCompile Include="build\jakefile.ts" />
+    <TypeScriptCompile Include="examples\module.ts" />
     <None Include="jakefile" />
     <TypeScriptCompile Include="lib\jake\jake.d.ts" />
     <TypeScriptCompile Include="lib\jasmine\jasmine.d.ts" />
@@ -79,8 +80,8 @@
     <TypeScriptCompile Include="tests\extractor.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="config\config.json" />
-    <Content Include="config\csharp\type.cs.tpl" />
+    <Content Include="examples\csharp\config.json" />
+    <Content Include="examples\csharp\type.cs.tpl" />
     <Content Include="lib\dust\dust-full.js" />
     <Content Include="lib\dust\dust-helpers.js" />
     <Content Include="lib\linq\linq.js" />
