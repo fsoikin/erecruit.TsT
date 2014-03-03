@@ -16,7 +16,7 @@ module erecruit.TsT.Tests {
 		beforeEach( () => {
 			e = new Extractor( {
 				DirectoryExists: _ => false,
-				FetchFile: name => name === fileName ? file : fs.existsSync( name ) ? fs.readFileSync( name, { encoding: 'utf8' } ) : null,
+				FetchFile: name => name === fileName ? file : fs.existsSync( name ) ? fs.readFileSync( name, { encoding: 'utf8' }) : null,
 				GetParentDirectory: _ => "",
 				MakeRelativePath: _ => "",
 				ResolveRelativePath: _ => "",
@@ -103,8 +103,8 @@ module erecruit.TsT.Tests {
 							Name: 'X',
 							Values: [{ Name: 'A', Value: 1 }, { Name: 'B', Value: 2 }, { Name: 'C', Value: 6 },
 								{ Name: 'D', Value: 1 | 2 }, { Name: 'E', Value: 2 & 6 }, { Name: 'F', Value: ~2 },
-								{ Name: 'G', Value: 1 + 2 }, { Name: 'H', Value: 2 - 6 }, { Name: 'I', Value: 6 ^ 2 }, 
-								{ Name: 'J', Value: -2 } ]
+								{ Name: 'G', Value: 1 + 2 }, { Name: 'H', Value: 2 - 6 }, { Name: 'I', Value: 6 ^ 2 },
+								{ Name: 'J', Value: -2 }]
 						})
 					}
 				] );
@@ -128,21 +128,79 @@ module erecruit.TsT.Tests {
 			] );
 		});
 
-		it( "should correctly parse generic interfaces", () => {
-			file = "export interface I<T> { X: T[]; Y: T; }";
-			expect( e.GetModule( fileName ).Types ).toEqual( [
-				c( {
-					Interface: c( {
-						Name: 'I',
-						GenericParameters: [c( { GenericParameter: { Name: 'T', Constraint: null } } ) ],
-						Properties: [
-							{ Name: 'X', Type: c( { Array: c( { GenericParameter: { Name: 'T', Constraint: null } }) }) },
-							{ Name: 'Y', Type: c( { GenericParameter: { Name: 'T', Constraint: null } }) },
-						]
+		describe( "should correctly parse generic interfaces", () => {
+			it( "with one parameter", () => {
+				file = "export interface I<T> { X: T[]; Y: T; }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					c( {
+						Interface: c( {
+							Name: 'I',
+							GenericParameters: [c( { GenericParameter: { Name: 'T', Constraint: null } })],
+							Properties: [
+								{ Name: 'X', Type: c( { Array: c( { GenericParameter: { Name: 'T', Constraint: null } }) }) },
+								{ Name: 'Y', Type: c( { GenericParameter: { Name: 'T', Constraint: null } }) },
+							]
+						})
 					})
-				})
-			] );
-		});
+				] );
+			});
 
+			it( "with two parameters", () => {
+				file = "export interface I<T,S> { X: T[]; Y: S; }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					c( {
+						Interface: c( {
+							Name: 'I',
+							GenericParameters: [
+								c( { GenericParameter: { Name: 'T', Constraint: null } }),
+								c( { GenericParameter: { Name: 'S', Constraint: null } })
+							],
+							Properties: [
+								{ Name: 'X', Type: c( { Array: c( { GenericParameter: { Name: 'T', Constraint: null } }) }) },
+								{ Name: 'Y', Type: c( { GenericParameter: { Name: 'S', Constraint: null } }) },
+							]
+						})
+					})
+				] );
+			});
+
+			it( "with parameters constrained by other parameters", () => {
+				file = "export interface I<T,S extends T> { X: T[]; Y: S; }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					c( {
+						Interface: c( {
+							Name: 'I',
+							GenericParameters: [
+								c( { GenericParameter: { Name: 'T', Constraint: null } }),
+								c( { GenericParameter: { Name: 'S', Constraint: c( { GenericParameter: { Name: 'T', Constraint: null } }) } })
+							],
+							Properties: [
+								{ Name: 'X', Type: c( { Array: c( { GenericParameter: { Name: 'T', Constraint: null } }) }) },
+								{ Name: 'Y', Type: c( { GenericParameter: c({ Name: 'S' }) }) },
+							]
+						})
+					})
+				] );
+			});
+
+			it( "with parameters constrained by regular types", () => {
+				file = "export interface I<T extends J> { X: T; } export interface J {}";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					c( {
+						Interface: c( {
+							Name: 'I',
+							GenericParameters: [
+								c( { GenericParameter: { Name: 'T', Constraint: c( { Interface: c( { Name: 'J' }) }) } })
+							],
+							Properties: [
+								{ Name: 'X', Type: c( { GenericParameter: c( { Name: 'T' }) }) },
+							]
+						})
+					}),
+					c( { Interface: c( { Name: 'J' }) } )
+				] );
+			});
+
+		});
 	});
 }
