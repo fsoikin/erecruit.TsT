@@ -5,6 +5,7 @@ module erecruit.TsT {
 		MakeRelativePath( from: string, to: string ): string;
 		DirectoryExists( path: string ): boolean;
 		GetParentDirectory( path: string ): string;
+		GetIncludedTypingFiles(): string[];
 	}
 
 	export interface Module {

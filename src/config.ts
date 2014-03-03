@@ -16,6 +16,7 @@ module erecruit.TsT {
 		Extension?: string;
 		RootDir?: string;
 		ConfigDir?: string;
+		IncludedTypingFiles?: string[];
 		File?: { [regex: string]: FileConfig };
 	}
 

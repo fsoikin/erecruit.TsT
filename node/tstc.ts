@@ -15,18 +15,19 @@ main();
 function main() {
 	var files = loadFiles();
 
+	var configPath = args.c;
+	var config: erecruit.TsT.Config = eval( "(" + readFile( configPath ) + ")" );
+	config.ConfigDir = path.dirname( configPath );
+	config.RootDir = config.RootDir ? path.resolve( '.', config.RootDir ) : path.resolve( '.' );
+
 	var host: erecruit.TsT.ITsTHost = {
 		FetchFile: fileName => fs.existsSync( fileName ) && fs.statSync( fileName ).isFile() ? readFile( fileName ) : null,
 		DirectoryExists: path => fs.existsSync( path ) && fs.statSync( path ).isDirectory(),
 		GetParentDirectory: name => { var d = path.dirname( name ); return d === name ? null : d; },
 		ResolveRelativePath: ( relPath, dir ) => path.resolve( dir, relPath ),
 		MakeRelativePath: ( from, to ) => path.relative( from, to ),
+		GetIncludedTypingFiles: () => [require.resolve( "./lib.d.ts" )].concat( config.IncludedTypingFiles || [] ) 
 	};
-
-	var configPath = args.c;
-	var config: erecruit.TsT.Config = eval( "(" + readFile( configPath ) + ")" );
-	config.ConfigDir = path.dirname( configPath );
-	config.RootDir = config.RootDir ? path.resolve( '.', config.RootDir ) : path.resolve( '.' );
 
 	erecruit.TsT.Emit( config, files, host )
 		.subscribe( c => console.log( c.File + ":\r\n\t" + c.Content ) );

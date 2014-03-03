@@ -9,6 +9,7 @@ declare module "tst" {
         MakeRelativePath(from: string, to: string): string;
         DirectoryExists(path: string): boolean;
         GetParentDirectory(path: string): string;
+        GetIncludedTypingFiles(): string[];
     }
     interface Module {
         Path: string;
@@ -78,6 +79,7 @@ declare module "tst" {
         Extension?: string;
         RootDir?: string;
         ConfigDir?: string;
+        IncludedTypingFiles?: string[];
         File?: {
             [regex: string]: FileConfig;
         };
@@ -108,6 +110,7 @@ declare module "tst" {
         private _host;
         private _options;
         constructor(_host: ITsTHost, _options?: ExtractorOptions);
+        private addFile(f);
         public GetModule(fileName: string): Module;
         private GetType;
         private GetCallSignature;
@@ -115,6 +118,7 @@ declare module "tst" {
         private GetBaseTypes;
         private GetInterface;
         private GetEnum(type);
+        private GetDocumentForDecl(d);
         private GetMethod;
         private GetGenericParameter(mod, type);
         private EnsureResolved(s);

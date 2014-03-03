@@ -65,6 +65,7 @@
     <TypeScriptCompile Include="lib\jasmine\jasmine.d.ts" />
     <TypeScriptCompile Include="lib\node\node.d.ts" />
     <TypeScriptCompile Include="lib\typescript\typescript.d.ts" />
+    <TypeScriptCompile Include="node\lib.d.ts" />
     <TypeScriptCompile Include="node\tstc.ts" />
     <TypeScriptCompile Include="src\config.ts" />
     <TypeScriptCompile Include="src\dust-bootstrap.ts" />

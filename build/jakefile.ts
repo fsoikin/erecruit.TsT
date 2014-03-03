@@ -22,6 +22,7 @@ var freeModule = toOutDir( 'tst.js' );
 var freeModuleTypings = toOutDir( 'tst.d.ts' );
 var executableModule = toOutDir( 'tstc.js' );
 var testsModule = toOutDir( 'tests/tstSpec.js' );
+var typeScriptBaseTypings = toOutDir( 'lib.d.ts' );
 var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule, testsModule];
 
 var lib = wrapLibs();
@@ -34,9 +35,10 @@ desc( "Compile NodeJS module" ); task( 'node', [nodeModule, nodeModuleTypings] )
 desc( "Compile free module" ); task( 'free', [freeModule, freeModuleTypings] );
 
 compileTs( freeModule, sources.toArray(), lib, /* disableTypings */ false, /* mergeOutput */ true );
-compileTs( executableModule, ['node/tstc.ts'], [freeModule], /* disableTypings */ true, /* mergeOutput */ false );
+compileTs( executableModule, ['node/tstc.ts'], [freeModule], /* disableTypings */ true, /* mergeOutput */ false, /* prereqs */ [typeScriptBaseTypings] );
 compileTs( testsModule, tests.toArray(), lib, /* disableTypings */ true, /* mergeOutput */ true );
 wrapFile( freeModule, nodeModule, "(function(erecruit){", "})( { TsT: module.exports } );" );
+file( typeScriptBaseTypings, ['node/lib.d.ts'], () => jake.cpR( 'node/lib.d.ts', typeScriptBaseTypings ) );
 
 file( nodeModuleTypings, [freeModuleTypings], () => {
 	console.log( "Building " + nodeModuleTypings );
@@ -76,8 +78,8 @@ function wrapFile( sourceFile: string, outFile: string, prefix: string, suffix: 
 	});
 }
 
-function compileTs( outFile: string, sources: string[], prefixes: string[], disableTypings?: boolean, mergeOutput: boolean = true ) {
-	file( outFile, sources.concat( prefixes ), () => {
+function compileTs( outFile: string, sources: string[], prefixes: string[], disableTypings?: boolean, mergeOutput: boolean = true, prereqs?: string[] ) {
+	file( outFile, sources.concat( prefixes ).concat( prereqs || [] ), () => {
 		console.log( "Building " + outFile );
 		jake.mkdirP( path.dirname( outFile ) );
 		if ( !mergeOutput ) jake.mkdirP( "temp.tmp" );

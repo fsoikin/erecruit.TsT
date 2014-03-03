@@ -4,6 +4,8 @@
 
 module erecruit.TsT.Tests {
 	var path = require( "path" );
+	var fs = require( "fs" );
+	var c = jasmine.objectContaining;
 
 	describe( "Extractor", () => {
 
@@ -14,62 +16,115 @@ module erecruit.TsT.Tests {
 		beforeEach( () => {
 			e = new Extractor( {
 				DirectoryExists: _ => false,
-				FetchFile: name => name === fileName ? file : null,
+				FetchFile: name => name === fileName ? file : fs.existsSync( name ) ? fs.readFileSync( name, { encoding: 'utf8' } ) : null,
 				GetParentDirectory: _ => "",
 				MakeRelativePath: _ => "",
-				ResolveRelativePath: _ => ""
+				ResolveRelativePath: _ => "",
+				GetIncludedTypingFiles: () => [require.resolve( '../lib.d.ts' )]
 			});
 		});
 
-		it( "should correctly parse simple data structure", () => {
-			file = "export interface X { A: string; B: number; }";
-			expect( e.GetModule( fileName ).Types ).toEqual( [{
-				Module: jasmine.any(Object),
-				Interface: jasmine.objectContaining({
-					Name: 'X',
-					Properties: [
-						{ Name: 'A', Type: jasmine.objectContaining({ PrimitiveType: PrimitiveType.String }) },
-						{ Name: 'B', Type: jasmine.objectContaining({ PrimitiveType: PrimitiveType.Number }) }
-					]
-				})
-			}] );
-		});
-
-		it( "should correctly parse data structure with a substructure", () => {
-			file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
-			expect( e.GetModule( fileName ).Types ).toEqual( [
-				{
+		describe( "should correctly parse data structure", () => {
+			it( " - simple", () => {
+				file = "export interface X { A: string; B: number; }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [{
 					Module: jasmine.any( Object ),
-					Interface: jasmine.objectContaining( {
+					Interface: c( {
 						Name: 'X',
 						Properties: [
-							{ Name: 'A', Type: jasmine.objectContaining( { PrimitiveType: PrimitiveType.String }) },
-							{ Name: 'B', Type: jasmine.objectContaining( { Interface: jasmine.objectContaining( { Name: 'Y' }) }) }
-						]
-					})
-				},
-				{
-					Module: jasmine.any( Object ),
-					Interface: jasmine.objectContaining( {
-						Name: 'Y',
-						Properties: [
-							{ Name: 'C', Type: jasmine.objectContaining( { PrimitiveType: PrimitiveType.Number }) },
+							{ Name: 'A', Type: c( { PrimitiveType: PrimitiveType.String }) },
+							{ Name: 'B', Type: c( { PrimitiveType: PrimitiveType.Number }) }
 						]
 					})
 				}] );
+			});
+
+			it( "with a substructure", () => {
+				file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					{
+						Module: jasmine.any( Object ),
+						Interface: c( {
+							Name: 'X',
+							Properties: [
+								{ Name: 'A', Type: c( { PrimitiveType: PrimitiveType.String }) },
+								{ Name: 'B', Type: c( { Interface: c( { Name: 'Y' }) }) }
+							]
+						})
+					},
+					{
+						Module: jasmine.any( Object ),
+						Interface: c( {
+							Name: 'Y',
+							Properties: [
+								{ Name: 'C', Type: c( { PrimitiveType: PrimitiveType.Number }) },
+							]
+						})
+					}] );
+			});
 		});
 
-		it( "should correctly parse enums", () => {
-			debugger;
-			file = "export enum X { A, B, C }";
+		describe( "should correctly parse enums", () => {
+			it( "with implicit values", () => {
+				file = "export enum X { A, B, C }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					{
+						Module: jasmine.any( Object ),
+						Enum: c( {
+							Name: 'X',
+							Values: [{ Name: 'A', Value: 0 }, { Name: 'B', Value: 1 }, { Name: 'C', Value: 2 }]
+						})
+					}
+				] );
+			});
+
+			it( "with explicit values", () => {
+				file = "export enum X { A = 5, B = 8, C = 10 }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					{
+						Module: jasmine.any( Object ),
+						Enum: c( {
+							Name: 'X',
+							Values: [{ Name: 'A', Value: 5 }, { Name: 'B', Value: 8 }, { Name: 'C', Value: 10 }]
+						})
+					}
+				] );
+			});
+
+			it( "with compound values", () => {
+				file = "export enum X { A = 1, B = 2, C = 6, \
+					D = A | B, E = B & C, F = ~B \
+					G = A + B, H = B - C, I = C ^ B, \
+					J = -B }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					{
+						Module: jasmine.any( Object ),
+						Enum: c( {
+							Name: 'X',
+							Values: [{ Name: 'A', Value: 1 }, { Name: 'B', Value: 2 }, { Name: 'C', Value: 6 },
+								{ Name: 'D', Value: 1 | 2 }, { Name: 'E', Value: 2 & 6 }, { Name: 'F', Value: ~2 },
+								{ Name: 'G', Value: 1 + 2 }, { Name: 'H', Value: 2 - 6 }, { Name: 'I', Value: 6 ^ 2 }, 
+								{ Name: 'J', Value: -2 } ]
+						})
+					}
+				] );
+			});
+		});
+
+		it( "should correctly parse array-typed properties", () => {
+			file = "export interface I { X: string[]; Y: number[]; Z: J[]; } export interface J {}";
 			expect( e.GetModule( fileName ).Types ).toEqual( [
-				{
-					Module: jasmine.any( Object ),
-					Enum: jasmine.objectContaining( {
-						Name: 'X',
-						Values: [ { Name: 'A', Value: 0 }, { Name: 'B', Value: 1 }, { Name: 'C', Value: 2 } ]
+				c( {
+					Interface: c( {
+						Name: 'I',
+						Properties: [
+							{ Name: 'X', Type: c( { Array: c( { PrimitiveType: PrimitiveType.String }) }) },
+							{ Name: 'Y', Type: c( { Array: c( { PrimitiveType: PrimitiveType.Number }) }) },
+							{ Name: 'Z', Type: c( { Array: c( { Interface: c( { Name: 'J' }) }) }) },
+						]
 					})
-				}
+				}),
+				c( { Interface: c( { Name: 'J' }) })
 			] );
 		});
 

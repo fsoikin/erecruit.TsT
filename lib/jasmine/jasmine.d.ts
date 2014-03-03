@@ -5,9 +5,13 @@
 
 
 declare function describe(description: string, specDefinitions: () => void): void;
+declare function fdescribe( description: string, specDefinitions: () => void ): void;
+declare function ffdescribe( description: string, specDefinitions: () => void ): void;
 declare function xdescribe(description: string, specDefinitions: () => void): void;
 
 declare function it(expectation: string, assertion: () => void): void;
+declare function fit( expectation: string, assertion: () => void ): void;
+declare function ffit( expectation: string, assertion: () => void ): void;
 declare function it(expectation: string, assertion: (done: (err?: any) => void) => void): void;
 declare function xit(expectation: string, assertion: () => void): void;
 

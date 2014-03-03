@@ -8,19 +8,22 @@ module erecruit.TsT {
 	}
 
 	export class Extractor {
-		constructor( private _host: ITsTHost, private _options: ExtractorOptions = {}) { }
+		constructor( private _host: ITsTHost, private _options: ExtractorOptions = {}) {
+			_host.GetIncludedTypingFiles().forEach( f => this.addFile( f ) );
+		}
+
+		private addFile( f: string ) { this._compiler.addFile( f, this._tsHost.getScriptSnapshot( f ), null, 0, false, [] ); }
 
 		GetModule( fileName: string ): Module {
 			fileName = fileName.replace( /\\/g, '/' );
 
 			if ( !this._compiler.getDocument( fileName ) ) {
-				var addFile = ( f: string ) => this._compiler.addFile( f, this._tsHost.getScriptSnapshot( f ), null, 0, false, [] );
-				addFile( fileName );
+				this.addFile( fileName );
 
 				var resolved = TypeScript.ReferenceResolver.resolve( [fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution );
 				Enumerable.from( resolved && resolved.resolvedFiles )
 					.where( f => !this._compiler.getDocument( f.path ) )
-					.forEach( f => addFile( f.path ) );
+					.forEach( f => this.addFile( f.path ) );
 			}
 
 			var mod = this._compiler.topLevelDeclaration( fileName );
@@ -125,14 +128,60 @@ module erecruit.TsT {
 		});
 
 		private GetEnum( type: TypeScript.PullTypeSymbol ): Enum {
+			var doc = this.GetDocumentForDecl( type.getDeclarations()[0] );
+			var values: { [name: string]: number } = {};
+			Enumerable.from( type.getDeclarations() )
+				.selectMany( d => d.getChildDecls() )
+				.where( d => d.kind == TypeScript.PullElementKind.EnumMember )
+				.forEach( decl => {
+					var value: any = ( <TypeScript.PullEnumElementDecl>decl ).constantValue;
+					if ( typeof value !== "number" ) {
+						var expr = doc && <TypeScript.EnumElement>doc._getASTForDecl( decl );
+						var eval = expr && evalExpr( expr.equalsValueClause.value );
+						if ( eval ) value = eval.errorMessage || eval.result;
+					}
+					values[decl.name] = value;
+				});
+
 			return <Enum>{
 				Name: type.name,
-				Values: Enumerable.from( type.getDeclarations() )
-					.selectMany( d => d.getChildDecls() )
-					.where( d => d.kind == TypeScript.PullElementKind.EnumMember )
-					.select( ( d ) => ( { Name: d.name, Value: ( <TypeScript.PullEnumElementDecl>d ).constantValue }) )
-					.toArray()
+				Values: Enumerable.from( values ).select( ( x ) => ( { Name: x.key, Value: x.value }) ).toArray()
 			};
+
+			function evalExpr( e: TypeScript.AST ): { errorMessage?: string; result?: number } {
+				if ( e.kind() == TypeScript.SyntaxKind.IdentifierName ) {
+					return { result: values[( <TypeScript.Identifier>e ).text()] };
+				}
+
+				if ( e instanceof TypeScript.BinaryExpression ) {
+					var b = <TypeScript.BinaryExpression>e;
+					var bop = binaryOp( e.kind() );
+					var left = evalExpr( b.left );
+					var right = evalExpr( b.right );
+					if ( left.errorMessage ) return left;
+					if ( !bop ) return err();
+					if ( right.errorMessage ) return right;
+					return { result: bop( left.result, right.result ) };
+				}
+
+				if ( e instanceof TypeScript.PrefixUnaryExpression ) {
+					var uop = unaryOp( e.kind() );
+					var arg = evalExpr( ( <TypeScript.PrefixUnaryExpression>e ).operand );
+					if ( !uop ) return err();
+					if ( arg.errorMessage ) return arg;
+					return { result: uop( arg.result ) };
+				}
+
+				function err() {
+					return { errorMessage: TypeScript.SyntaxKind[e.kind()] + " is not supported." };
+				}
+			}
+		}
+
+		private GetDocumentForDecl( d: TypeScript.PullDecl ): TypeScript.Document {
+			var script = d && d.getParentPath()[0];
+			var fileName = script && script.kind == TypeScript.PullElementKind.Script && ( <TypeScript.RootPullDecl>script ).fileName();
+			return fileName && this._compiler.getDocument( fileName );
 		}
 
 		private GetMethod = ( mod: Module ) => ( type: TypeScript.PullTypeSymbol ) => ( {
@@ -166,5 +215,25 @@ module erecruit.TsT {
 			directoryExists: path => this._host.DirectoryExists( path ),
 			getParentDirectory: path => this._host.GetParentDirectory( path )
 		};
+	}
+
+	function binaryOp( op: TypeScript.SyntaxKind ): (x: number, y: number) => number {
+		switch ( op ) {
+			case TypeScript.SyntaxKind.BitwiseOrExpression: return ( x, y ) => x | y;
+			case TypeScript.SyntaxKind.BitwiseAndExpression: return ( x, y ) => x & y;
+			case TypeScript.SyntaxKind.BitwiseExclusiveOrExpression: return ( x, y ) => x ^ y;
+			case TypeScript.SyntaxKind.AddExpression: return ( x, y ) => x + y;
+			case TypeScript.SyntaxKind.SubtractExpression: return ( x, y ) => x - y;
+			case TypeScript.SyntaxKind.LeftShiftExpression: return ( x, y ) => x << y;
+			case TypeScript.SyntaxKind.UnsignedRightShiftExpression:
+			case TypeScript.SyntaxKind.SignedRightShiftExpression: return ( x, y ) => x >> y;
+		}
+	}
+
+	function unaryOp( op: TypeScript.SyntaxKind ): ( x: number ) => number {
+		switch ( op ) {
+			case TypeScript.SyntaxKind.BitwiseNotExpression: return x => ~x;
+			case TypeScript.SyntaxKind.NegateExpression: return x => -x;
+		}
 	}
 }

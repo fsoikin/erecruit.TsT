@@ -9,6 +9,7 @@ declare module erecruit.TsT {
         MakeRelativePath(from: string, to: string): string;
         DirectoryExists(path: string): boolean;
         GetParentDirectory(path: string): string;
+        GetIncludedTypingFiles(): string[];
     }
     interface Module {
         Path: string;
@@ -79,6 +80,7 @@ declare module erecruit.TsT {
         Extension?: string;
         RootDir?: string;
         ConfigDir?: string;
+        IncludedTypingFiles?: string[];
         File?: {
             [regex: string]: FileConfig;
         };
@@ -110,6 +112,7 @@ declare module erecruit.TsT {
         private _host;
         private _options;
         constructor(_host: TsT.ITsTHost, _options?: ExtractorOptions);
+        private addFile(f);
         public GetModule(fileName: string): TsT.Module;
         private GetType;
         private GetCallSignature;
@@ -117,6 +120,7 @@ declare module erecruit.TsT {
         private GetBaseTypes;
         private GetInterface;
         private GetEnum(type);
+        private GetDocumentForDecl(d);
         private GetMethod;
         private GetGenericParameter(mod, type);
         private EnsureResolved(s);
