@@ -128,5 +128,21 @@ module erecruit.TsT.Tests {
 			] );
 		});
 
+		it( "should correctly parse generic interfaces", () => {
+			file = "export interface I<T> { X: T[]; Y: T; }";
+			expect( e.GetModule( fileName ).Types ).toEqual( [
+				c( {
+					Interface: c( {
+						Name: 'I',
+						GenericParameters: [c( { GenericParameter: { Name: 'T', Constraint: null } } ) ],
+						Properties: [
+							{ Name: 'X', Type: c( { Array: c( { GenericParameter: { Name: 'T', Constraint: null } }) }) },
+							{ Name: 'Y', Type: c( { GenericParameter: { Name: 'T', Constraint: null } }) },
+						]
+					})
+				})
+			] );
+		});
+
 	});
 }
