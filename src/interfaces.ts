@@ -18,6 +18,7 @@ module erecruit.TsT {
 
 	export interface ModuleElement {
 		Module: Module;
+		InternalModule: string;
 		Kind: ModuleElementKind;
 	}
 
@@ -72,6 +73,7 @@ module erecruit.TsT {
 	export interface CallSignature {
 		GenericParameters?: Type[];
 		Parameters: Identifier[];
+		ReturnType?: Type;
 	}
 
 	export function typeName( e: ModuleElement ) {

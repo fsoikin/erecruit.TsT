@@ -1,50 +1,55 @@
+{! 
+	This is a Dust template.
+	For more information about Dust and its usage see https://github.com/linkedin/dustjs/wiki/Dust-Tutorial
+	For more information about TsT-specific helpers see https://github.com/erecruit/TsT
+!}
 
-{@csharpClass}
-namespace erecruit.JS{#Namespace}.{.}{/Namespace} { {~n}
+namespace erecruit.JS{@cs_whenEmptyNamespace}{:else}.{/cs_whenEmptyNamespace}{@cs_typeNamespace/} { {~n}
 
-	{?IsInterface}{?Properties}
-		{@indent/}
-		public class {Name}{+genericParams/} { {~n}
-			{#Properties}
-				{@indent count=2/}
-				public {Type} {Name} { get; set; } {~n}
-			{/Properties}
+	{@whenType}
+		{#Interface}{?Properties}
 			{@indent/}
-		}
-	{/Properties}{/IsInterface}
+			public class {Name}{+genericParams/} { {~n}
+				{#Properties}
+					{@indent count=2/}
+					public {#Type}{@cs_typeFullName/}{/Type} {Name} { get; set; } {~n}
+				{/Properties}
+				{@indent/}
+			}
+		{/Properties}{/Interface}
 
-	{?IsEnum}
-		{@indent/}
-		public enum {Name} { {~n}
-			{#EnumValues}
-				{@indent count=2/}
-				{Name}={Value}
-				{@sep},{/sep}
-				{~n}
-			{/EnumValues} 
+		{#Enum}
 			{@indent/}
-		}
-	{/IsEnum}
+			public enum {Name} { {~n}
+				{#Values}
+					{@indent count=2/}
+					{Name}={Value}
+					{@sep},{/sep}
+					{~n}
+				{/Values} 
+				{@indent/}
+			}
+		{/Enum}
+	{/whenType}
 
-	{?IsClass}
+	{@whenClass}
 		{@indent/}
-		public partial static class {@fs_fileNameWithoutExtension path="Module.Path"/}{+genericParams/} { {~n}
+		public partial class {@fs_fileNameWithoutExtension path="Module.Path"/}{+genericParams/} { {~n}
 			{#Constructors}
 				{@indent count="2"/}
 				public static string {Name}(
 					{#Parameters}
-						{Type} {Name}{@sep},{/sep}
+						{#Type}{@cs_typeFullName/}{/Type} {Name}{@sep},{/sep}
 					{/Parameters}
 				) = "{Name}, {@fs_relativePath path="{Module.Path}"/}";{~n}
 			{/Constructors}
 		{@indent/}
 		}
-	{/IsClass}
+	{/whenClass}
 
 {~n}
 } {~n}
-{/csharpClass}
 
 {<genericParams}
-	{?GenericParameters}<{#GenericParameters}{Name}{@sep},{/sep}{/GenericParameters}>{/GenericParameters}
+	{?GenericParameters}<{#GenericParameters}{GenericParameter.Name}{@sep},{/sep}{/GenericParameters}>{/GenericParameters}
 {/genericParams}

@@ -5,13 +5,26 @@
 /// <reference path="../config.ts" />
 
 module erecruit.TsT.CSharp {
-	dust.helpers['csharpClass'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: any ) => {
-		var type: ModuleElement = ctx.current();
-		var config = Config.fromDustContext( ctx );
-		if ( !type || !config || type.Kind === undefined ) return chunk;
+	typeHelper( 'typeName', typeName );
+	typeHelper( 'typeNamespace', typeNamespace );
+	typeHelper( 'typeFullName', ( config, type ) => typeName( config, type, true ) );
 
-		return chunk.render( bodies.block, dust.makeBase( makeCSharpAST( config, type ) ) );
+	dust.helpers['cs_whenEmptyNamespace'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: any ) => {
+		var type: Type = ctx.current();
+		var config = Config.fromDustContext( ctx );
+		if ( !type || !config || type.Kind !== ModuleElementKind.Type ) return chunk;
+		if ( typeNamespace( config, type ) ) bodies['else'] ? chunk.render( bodies['else'], ctx ) : chunk;
+		return chunk.render( bodies.block, ctx );
 	};
+
+	function typeHelper( name: string, render: ( config: CachedConfig, type: Type ) => string ) {
+		dust.helpers['cs_' + name] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: any ) => {
+			var type: Type = ctx.current();
+			var config = Config.fromDustContext( ctx );
+			if ( !type || !config || type.Kind !== ModuleElementKind.Type ) return chunk;
+			return chunk.write( render( config, type ) );
+		};
+	}
 
 	var primitiveTypeMap: { [key: number]: string } = <any>Enumerable.from( [
 		{ t: PrimitiveType.Any, n: "object" },
@@ -42,32 +55,5 @@ module erecruit.TsT.CSharp {
 		return relPath
 			.replace( /[\.\-\+]/, '_' )
 			.replace( /[\/\\]/, '.' );
-	}
-
-	function makeCSharpAST( config: CachedConfig, e: ModuleElement ) {
-		var type = <Type>e, cls = <Class>e;
-		var genericPs = e.Kind === ModuleElementKind.Class ? cls.GenericParameters : ( type.Interface && type.Interface.GenericParameters );
-		var bases = cls.Implements || (type.Interface && type.Interface.Extends);
-		return {
-			Name: cls.Name || typeName( config, type ),
-			Namespace: typeNamespace( config, e ),
-			IsClass: e.Kind === ModuleElementKind.Class,
-			IsInterface: !!type.Interface,
-			IsEnum: !!type.Enum,
-			IsPrimitive: !!type.PrimitiveType,
-			IsGenericParameter: !!type.GenericParameter,
-			IsArray: !!type.Array,
-			GenericParameters: genericPs && genericPs.length ? genericPs.map( (p) => ( { Name: typeName( config, p ) }) ) : null,
-			Properties: type.Interface && type.Interface.Properties.map( (p) => ( {
-				Name: p.Name,
-				Type: typeName( config, p.Type, true )
-			}) ),
-			EnumValues: type.Enum && type.Enum.Values,
-			Constructors: cls.Constructors && cls.Constructors.map( (c) => ({
-				GenericParameters: c.GenericParameters && c.GenericParameters.map( (p) => ( { Name: typeName( config, p ) }) ),
-				Parameters: c.Parameters && c.Parameters.map( (p) => ( { Name: p.Name, Type: typeName( config, p.Type, true ) }) )
-			}) ),
-			Extends: bases && bases.map( (i) => ( { Name: typeName( config, i, true ) }) )
-		};
 	}
 }

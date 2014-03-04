@@ -61,6 +61,9 @@
     <Content Include="README.md" />
     <TypeScriptCompile Include="build\jakefile.ts" />
     <TypeScriptCompile Include="examples\module.ts" />
+    <Content Include="examples\self\config.json" />
+    <Content Include="examples\self\data.cs.tpl" />
+    <Content Include="examples\self\host.cs.tpl" />
     <None Include="jakefile" />
     <TypeScriptCompile Include="lib\jake\jake.d.ts" />
     <TypeScriptCompile Include="lib\jasmine\jasmine.d.ts" />

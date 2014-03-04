@@ -8,14 +8,14 @@ module erecruit.TsT {
 	}
 
 	export class Extractor {
-		constructor( private _host: ITsTHost, private _options: ExtractorOptions = {}) {
-			_host.GetIncludedTypingFiles().forEach( f => this.addFile( f ) );
+		constructor( private _config: CachedConfig, private _options: ExtractorOptions = {}) {
+			_config.Host.GetIncludedTypingFiles().forEach( f => this.addFile( f ) );
 		}
 
 		private addFile( f: string ) { this._compiler.addFile( f, this._tsHost.getScriptSnapshot( f ), null, 0, false, [] ); }
 
 		GetModule( fileName: string ): Module {
-			fileName = fileName.replace( /\\/g, '/' );
+			fileName = this.normalizePath( fileName ); // Have to normalize file path to avoid duplicates
 
 			if ( !this._compiler.getDocument( fileName ) ) {
 				this.addFile( fileName );
@@ -31,8 +31,15 @@ module erecruit.TsT {
 
 			var allModuleDecls = Enumerable
 				.from( mod.getChildDecls() )
-				.where( d => d.kind == TypeScript.PullElementKind.DynamicModule )
+				.where( d => d.kind === TypeScript.PullElementKind.DynamicModule || d.kind === TypeScript.PullElementKind.Container )
 				.selectMany( mod => mod.getChildDecls() );
+
+			function flatten( ds: linqjs.IEnumerable<TypeScript.PullDecl> ): linqjs.IEnumerable<TypeScript.PullDecl> {
+				return ds.where( d => d.kind !== TypeScript.PullElementKind.Container ).concat(
+					ds.where( d => d.kind === TypeScript.PullElementKind.Container )
+						.selectMany( d => flatten( Enumerable.from( d.getChildDecls() ) ) ) );
+			}
+			allModuleDecls = flatten( allModuleDecls );
 
 			var result: Module = { Path: fileName, Classes: null, Types: null };
 
@@ -49,6 +56,7 @@ module erecruit.TsT {
 					return <Class> {
 						Name: d.name,
 						Module: result,
+						InternalModule: this.GetInternalModule( d ),
 						Kind: ModuleElementKind.Class,
 						Implements: varType && this.GetBaseTypes( result )( varType ),
 						GenericParameters: varType && varType.getTypeParameters().map( this.GetType( result ) ),
@@ -68,12 +76,24 @@ module erecruit.TsT {
 			return result;
 		}
 
+		private GetInternalModule( d: TypeScript.PullDecl ) {
+			return d && Enumerable.from( d.getParentPath() )
+				.where( p => p.kind == TypeScript.PullElementKind.Container )
+				.select( p => p.name )
+				.toArray()
+				.join(".");
+		}
+
 		private GetType = ( mod: Module ) => ( type: TypeScript.PullTypeSymbol ) => {
 			if ( !type ) return null;
 			var cached = this._typeCache[type.pullSymbolID];
 			if ( cached ) return cached;
 
-			this._typeCache[type.pullSymbolID] = cached = { Module: mod, Kind: ModuleElementKind.Type };
+			this._typeCache[type.pullSymbolID] = cached = {
+				Module: mod,
+				Kind: ModuleElementKind.Type,
+				InternalModule: this.GetInternalModule( type.getDeclarations()[0] )
+			};
 
 			this.EnsureResolved( type );
 			if ( type.getElementType() ) cached.Array = this.GetType( mod )( type.getElementType() )
@@ -89,7 +109,8 @@ module erecruit.TsT {
 			this.EnsureResolved( s );
 			return {
 				GenericParameters: s.getTypeParameters().map( t => this.GetType( mod )( t.type ) ),
-				Parameters: s.parameters.map( p => <Identifier>{ Name: p.name, Type: this.GetType( mod )( p.type ) })
+				Parameters: s.parameters.map( p => <Identifier>{ Name: p.name, Type: this.GetType( mod )( p.type ) }),
+				ReturnType: this.GetType(mod)( s.returnType )
 			};
 		};
 
@@ -123,8 +144,8 @@ module erecruit.TsT {
 					Name: name,
 					Signatures: ms.selectMany( m => {
 						this.EnsureResolved( m );
-						return m.type.getCallSignatures().map( this.GetCallSignature( mod ) );
-					}).toArray()
+						return Enumerable.from( m.type.getCallSignatures() ).select( this.GetCallSignature( mod ) );
+					}).toArray(),
 				})
 				.toArray(),
 		});
@@ -186,11 +207,6 @@ module erecruit.TsT {
 			return fileName && this._compiler.getDocument( fileName );
 		}
 
-		private GetMethod = ( mod: Module ) => ( type: TypeScript.PullTypeSymbol ) => ( {
-			Name: type.name,
-			Signatures: type.getCallSignatures().map( this.GetCallSignature( mod ) )
-		});
-
 		private GetGenericParameter( mod: Module, type: TypeScript.PullTypeSymbol ): GenericParameter {
 			var g = <TypeScript.PullTypeParameterSymbol> type;
 			return { Name: type.name, Constraint: this.GetType( mod )( g.getConstraint() ) };
@@ -205,17 +221,24 @@ module erecruit.TsT {
 		private _typeCache: { [pullSymbolId: number]: Type } = {};
 		private _snapshots: { [fileName: number]: TypeScript.IScriptSnapshot } = {};
 
+		private normalizePath( path: string ): string {
+			return this._config.Host
+				.MakeRelativePath( '.', path )
+				.replace( /\\/g, '/' );
+		}
+
 		private _tsHost: TypeScript.IReferenceResolverHost = {
 			getScriptSnapshot: fileName => {
 				return this._snapshots[fileName] || ( this._snapshots[fileName] = ( () => {
-					var content = this._host.FetchFile( fileName );
+					console.log( "Fetching " + fileName );
+					var content = this._config.Host.FetchFile( fileName );
 					return content ? TypeScript.ScriptSnapshot.fromString( content ) : null;
 				})() );
 			},
-			resolveRelativePath: ( path, directory ) => this._host.ResolveRelativePath( path, directory ),
+			resolveRelativePath: ( path, directory ) => this.normalizePath( this._config.Host.ResolveRelativePath( path, directory ) ),
 			fileExists: path => !!this._tsHost.getScriptSnapshot( path ),
-			directoryExists: path => this._host.DirectoryExists( path ),
-			getParentDirectory: path => this._host.GetParentDirectory( path )
+			directoryExists: path => this._config.Host.DirectoryExists( path ),
+			getParentDirectory: path => this._config.Host.GetParentDirectory( path )
 		};
 	}
 

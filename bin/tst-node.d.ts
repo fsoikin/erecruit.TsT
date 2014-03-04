@@ -22,6 +22,7 @@ declare module "tst" {
     }
     interface ModuleElement {
         Module: Module;
+        InternalModule: string;
         Kind: ModuleElementKind;
     }
     interface Class extends ModuleElement {
@@ -72,6 +73,7 @@ declare module "tst" {
     interface CallSignature {
         GenericParameters?: Type[];
         Parameters: Identifier[];
+        ReturnType?: Type;
     }
     function typeName(e: ModuleElement): string;
 
@@ -114,11 +116,12 @@ declare module "tst" {
         UseCaseSensitiveFileResolution?: boolean;
     }
     class Extractor {
-        private _host;
+        private _config;
         private _options;
-        constructor(_host: ITsTHost, _options?: ExtractorOptions);
+        constructor(_config: CachedConfig, _options?: ExtractorOptions);
         private addFile(f);
         public GetModule(fileName: string): Module;
+        private GetInternalModule(d);
         private GetType;
         private GetCallSignature;
         private GetPrimitiveType(type);
@@ -126,12 +129,12 @@ declare module "tst" {
         private GetInterface;
         private GetEnum(type);
         private GetDocumentForDecl(d);
-        private GetMethod;
         private GetGenericParameter(mod, type);
         private EnsureResolved(s);
         private _compiler;
         private _typeCache;
         private _snapshots;
+        private normalizePath(path);
         private _tsHost;
     }
 

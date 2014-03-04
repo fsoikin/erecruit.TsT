@@ -6,7 +6,7 @@
 	Types: {
 		// For all types whose name matches the regex '.'
 		'.': {
-			// Dump all definitions into this file
+			// Dump all definitions into this file (path relative to where config.json is located)
 			// Variables are: {Path}, {Name}, {Extension}
 			FileName: "out/{Path}/{Name}.cs",
 

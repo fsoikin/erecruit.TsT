@@ -71475,7 +71475,7 @@ var erecruit;
                 Original: config,
                 Host: host,
                 File: Enumerable.from(config.File).concat([{ key: '.', value: config }]).where(function (x) {
-                    return !!x.key && !!x.value;
+                    return !!x.key;
                 }).select(function (x) {
                     var regex = new RegExp(x.key);
                     return {
@@ -71484,14 +71484,14 @@ var erecruit;
                             regex.test('');
                             return res;
                         },
-                        types: cacheConfigPart(config, host, x.value.Types)
+                        types: (x.value && cacheConfigPart(config, host, x.value.Types)) || []
                     };
                 }).toArray()
             };
 
             function cacheConfigPart(cfg, host, c) {
                 return Enumerable.from(c).where(function (c) {
-                    return !!c.key && !!c.value;
+                    return !!c.key;
                 }).select(function (x) {
                     var regex = new RegExp(x.key);
                     return {
@@ -71500,8 +71500,8 @@ var erecruit;
                             regex.test('');
                             return res;
                         },
-                        fileName: compileTemplate(x.value.FileName, cfg),
-                        template: compileTemplate(x.value.Template, cfg)
+                        fileName: x.value && compileTemplate(x.value.FileName, cfg),
+                        template: x.value && compileTemplate(x.value.Template, cfg)
                     };
                 }).toArray();
             }
@@ -71523,6 +71523,14 @@ dust.helpers['replace'] = function (chunk, ctx, bodies, params) {
     return chunk.write(str.replace(new RegExp(regex), replacement || ""));
 };
 
+dust.helpers['test'] = function (chunk, ctx, bodies, params) {
+    var str = dust.helpers.tap(params.str, chunk, ctx);
+    var regex = dust.helpers.tap(params.regex, chunk, ctx);
+    if (!str || !regex || !new RegExp(regex).test(str))
+        return bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
+    return chunk.render(bodies.block, ctx);
+};
+
 dust.helpers['typeName'] = function (chunk, ctx, bodies, params) {
     var path = params.path && dust.helpers.tap(params.path, chunk, ctx);
     var type = path && ctx.get(path.toString());
@@ -71535,6 +71543,18 @@ dust.helpers['typeName'] = function (chunk, ctx, bodies, params) {
 dust.helpers['indent'] = function (chunk, ctx, bodies, params) {
     return chunk.write(Enumerable.repeat("\t", (params && dust.helpers.tap(params.count, chunk, ctx)) || 1).toArray().join(''));
 };
+
+[
+    { name: 'whenType', kind: 1 /* Type */ },
+    { name: 'whenClass', kind: 0 /* Class */ }
+].forEach(function (x) {
+    return dust.helpers[x.name] = function (chunk, ctx, bodies, params) {
+        var t = ctx.current();
+        if (t && t.Kind == x.kind)
+            return chunk.render(bodies.block, ctx);
+        return bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
+    };
+});
 
 dust.helpers['fs_fileNameWithoutExtension'] = function (chunk, ctx, bodies, params) {
     var path = dust.helpers.tap(params.path, chunk, ctx);
@@ -71563,10 +71583,10 @@ var erecruit;
 (function (erecruit) {
     (function (TsT) {
         var Extractor = (function () {
-            function Extractor(_host, _options) {
+            function Extractor(_config, _options) {
                 if (typeof _options === "undefined") { _options = {}; }
                 var _this = this;
-                this._host = _host;
+                this._config = _config;
                 this._options = _options;
                 this.GetType = function (mod) {
                     return function (type) {
@@ -71576,7 +71596,11 @@ var erecruit;
                         if (cached)
                             return cached;
 
-                        _this._typeCache[type.pullSymbolID] = cached = { Module: mod, Kind: 1 /* Type */ };
+                        _this._typeCache[type.pullSymbolID] = cached = {
+                            Module: mod,
+                            Kind: 1 /* Type */,
+                            InternalModule: _this.GetInternalModule(type.getDeclarations()[0])
+                        };
 
                         _this.EnsureResolved(type);
                         if (type.getElementType())
@@ -71602,7 +71626,8 @@ var erecruit;
                             }),
                             Parameters: s.parameters.map(function (p) {
                                 return { Name: p.name, Type: _this.GetType(mod)(p.type) };
-                            })
+                            }),
+                            ReturnType: _this.GetType(mod)(s.returnType)
                         };
                     };
                 };
@@ -71636,18 +71661,10 @@ var erecruit;
                                     Name: name,
                                     Signatures: ms.selectMany(function (m) {
                                         _this.EnsureResolved(m);
-                                        return m.type.getCallSignatures().map(_this.GetCallSignature(mod));
+                                        return Enumerable.from(m.type.getCallSignatures()).select(_this.GetCallSignature(mod));
                                     }).toArray()
                                 };
                             }).toArray()
-                        });
-                    };
-                };
-                this.GetMethod = function (mod) {
-                    return function (type) {
-                        return ({
-                            Name: type.name,
-                            Signatures: type.getCallSignatures().map(_this.GetCallSignature(mod))
                         });
                     };
                 };
@@ -71657,24 +71674,24 @@ var erecruit;
                 this._tsHost = {
                     getScriptSnapshot: function (fileName) {
                         return _this._snapshots[fileName] || (_this._snapshots[fileName] = (function () {
-                            var content = _this._host.FetchFile(fileName);
+                            var content = _this._config.Host.FetchFile(fileName);
                             return content ? TypeScript.ScriptSnapshot.fromString(content) : null;
                         })());
                     },
                     resolveRelativePath: function (path, directory) {
-                        return _this._host.ResolveRelativePath(path, directory);
+                        return _this._config.Host.ResolveRelativePath(path, directory);
                     },
                     fileExists: function (path) {
                         return !!_this._tsHost.getScriptSnapshot(path);
                     },
                     directoryExists: function (path) {
-                        return _this._host.DirectoryExists(path);
+                        return _this._config.Host.DirectoryExists(path);
                     },
                     getParentDirectory: function (path) {
-                        return _this._host.GetParentDirectory(path);
+                        return _this._config.Host.GetParentDirectory(path);
                     }
                 };
-                _host.GetIncludedTypingFiles().forEach(function (f) {
+                _config.Host.GetIncludedTypingFiles().forEach(function (f) {
                     return _this.addFile(f);
                 });
             }
@@ -71684,6 +71701,7 @@ var erecruit;
 
             Extractor.prototype.GetModule = function (fileName) {
                 var _this = this;
+                fileName = this._config.Host.MakeRelativePath(this._config.Original.RootDir, fileName);
                 fileName = fileName.replace(/\\/g, '/');
 
                 if (!this._compiler.getDocument(fileName)) {
@@ -71702,10 +71720,21 @@ var erecruit;
                     return { Path: fileName, Classes: [], Types: [] };
 
                 var allModuleDecls = Enumerable.from(mod.getChildDecls()).where(function (d) {
-                    return d.kind == TypeScript.PullElementKind.DynamicModule;
+                    return d.kind === TypeScript.PullElementKind.DynamicModule || d.kind === TypeScript.PullElementKind.Container;
                 }).selectMany(function (mod) {
                     return mod.getChildDecls();
                 });
+
+                function flatten(ds) {
+                    return ds.where(function (d) {
+                        return d.kind !== TypeScript.PullElementKind.Container;
+                    }).concat(ds.where(function (d) {
+                        return d.kind === TypeScript.PullElementKind.Container;
+                    }).selectMany(function (d) {
+                        return flatten(Enumerable.from(d.getChildDecls()));
+                    }));
+                }
+                allModuleDecls = flatten(allModuleDecls);
 
                 var result = { Path: fileName, Classes: null, Types: null };
 
@@ -71723,6 +71752,7 @@ var erecruit;
                     return {
                         Name: d.name,
                         Module: result,
+                        InternalModule: _this.GetInternalModule(d),
                         Kind: 0 /* Class */,
                         Implements: varType && _this.GetBaseTypes(result)(varType),
                         GenericParameters: varType && varType.getTypeParameters().map(_this.GetType(result)),
@@ -71739,6 +71769,14 @@ var erecruit;
                 }).doAction(this.EnsureResolved).select(this.GetType(result)).toArray();
 
                 return result;
+            };
+
+            Extractor.prototype.GetInternalModule = function (d) {
+                return d && Enumerable.from(d.getParentPath()).where(function (p) {
+                    return p.kind == TypeScript.PullElementKind.Container;
+                }).select(function (p) {
+                    return p.name;
+                }).toArray().join(".");
             };
 
             Extractor.prototype.GetPrimitiveType = function (type) {
@@ -71895,7 +71933,7 @@ var erecruit;
 
         function Emit(cfg, files, host) {
             var config = erecruit.TsT.cacheConfig(host, cfg);
-            var e = new erecruit.TsT.Extractor(host);
+            var e = new erecruit.TsT.Extractor(config);
 
             return Rx.Observable.fromArray(files).selectMany(function (f) {
                 return formatTemplate(f, e.GetModule(f).Types, erecruit.TsT.getFileConfig(config, f), Config.toDustContext(config), erecruit.TsT.typeName);
@@ -71921,7 +71959,7 @@ var erecruit;
 
             function formatTemplate(sourceFileName, objects, config, baseCtx, objectName) {
                 return Rx.Observable.fromArray(config).select(function (cfg) {
-                    return Enumerable.from(objects).where(function (obj) {
+                    return !cfg.template || !cfg.fileName ? null : Enumerable.from(objects).where(function (obj) {
                         return cfg.match(objectName(obj));
                     }).select(function (obj) {
                         return Rx.Observable.create(function (or) {
@@ -71934,8 +71972,12 @@ var erecruit;
                             return ({ outputFileName: fileName, content: content });
                         });
                     });
+                }).where(function (e) {
+                    return !!e;
                 }).selectMany(function (oos) {
-                    return Rx.Observable.merge(oos.toArray());
+                    return Rx.Observable.merge(oos.where(function (e) {
+                        return !!e;
+                    }).toArray());
                 });
             }
 
@@ -71975,6 +72017,32 @@ var erecruit;
 
                 return chunk.render(bodies.block, dust.makeBase(makeCSharpAST(config, type)));
             };
+
+            typeHelper('typeName', typeName);
+            typeHelper('typeNamespace', typeNamespace);
+            typeHelper('typeFullName', function (config, type) {
+                return typeName(config, type, true);
+            });
+
+            dust.helpers['cs_whenEmptyNamespace'] = function (chunk, ctx, bodies, params) {
+                var type = ctx.current();
+                var config = erecruit.TsT.Config.fromDustContext(ctx);
+                if (!type || !config || type.Kind !== 1 /* Type */)
+                    return chunk;
+                if (typeNamespace(config, type))
+                    bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
+                return chunk.render(bodies.block, ctx);
+            };
+
+            function typeHelper(name, render) {
+                dust.helpers['cs_' + name] = function (chunk, ctx, bodies, params) {
+                    var type = ctx.current();
+                    var config = erecruit.TsT.Config.fromDustContext(ctx);
+                    if (!type || !config || type.Kind !== 1 /* Type */)
+                        return chunk;
+                    return chunk.write(render(config, type));
+                };
+            }
 
             var primitiveTypeMap = Enumerable.from([
                 { t: 0 /* Any */, n: "object" },
@@ -72073,23 +72141,27 @@ var erecruit;
 
                 beforeEach(function () {
                     e = new erecruit.TsT.Extractor({
-                        DirectoryExists: function (_) {
-                            return false;
-                        },
-                        FetchFile: function (name) {
-                            return name === fileName ? file : fs.existsSync(name) ? fs.readFileSync(name, { encoding: 'utf8' }) : null;
-                        },
-                        GetParentDirectory: function (_) {
-                            return "";
-                        },
-                        MakeRelativePath: function (_) {
-                            return "";
-                        },
-                        ResolveRelativePath: function (_) {
-                            return "";
-                        },
-                        GetIncludedTypingFiles: function () {
-                            return [require.resolve('../lib.d.ts')];
+                        Original: { RootDir: '.', ConfigDir: '.' },
+                        File: [{ match: null, types: null }],
+                        Host: {
+                            DirectoryExists: function (_) {
+                                return false;
+                            },
+                            FetchFile: function (name) {
+                                return name === fileName ? file : fs.existsSync(name) ? fs.readFileSync(name, { encoding: 'utf8' }) : null;
+                            },
+                            GetParentDirectory: function (_) {
+                                return "";
+                            },
+                            MakeRelativePath: function (from, to) {
+                                return to;
+                            },
+                            ResolveRelativePath: function (_) {
+                                return "";
+                            },
+                            GetIncludedTypingFiles: function () {
+                                return [require.resolve('../lib.d.ts')];
+                            }
                         }
                     });
                 });
@@ -72097,9 +72169,7 @@ var erecruit;
                 describe("should correctly parse data structure", function () {
                     it(" - simple", function () {
                         file = "export interface X { A: string; B: number; }";
-                        expect(e.GetModule(fileName).Types).toEqual([{
-                                Module: jasmine.any(Object),
-                                Kind: 1 /* Type */,
+                        expect(e.GetModule(fileName).Types).toEqual([c({
                                 Interface: c({
                                     Name: 'X',
                                     Properties: [
@@ -72107,15 +72177,13 @@ var erecruit;
                                         { Name: 'B', Type: c({ PrimitiveType: 3 /* Number */ }) }
                                     ]
                                 })
-                            }]);
+                            })]);
                     });
 
                     it("with a substructure", function () {
                         file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
                         expect(e.GetModule(fileName).Types).toEqual([
-                            {
-                                Module: jasmine.any(Object),
-                                Kind: 1 /* Type */,
+                            c({
                                 Interface: c({
                                     Name: 'X',
                                     Properties: [
@@ -72123,17 +72191,70 @@ var erecruit;
                                         { Name: 'B', Type: c({ Interface: c({ Name: 'Y' }) }) }
                                     ]
                                 })
-                            },
-                            {
-                                Module: jasmine.any(Object),
-                                Kind: 1 /* Type */,
+                            }),
+                            c({
                                 Interface: c({
                                     Name: 'Y',
                                     Properties: [
                                         { Name: 'C', Type: c({ PrimitiveType: 3 /* Number */ }) }
                                     ]
                                 })
-                            }]);
+                            })
+                        ]);
+                    });
+                });
+
+                describe("should correctly parse an interface", function () {
+                    it("with methods", function () {
+                        file = "export interface I { M( x: string ): number; N( x: number ): string; }";
+                        expect(e.GetModule(fileName).Types).toEqual([
+                            c({
+                                Interface: c({
+                                    Name: 'I',
+                                    Methods: [
+                                        {
+                                            Name: 'M',
+                                            Signatures: [c({
+                                                    Parameters: [c({ Name: 'x', Type: c({ PrimitiveType: 1 /* String */ }) })],
+                                                    ReturnType: c({ PrimitiveType: 3 /* Number */ })
+                                                })]
+                                        },
+                                        {
+                                            Name: 'N',
+                                            Signatures: [c({
+                                                    Parameters: [c({ Name: 'x', Type: c({ PrimitiveType: 3 /* Number */ }) })],
+                                                    ReturnType: c({ PrimitiveType: 1 /* String */ })
+                                                })]
+                                        }
+                                    ]
+                                })
+                            })
+                        ]);
+                    });
+                    it("with multiple method overloads", function () {
+                        file = "export interface I { M( x: string ): number; M( x: number ): string; }";
+                        expect(e.GetModule(fileName).Types).toEqual([
+                            c({
+                                Interface: c({
+                                    Name: 'I',
+                                    Methods: [
+                                        {
+                                            Name: 'M',
+                                            Signatures: [
+                                                c({
+                                                    Parameters: [c({ Name: 'x', Type: c({ PrimitiveType: 1 /* String */ }) })],
+                                                    ReturnType: c({ PrimitiveType: 3 /* Number */ })
+                                                }),
+                                                c({
+                                                    Parameters: [c({ Name: 'x', Type: c({ PrimitiveType: 3 /* Number */ }) })],
+                                                    ReturnType: c({ PrimitiveType: 1 /* String */ })
+                                                })
+                                            ]
+                                        }
+                                    ]
+                                })
+                            })
+                        ]);
                     });
                 });
 
@@ -72141,28 +72262,24 @@ var erecruit;
                     it("with implicit values", function () {
                         file = "export enum X { A, B, C }";
                         expect(e.GetModule(fileName).Types).toEqual([
-                            {
-                                Module: jasmine.any(Object),
-                                Kind: 1 /* Type */,
+                            c({
                                 Enum: c({
                                     Name: 'X',
                                     Values: [{ Name: 'A', Value: 0 }, { Name: 'B', Value: 1 }, { Name: 'C', Value: 2 }]
                                 })
-                            }
+                            })
                         ]);
                     });
 
                     it("with explicit values", function () {
                         file = "export enum X { A = 5, B = 8, C = 10 }";
                         expect(e.GetModule(fileName).Types).toEqual([
-                            {
-                                Module: jasmine.any(Object),
-                                Kind: 1 /* Type */,
+                            c({
                                 Enum: c({
                                     Name: 'X',
                                     Values: [{ Name: 'A', Value: 5 }, { Name: 'B', Value: 8 }, { Name: 'C', Value: 10 }]
                                 })
-                            }
+                            })
                         ]);
                     });
 
@@ -72172,9 +72289,7 @@ var erecruit;
 					G = A + B, H = B - C, I = C ^ B, \
 					J = -B }";
                         expect(e.GetModule(fileName).Types).toEqual([
-                            {
-                                Module: jasmine.any(Object),
-                                Kind: 1 /* Type */,
+                            c({
                                 Enum: c({
                                     Name: 'X',
                                     Values: [
@@ -72183,7 +72298,7 @@ var erecruit;
                                         { Name: 'G', Value: 1 + 2 }, { Name: 'H', Value: 2 - 6 }, { Name: 'I', Value: 6 ^ 2 },
                                         { Name: 'J', Value: -2 }]
                                 })
-                            }
+                            })
                         ]);
                     });
                 });

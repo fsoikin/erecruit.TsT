@@ -27,7 +27,7 @@ module erecruit.TsT {
 
 	export function Emit( cfg: Config, files: string[], host: ITsTHost ): Rx.IObservable<FileContent> {
 		var config = cacheConfig( host, cfg );
-		var e = new Extractor( host );
+		var e = new Extractor( config );
 
 		return Rx.Observable
 			.fromArray( files )
@@ -48,7 +48,8 @@ module erecruit.TsT {
 
 			return Rx.Observable
 				.fromArray( config )
-				.select( cfg => Enumerable
+				.select( cfg => !cfg.template || !cfg.fileName ? null :
+					Enumerable
 					.from( objects )
 					.where( obj => cfg.match( objectName( obj ) ) )
 					.select( obj =>
@@ -59,7 +60,8 @@ module erecruit.TsT {
 							( content, fileName ) => ( { outputFileName: fileName, content: content }) )
 					)
 				)
-				.selectMany( oos => Rx.Observable.merge( oos.toArray() ) );
+				.where( e => !!e )
+				.selectMany( oos => Rx.Observable.merge( oos.where( e => !!e ).toArray() ) );
 		}
 
 		function formatFileName( sourceFileName: string, template: dust.RenderFn ) {

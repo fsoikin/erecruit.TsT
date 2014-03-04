@@ -49,12 +49,12 @@ module erecruit.TsT {
 			File: Enumerable
 				.from( config.File )
 				.concat( [{ key: '.', value: <FileConfig>config }] )
-				.where( x => !!x.key && !!x.value )
+				.where( x => !!x.key )
 				.select( x => {
 					var regex = new RegExp( x.key );
 					return {
 						match: ( fileName: string ) => { var res = regex.test( fileName ); regex.test( '' ); return res; },
-						types: cacheConfigPart( config, host, x.value.Types )
+						types: (x.value && cacheConfigPart( config, host, x.value.Types )) || []
 					};
 				})
 				.toArray()
@@ -62,13 +62,13 @@ module erecruit.TsT {
 
 		function cacheConfigPart( cfg: Config, host: ITsTHost, c: ConfigPart ): CachedConfigPart[] {
 			return Enumerable.from( c )
-				.where( c => !!c.key && !!c.value )
+				.where( c => !!c.key )
 				.select( x => {
 					var regex = new RegExp( x.key );
 					return {
 						match: ( name: string ) => { var res = regex.test( name ); regex.test( '' ); return res; },
-						fileName: compileTemplate( x.value.FileName, cfg ),
-						template: compileTemplate( x.value.Template, cfg )
+						fileName: x.value && compileTemplate( x.value.FileName, cfg ),
+						template: x.value && compileTemplate( x.value.Template, cfg )
 					};
 				})
 				.toArray();

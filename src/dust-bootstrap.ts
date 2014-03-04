@@ -12,6 +12,13 @@ dust.helpers['replace'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, p
 	return chunk.write( str.replace( new RegExp( regex ), replacement || "" ) );
 };
 
+dust.helpers['test'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { str: string; regex: string }) => {
+	var str = dust.helpers.tap( params.str, chunk, ctx );
+	var regex = dust.helpers.tap( params.regex, chunk, ctx );
+	if ( !str || !regex || !new RegExp(regex).test(str) ) return bodies['else'] ? chunk.render( bodies['else'], ctx ) : chunk;
+	return chunk.render( bodies.block, ctx );
+};
+
 dust.helpers['typeName'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { path: string }) => {
 	var path = params.path && dust.helpers.tap( params.path, chunk, ctx );
 	var type = path && ctx.get( path.toString() );
@@ -22,6 +29,17 @@ dust.helpers['typeName'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, 
 dust.helpers['indent'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { count: number }) => {
 	return chunk.write( Enumerable.repeat( "\t", (params && dust.helpers.tap( params.count, chunk, ctx )) || 1 ).toArray().join('') );
 };
+
+[
+	{ name: 'whenType', kind: erecruit.TsT.ModuleElementKind.Type },
+	{ name: 'whenClass', kind: erecruit.TsT.ModuleElementKind.Class }
+]
+	.forEach( x =>
+		dust.helpers[x.name] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { count: number }) => {
+			var t: erecruit.TsT.ModuleElement = ctx.current();
+			if ( t && t.Kind == x.kind ) return chunk.render( bodies.block, ctx );
+			return bodies['else'] ? chunk.render( bodies['else'], ctx ) : chunk;
+		});
 
 dust.helpers['fs_fileNameWithoutExtension'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { path: string }) => {
 	var path = dust.helpers.tap( params.path, chunk, ctx );

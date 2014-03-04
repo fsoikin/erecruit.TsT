@@ -14,22 +14,24 @@ module erecruit.TsT.Tests {
 		var fileName = "a.ts";
 
 		beforeEach( () => {
-			e = new Extractor( {
-				DirectoryExists: _ => false,
-				FetchFile: name => name === fileName ? file : fs.existsSync( name ) ? fs.readFileSync( name, { encoding: 'utf8' }) : null,
-				GetParentDirectory: _ => "",
-				MakeRelativePath: _ => "",
-				ResolveRelativePath: _ => "",
-				GetIncludedTypingFiles: () => [require.resolve( '../lib.d.ts' )]
+			e = new Extractor( <CachedConfig>{
+				Original: { RootDir: '.', ConfigDir: '.' },
+				File: [{ match: null, types: null }],
+				Host: {
+					DirectoryExists: _ => false,
+					FetchFile: name => name === fileName ? file : fs.existsSync( name ) ? fs.readFileSync( name, { encoding: 'utf8' }) : null,
+					GetParentDirectory: _ => "",
+					MakeRelativePath: (from, to) => to,
+					ResolveRelativePath: _ => "",
+					GetIncludedTypingFiles: () => [require.resolve( '../lib.d.ts' )]
+				}
 			});
 		});
 
 		describe( "should correctly parse data structure", () => {
 			it( " - simple", () => {
 				file = "export interface X { A: string; B: number; }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [{
-					Module: jasmine.any( Object ),
-					Kind: ModuleElementKind.Type,
+				expect( e.GetModule( fileName ).Types ).toEqual( [c({
 					Interface: c( {
 						Name: 'X',
 						Properties: [
@@ -37,15 +39,13 @@ module erecruit.TsT.Tests {
 							{ Name: 'B', Type: c( { PrimitiveType: PrimitiveType.Number }) }
 						]
 					})
-				}] );
+				})] );
 			});
 
 			it( "with a substructure", () => {
 				file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
 				expect( e.GetModule( fileName ).Types ).toEqual( [
-					{
-						Module: jasmine.any( Object ),
-						Kind: ModuleElementKind.Type,
+					c({
 						Interface: c( {
 							Name: 'X',
 							Properties: [
@@ -53,17 +53,70 @@ module erecruit.TsT.Tests {
 								{ Name: 'B', Type: c( { Interface: c( { Name: 'Y' }) }) }
 							]
 						})
-					},
-					{
-						Module: jasmine.any( Object ),
-						Kind: ModuleElementKind.Type,
+					}),
+					c({
 						Interface: c( {
 							Name: 'Y',
 							Properties: [
 								{ Name: 'C', Type: c( { PrimitiveType: PrimitiveType.Number }) },
 							]
 						})
-					}] );
+					})
+				] );
+			});
+		});
+
+		describe( "should correctly parse an interface", () => {
+			it( "with methods", () => {
+				file = "export interface I { M( x: string ): number; N( x: number ): string; }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					c( {
+						Interface: c( {
+							Name: 'I',
+							Methods: [
+								{
+									Name: 'M',
+									Signatures: [c( {
+										Parameters: [c( { Name: 'x', Type: c( { PrimitiveType: PrimitiveType.String }) })],
+										ReturnType: c( { PrimitiveType: PrimitiveType.Number })
+									})]
+								},
+								{
+									Name: 'N',
+									Signatures: [c( {
+										Parameters: [c( { Name: 'x', Type: c( { PrimitiveType: PrimitiveType.Number }) })],
+										ReturnType: c( { PrimitiveType: PrimitiveType.String })
+									})]
+								}
+							]
+						})
+					})
+				] );
+			});
+			it( "with multiple method overloads", () => {
+				file = "export interface I { M( x: string ): number; M( x: number ): string; }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					c( {
+						Interface: c( {
+							Name: 'I',
+							Methods: [
+								{
+									Name: 'M',
+									Signatures: [
+										c( {
+											Parameters: [c( { Name: 'x', Type: c( { PrimitiveType: PrimitiveType.String }) })],
+											ReturnType: c( { PrimitiveType: PrimitiveType.Number })
+										}),
+										c( {
+											Parameters: [c( { Name: 'x', Type: c( { PrimitiveType: PrimitiveType.Number }) })],
+											ReturnType: c( { PrimitiveType: PrimitiveType.String })
+										})
+									]
+								}
+							]
+						})
+					})
+				] );
 			});
 		});
 
@@ -71,28 +124,24 @@ module erecruit.TsT.Tests {
 			it( "with implicit values", () => {
 				file = "export enum X { A, B, C }";
 				expect( e.GetModule( fileName ).Types ).toEqual( [
-					{
-						Module: jasmine.any( Object ),
-						Kind: ModuleElementKind.Type,
+					c({
 						Enum: c( {
 							Name: 'X',
 							Values: [{ Name: 'A', Value: 0 }, { Name: 'B', Value: 1 }, { Name: 'C', Value: 2 }]
 						})
-					}
+					})
 				] );
 			});
 
 			it( "with explicit values", () => {
 				file = "export enum X { A = 5, B = 8, C = 10 }";
 				expect( e.GetModule( fileName ).Types ).toEqual( [
-					{
-						Module: jasmine.any( Object ),
-						Kind: ModuleElementKind.Type,
+					c({
 						Enum: c( {
 							Name: 'X',
 							Values: [{ Name: 'A', Value: 5 }, { Name: 'B', Value: 8 }, { Name: 'C', Value: 10 }]
 						})
-					}
+					})
 				] );
 			});
 
@@ -102,9 +151,7 @@ module erecruit.TsT.Tests {
 					G = A + B, H = B - C, I = C ^ B, \
 					J = -B }";
 				expect( e.GetModule( fileName ).Types ).toEqual( [
-					{
-						Module: jasmine.any( Object ),
-						Kind: ModuleElementKind.Type,
+					c({
 						Enum: c( {
 							Name: 'X',
 							Values: [{ Name: 'A', Value: 1 }, { Name: 'B', Value: 2 }, { Name: 'C', Value: 6 },
@@ -112,7 +159,7 @@ module erecruit.TsT.Tests {
 								{ Name: 'G', Value: 1 + 2 }, { Name: 'H', Value: 2 - 6 }, { Name: 'I', Value: 6 ^ 2 },
 								{ Name: 'J', Value: -2 }]
 						})
-					}
+					})
 				] );
 			});
 		});
