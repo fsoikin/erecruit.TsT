@@ -29,6 +29,7 @@ module erecruit.TsT.Tests {
 				file = "export interface X { A: string; B: number; }";
 				expect( e.GetModule( fileName ).Types ).toEqual( [{
 					Module: jasmine.any( Object ),
+					Kind: ModuleElementKind.Type,
 					Interface: c( {
 						Name: 'X',
 						Properties: [
@@ -44,6 +45,7 @@ module erecruit.TsT.Tests {
 				expect( e.GetModule( fileName ).Types ).toEqual( [
 					{
 						Module: jasmine.any( Object ),
+						Kind: ModuleElementKind.Type,
 						Interface: c( {
 							Name: 'X',
 							Properties: [
@@ -54,6 +56,7 @@ module erecruit.TsT.Tests {
 					},
 					{
 						Module: jasmine.any( Object ),
+						Kind: ModuleElementKind.Type,
 						Interface: c( {
 							Name: 'Y',
 							Properties: [
@@ -70,6 +73,7 @@ module erecruit.TsT.Tests {
 				expect( e.GetModule( fileName ).Types ).toEqual( [
 					{
 						Module: jasmine.any( Object ),
+						Kind: ModuleElementKind.Type,
 						Enum: c( {
 							Name: 'X',
 							Values: [{ Name: 'A', Value: 0 }, { Name: 'B', Value: 1 }, { Name: 'C', Value: 2 }]
@@ -83,6 +87,7 @@ module erecruit.TsT.Tests {
 				expect( e.GetModule( fileName ).Types ).toEqual( [
 					{
 						Module: jasmine.any( Object ),
+						Kind: ModuleElementKind.Type,
 						Enum: c( {
 							Name: 'X',
 							Values: [{ Name: 'A', Value: 5 }, { Name: 'B', Value: 8 }, { Name: 'C', Value: 10 }]
@@ -99,6 +104,7 @@ module erecruit.TsT.Tests {
 				expect( e.GetModule( fileName ).Types ).toEqual( [
 					{
 						Module: jasmine.any( Object ),
+						Kind: ModuleElementKind.Type,
 						Enum: c( {
 							Name: 'X',
 							Values: [{ Name: 'A', Value: 1 }, { Name: 'B', Value: 2 }, { Name: 'C', Value: 6 },
