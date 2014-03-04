@@ -19,10 +19,27 @@ dust.helpers['typeName'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, 
 	else return chunk;
 };
 
-dust.helpers['br'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { path: string }) => {
-	return chunk.write( "\r\n" );
-};
-
 dust.helpers['indent'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { count: number }) => {
 	return chunk.write( Enumerable.repeat( "\t", (params && dust.helpers.tap( params.count, chunk, ctx )) || 1 ).toArray().join('') );
+};
+
+dust.helpers['fs_fileNameWithoutExtension'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { path: string }) => {
+	var path = dust.helpers.tap( params.path, chunk, ctx );
+	var config = erecruit.TsT.Config.fromDustContext( ctx );
+	if ( !path || !config ) return chunk;
+
+	var dir = config.Host.GetParentDirectory( path );
+	var name = path.substring( dir.length + 1 );
+	var nameParts = name.split( '.' );
+	return chunk.write( nameParts.slice( 0, nameParts.length - 1 ).join( '.' ) );
+};
+
+dust.helpers['fs_relativePath'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { from: string; to: string }) => {
+	var from = dust.helpers.tap( params.from, chunk, ctx );
+	var to = dust.helpers.tap( params.to, chunk, ctx );
+	var config = erecruit.TsT.Config.fromDustContext( ctx );
+	if ( !to || !config ) return chunk;
+	if ( !from ) return chunk.write( to );
+
+	return chunk.write( config.Host.MakeRelativePath( from, to ) );
 };

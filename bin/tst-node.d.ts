@@ -16,21 +16,33 @@ declare module "tst" {
         Classes: Class[];
         Types: Type[];
     }
-    enum PrimitiveType {
-        Any = 0,
-        String = 1,
-        Boolean = 2,
-        Number = 3,
+    enum ModuleElementKind {
+        Class = 0,
+        Type = 1,
     }
-    interface Type {
+    interface ModuleElement {
         Module: Module;
+        Kind: ModuleElementKind;
+    }
+    interface Class extends ModuleElement {
+        Name: string;
+        Implements: Type[];
+        GenericParameters?: Type[];
+        Constructors: CallSignature[];
+    }
+    interface Type extends ModuleElement {
         PrimitiveType?: PrimitiveType;
         Enum?: Enum;
         Interface?: Interface;
         GenericParameter?: GenericParameter;
         Array?: Type;
     }
-    function typeName(t: Type): string;
+    enum PrimitiveType {
+        Any = 0,
+        String = 1,
+        Boolean = 2,
+        Number = 3,
+    }
     interface GenericParameter {
         Name: string;
         Constraint: Type;
@@ -61,12 +73,7 @@ declare module "tst" {
         GenericParameters?: Type[];
         Parameters: Identifier[];
     }
-    interface Class {
-        Name: string;
-        Implements: Type[];
-        GenericParameters?: Type[];
-        Constructors: CallSignature[];
-    }
+    function typeName(e: ModuleElement): string;
 
     interface ConfigPart {
         [regex: string]: {
@@ -76,7 +83,7 @@ declare module "tst" {
     }
     interface FileConfig {
         Class?: ConfigPart;
-        Type?: ConfigPart;
+        Types?: ConfigPart;
     }
     interface Config extends FileConfig {
         Extension?: string;
@@ -92,19 +99,15 @@ declare module "tst" {
         fileName: dust.RenderFn;
         template: dust.RenderFn;
     }
-    interface CachedFileConfig {
-        Class: CachedConfigPart[];
-        Type: CachedConfigPart[];
-    }
     interface CachedConfig {
         Original: Config;
         Host: ITsTHost;
         File: {
             match: (fileName: string) => boolean;
-            config: CachedFileConfig;
+            types: CachedConfigPart[];
         }[];
     }
-    function getFileConfig(config: CachedConfig, fileName: string): CachedFileConfig;
+    function getFileConfig(config: CachedConfig, fileName: string): CachedConfigPart[];
     function cacheConfig(host: ITsTHost, config: Config): CachedConfig;
 
     interface ExtractorOptions {
@@ -137,9 +140,9 @@ declare module "tst" {
         function toDustContext(config: CachedConfig): dust.Context;
     }
     interface FileContent {
-        SourceFile: string;
         OutputFile: string;
         Content: string;
+        SourceFiles: string[];
     }
     function Emit(cfg: Config, files: string[], host: ITsTHost): Rx.IObservable<FileContent>;
 

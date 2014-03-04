@@ -24,7 +24,7 @@ var freeModuleTypings = toOutDir( 'tst.d.ts' );
 var executableModule = toOutDir( 'tstc.js' );
 var testsModule = toOutDir( 'tests/tstSpec.js' );
 var typeScriptBaseTypings = toOutDir( 'lib.d.ts' );
-var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule, testsModule];
+var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule];
 
 var lib = wrapLibs();
 

@@ -1,0 +1,17 @@
+{
+	// Root directory from which relative paths to input files are calculated.
+	// This directory itself is defined relative to where this config.json file is located.
+	RootDir: '..', 
+
+	Types: {
+		// For all types whose name matches the regex '.'
+		'.': {
+			// Dump all definitions into this file
+			// Variables are: {Path}, {Name}, {Extension}
+			FileName: "out/{Path}/{Name}.cs",
+
+			// Use this template (The '@' symbol in front means 'load from file'. otherwise the string itself will be the template)
+			Template: "@./type.cs.tpl"
+		}
+	}
+}

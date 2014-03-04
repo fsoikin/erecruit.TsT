@@ -88,6 +88,8 @@
     <Content Include="lib\rx\rx.js" />
     <Content Include="lib\typescript\typescript.js" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="examples\csharp-multiple-ouputs\" />
+  </ItemGroup>
   <Import Project="$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets')" />
 </Project>

@@ -43,11 +43,13 @@ module erecruit.TsT {
 					this.EnsureResolved( variable );
 					var varType = variable.isType() && ( <TypeScript.PullTypeSymbol>variable );
 					var sigs = variable.type.getConstructSignatures()
-			var ctor = variable.type.getConstructorMethod();
+					var ctor = variable.type.getConstructorMethod();
 					if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
 
 					return <Class> {
 						Name: d.name,
+						Module: result,
+						Kind: ModuleElementKind.Class,
 						Implements: varType && this.GetBaseTypes( result )( varType ),
 						GenericParameters: varType && varType.getTypeParameters().map( this.GetType( result ) ),
 						Constructors: sigs.map( this.GetCallSignature( result ) )
@@ -71,7 +73,7 @@ module erecruit.TsT {
 			var cached = this._typeCache[type.pullSymbolID];
 			if ( cached ) return cached;
 
-			this._typeCache[type.pullSymbolID] = cached = { Module: mod };
+			this._typeCache[type.pullSymbolID] = cached = { Module: mod, Kind: ModuleElementKind.Type };
 
 			this.EnsureResolved( type );
 			if ( type.getElementType() ) cached.Array = this.GetType( mod )( type.getElementType() )

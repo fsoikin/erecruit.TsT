@@ -14,13 +14,22 @@ module erecruit.TsT {
 		Types: Type[];
 	}
 
-	export enum PrimitiveType {
-		Any, String, Boolean, Number
+	export enum ModuleElementKind { Class, Type }
+
+	export interface ModuleElement {
+		Module: Module;
+		Kind: ModuleElementKind;
+	}
+
+	export interface Class extends ModuleElement {
+		Name: string;
+		Implements: Type[];
+		GenericParameters?: Type[];
+		Constructors: CallSignature[];
 	}
 
 	// This is supposed to be a type union, but alas, we don't have those in TS yet
-	export interface Type {
-		Module: Module;
+	export interface Type extends ModuleElement {
 		PrimitiveType?: PrimitiveType;
 		Enum?: Enum;
 		Interface?: Interface;
@@ -28,11 +37,8 @@ module erecruit.TsT {
 		Array?: Type;
 	}
 
-	export function typeName( t: Type ) {
-		return ( t.Enum && t.Enum.Name )
-			|| ( t.GenericParameter && t.GenericParameter.Name )
-			|| ( t.Interface && t.Interface.Name )
-			|| ( t.PrimitiveType && PrimitiveType[t.PrimitiveType] );
+	export enum PrimitiveType {
+		Any, String, Boolean, Number
 	}
 
 	export interface GenericParameter {
@@ -68,10 +74,12 @@ module erecruit.TsT {
 		Parameters: Identifier[];
 	}
 
-	export interface Class {
-		Name: string;
-		Implements: Type[];
-		GenericParameters?: Type[];
-		Constructors: CallSignature[];
+	export function typeName( e: ModuleElement ) {
+		var t = <Type>e, c = <Class>e;
+		return c.Kind == ModuleElementKind.Class ? c.Name :
+			( t.Enum && t.Enum.Name )
+			|| ( t.GenericParameter && t.GenericParameter.Name )
+			|| ( t.Interface && t.Interface.Name )
+			|| ( t.PrimitiveType && PrimitiveType[t.PrimitiveType] );
 	}
 }

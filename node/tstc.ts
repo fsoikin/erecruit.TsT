@@ -31,9 +31,17 @@ function main() {
 
 	erecruit.TsT.Emit( config, files, host )
 		.subscribe( c => {
-			console.log( c.SourceFile + " --> " + c.OutputFile );
-			fs.writeFileSync( c.OutputFile, c.Content, { encoding: 'utf8' });
+			var outPath = path.resolve( config.ConfigDir, c.OutputFile );
+			console.log( c.SourceFiles.join( ', ' ) + " --> " + path.relative( '.', outPath ) );
+			createDir( path.dirname( outPath ) );
+			fs.writeFileSync( outPath, c.Content, { encoding: 'utf8' });
 		} );
+}
+
+function createDir( dir: string ) {
+	if ( fs.existsSync( dir ) ) return;
+	createDir( path.dirname( dir ) );
+	fs.mkdirSync( dir );
 }
 
 function readFile( f: string ): string {

@@ -6,9 +6,9 @@
 
 module erecruit.TsT.CSharp {
 	dust.helpers['csharpClass'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: any ) => {
-		var type: Type = ctx.current();
+		var type: ModuleElement = ctx.current();
 		var config = Config.fromDustContext( ctx );
-		if ( !type || !config ) return chunk;
+		if ( !type || !config || type.Kind === undefined ) return chunk;
 
 		return chunk.render( bodies.block, dust.makeBase( makeCSharpAST( config, type ) ) );
 	};
@@ -35,33 +35,39 @@ module erecruit.TsT.CSharp {
 		return ( includeNamespace ? ns : "" ) + n;
 	}
 
-	function typeNamespace( config: CachedConfig, type: Type ) {
-		if ( !type.Module.Path ) return "";
-		var relPath = config.Host.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( type.Module.Path ) );
+	function typeNamespace( config: CachedConfig, e: ModuleElement ) {
+		if ( !e.Module || !e.Module.Path ) return "";
+		var relPath = config.Host.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( e.Module.Path ) );
 		if ( relPath[0] == '.' && relPath[1] == '.' ) return "";
 		return relPath
 			.replace( /[\.\-\+]/, '_' )
 			.replace( /[\/\\]/, '.' );
 	}
 
-	function makeCSharpAST( config: CachedConfig, type: Type ) {
+	function makeCSharpAST( config: CachedConfig, e: ModuleElement ) {
+		var type = <Type>e, cls = <Class>e;
+		var genericPs = e.Kind === ModuleElementKind.Class ? cls.GenericParameters : ( type.Interface && type.Interface.GenericParameters );
+		var bases = cls.Implements || (type.Interface && type.Interface.Extends);
 		return {
-			Name: typeName( config, type ),
-			Namespace: typeNamespace( config, type ),
+			Name: cls.Name || typeName( config, type ),
+			Namespace: typeNamespace( config, e ),
+			IsClass: e.Kind === ModuleElementKind.Class,
 			IsInterface: !!type.Interface,
 			IsEnum: !!type.Enum,
 			IsPrimitive: !!type.PrimitiveType,
 			IsGenericParameter: !!type.GenericParameter,
 			IsArray: !!type.Array,
-			GenericParameters:
-			type.Interface && type.Interface.GenericParameters && type.Interface.GenericParameters.length ?
-			type.Interface.GenericParameters.map( p => ( { Name: typeName( config, p ) }) )
-			: null,
-			Properties: type.Interface && type.Interface.Properties.map( p => ( {
+			GenericParameters: genericPs && genericPs.length ? genericPs.map( (p) => ( { Name: typeName( config, p ) }) ) : null,
+			Properties: type.Interface && type.Interface.Properties.map( (p) => ( {
 				Name: p.Name,
 				Type: typeName( config, p.Type, true )
 			}) ),
-			EnumValues: type.Enum && type.Enum.Values
+			EnumValues: type.Enum && type.Enum.Values,
+			Constructors: cls.Constructors && cls.Constructors.map( (c) => ({
+				GenericParameters: c.GenericParameters && c.GenericParameters.map( (p) => ( { Name: typeName( config, p ) }) ),
+				Parameters: c.Parameters && c.Parameters.map( (p) => ( { Name: p.Name, Type: typeName( config, p.Type, true ) }) )
+			}) ),
+			Extends: bases && bases.map( (i) => ( { Name: typeName( config, i, true ) }) )
 		};
 	}
 }

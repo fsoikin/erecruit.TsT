@@ -9,7 +9,7 @@ module erecruit.TsT {
 
 	export interface FileConfig {
 		Class?: ConfigPart;
-		Type?: ConfigPart;
+		Types?: ConfigPart;
 	}
 
 	export interface Config extends FileConfig {
@@ -26,17 +26,12 @@ module erecruit.TsT {
 		template: dust.RenderFn;
 	}
 
-	export interface CachedFileConfig {
-		Class: CachedConfigPart[];
-		Type: CachedConfigPart[];
-	}
-
 	export interface CachedConfig {
 		Original: Config;
 		Host: ITsTHost;
 		File: {
 			match: ( fileName: string ) => boolean;
-			config: CachedFileConfig;
+			types: CachedConfigPart[];
 		}[];
 	}
 
@@ -44,10 +39,7 @@ module erecruit.TsT {
 		return Enumerable
 			.from( config.File )
 			.where( c => c.match( fileName ) )
-			.aggregate( <CachedFileConfig>{}, ( a, b ) => ( {
-				Class: ( a.Class || [] ).concat( b.config.Class || [] ),
-				Type: ( a.Type || [] ).concat( b.config.Type || [] )
-			}) );
+			.aggregate( <CachedConfigPart[]>[], ( a, b ) => ( a || [] ).concat( b.types || [] ) );
 	}
 
 	export function cacheConfig( host: ITsTHost, config: Config ): CachedConfig {
@@ -62,7 +54,7 @@ module erecruit.TsT {
 					var regex = new RegExp( x.key );
 					return {
 						match: ( fileName: string ) => { var res = regex.test( fileName ); regex.test( '' ); return res; },
-						config: cacheConfig( config, host, x.value )
+						types: cacheConfigPart( config, host, x.value.Types )
 					};
 				})
 				.toArray()
@@ -85,10 +77,6 @@ module erecruit.TsT {
 		function compileTemplate( tpl: string, cfg: Config ) {
 			return !tpl ? null :
 				dust.compileFn( tpl[0] == '@' ? host.FetchFile( host.ResolveRelativePath( tpl.substring( 1 ), cfg.ConfigDir ) ) : tpl );
-		}
-
-		function cacheConfig( cfg: Config, host: ITsTHost, c: FileConfig ): CachedFileConfig {
-			return { Class: cacheConfigPart( cfg, host, c.Class ), Type: cacheConfigPart( cfg, host, c.Type ) };
 		}
 	}
 }

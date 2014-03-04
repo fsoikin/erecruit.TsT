@@ -20,9 +20,9 @@ module erecruit.TsT {
 	}
 
 	export interface FileContent {
-		SourceFile: string;
 		OutputFile: string;
 		Content: string;
+		SourceFiles: string[];
 	}
 
 	export function Emit( cfg: Config, files: string[], host: ITsTHost ): Rx.IObservable<FileContent> {
@@ -31,23 +31,17 @@ module erecruit.TsT {
 
 		return Rx.Observable
 			.fromArray( files )
-			.selectMany( f => {
-				var fileConfig = getFileConfig( config, f );
-				var mod = e.GetModule( f );
-				var ctx = Config.toDustContext( config );
-				var classes = formatTemplate( f, mod.Classes, fileConfig.Class, ctx, c => c.Name );
-				var types = formatTemplate( f, mod.Types, fileConfig.Type, ctx, typeName );
-				return classes.merge( types )
-					.groupBy( x => x.outputFileName, x => x.content )
-					.selectMany( x => x
-						.takeLastBuffer( Number.MAX_VALUE )
-						.select( xs => <FileContent>{
-							SourceFile: f, 
-							OutputFile: x.key,
-							Content: xs.join( '\r\n' )
-						})
-					);
-			});
+			.selectMany(
+				f => formatTemplate( f, e.GetModule( f ).Types, getFileConfig( config, f ), Config.toDustContext( config ), typeName ),
+				(f, x) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )
+			.groupBy( x => x.outputFile, x => x )
+			.selectMany(
+				x => x.takeLastBuffer( Number.MAX_VALUE ),
+				(x, xs) => <FileContent>{
+					OutputFile: x.key,
+					SourceFiles: Enumerable.from( xs ).select( k => k.inputFile ).distinct().toArray(), 
+					Content: xs.map( k => k.content ).join( '\r\n' )
+				});
 
 		function formatTemplate<TObject>( sourceFileName: string, objects: TObject[], config: CachedConfigPart[], baseCtx: dust.Context, objectName: ( o: TObject ) => string )
 			: Rx.IObservable<{ outputFileName: string; content: string }> {
@@ -61,20 +55,20 @@ module erecruit.TsT {
 						Rx.Observable.create<string>( or => {
 							cfg.template( baseCtx.push( obj ), ( err, out ) => err ? or.onError( err ) : ( or.onNext( out ), or.onCompleted() ) );
 							return () => { };
-						}).zip( formatFileName( sourceFileName, host, cfg.fileName ),
-						( content, fileName ) => ( { outputFileName: fileName, content: content }) )
+						}).zip( formatFileName( sourceFileName, cfg.fileName ),
+							( content, fileName ) => ( { outputFileName: fileName, content: content }) )
 					)
 				)
 				.selectMany( oos => Rx.Observable.merge( oos.toArray() ) );
 		}
 
-		function formatFileName( sourceFileName: string, host: ITsTHost, template: dust.RenderFn ) {
+		function formatFileName( sourceFileName: string, template: dust.RenderFn ) {
 			var dir = host.GetParentDirectory( sourceFileName );
 			var name = sourceFileName.substring( dir.length + 1 );
 			var nameParts = name.split( '.' );
 
 			var model = {
-				Path: dir,
+				Path: host.MakeRelativePath( config.Original.RootDir, dir ),
 				Name: nameParts.slice( 0, nameParts.length - 1 ).join( '.' ),
 				Extension: nameParts[nameParts.length - 1]
 			};
