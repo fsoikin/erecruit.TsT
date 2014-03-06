@@ -75,6 +75,7 @@ module erecruit.TsT {
 		}
 
 		function compileTemplate( tpl: string, cfg: Config ) {
+			console.log( "Compiling template " + tpl );
 			return !tpl ? null :
 				dust.compileFn( tpl[0] == '@' ? host.FetchFile( host.ResolveRelativePath( tpl.substring( 1 ), cfg.ConfigDir ) ) : tpl );
 		}

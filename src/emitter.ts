@@ -5,6 +5,7 @@
 /// <reference path="extractor.ts" />
 /// <reference path="config.ts" />
 /// <reference path="dust-bootstrap.ts" />
+/// <reference path="utils.ts" />
 
 module erecruit.TsT {
 	export module Config {
@@ -30,7 +31,7 @@ module erecruit.TsT {
 		var e = new Extractor( config );
 
 		return Rx.Observable
-			.fromArray( files )
+			.fromArray( ensureArray( files ) )
 			.selectMany(
 				f => formatTemplate( f, e.GetModule( f ).Types, getFileConfig( config, f ), Config.toDustContext( config ), typeName ),
 				(f, x) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )
@@ -54,7 +55,7 @@ module erecruit.TsT {
 					.where( obj => cfg.match( objectName( obj ) ) )
 					.select( obj =>
 						Rx.Observable.create<string>( or => {
-							cfg.template( baseCtx.push( obj ), ( err, out ) => err ? or.onError( err ) : ( or.onNext( out ), or.onCompleted() ) );
+							cfg.template( baseCtx.push( obj ), ( err, out ) => err ? or.onError( err ) : ( console.log( out ), or.onNext( out ), or.onCompleted() ) );
 							return () => { };
 						}).zip( formatFileName( sourceFileName, cfg.fileName ),
 							( content, fileName ) => ( { outputFileName: fileName, content: content }) )
@@ -66,14 +67,15 @@ module erecruit.TsT {
 
 		function formatFileName( sourceFileName: string, template: dust.RenderFn ) {
 			var dir = host.GetParentDirectory( sourceFileName );
-			var name = sourceFileName.substring( dir.length + 1 );
+			var name = sourceFileName.substring( dir.length + ( dir[dir.length-1] === '/' || dir[dir.length-1] === '\\' ? 1 : 0) );
 			var nameParts = name.split( '.' );
 
 			var model = {
-				Path: host.MakeRelativePath( config.Original.RootDir, dir ),
+				Path: host.MakeRelativePath( config.Original.RootDir || "", dir ),
 				Name: nameParts.slice( 0, nameParts.length - 1 ).join( '.' ),
 				Extension: nameParts[nameParts.length - 1]
 			};
+			console.log( "Format filename: " + sourceFileName + " with " + template + " - " + JSON.stringify( nameParts ) );
 
 			return Rx.Observable.create<string>( or => {
 				template( dust.makeBase( model ), ( err, out ) => err ? or.onError( err ) : ( or.onNext( out ), or.onCompleted() ) );

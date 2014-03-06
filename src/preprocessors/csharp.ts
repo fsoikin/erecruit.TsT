@@ -3,6 +3,7 @@
 /// <reference path="../interfaces.ts" />
 /// <reference path="../emitter.ts" />
 /// <reference path="../config.ts" />
+/// <reference path="../utils.ts" />
 
 module erecruit.TsT.CSharp {
 	typeHelper( 'typeName', typeName );
@@ -50,7 +51,7 @@ module erecruit.TsT.CSharp {
 
 	function typeNamespace( config: CachedConfig, e: ModuleElement ) {
 		if ( !e.Module || !e.Module.Path ) return "";
-		var relPath = config.Host.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( e.Module.Path ) );
+		var relPath = config.Host.MakeRelativePath( config.Original.RootDir || "", config.Host.GetParentDirectory( e.Module.Path ) );
 		if ( relPath[0] == '.' && relPath[1] == '.' ) return "";
 		return relPath
 			.replace( /[\.\-\+]/, '_' )

@@ -2,7 +2,7 @@
 	RootDir: '../../src', 
 
 	Types: {
-		'^(?!ITsTHost).': {
+		'^(?!ITsTHost|Cached).': {
 			FileName: "../../dotNet/host/JS/{Path}/{Name}.cs",
 			Template: "@./data.cs.tpl"
 		},

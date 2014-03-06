@@ -1,6 +1,7 @@
 /// <reference path="../lib/typescript/typescript.d.ts" />
 /// <reference path="../lib/linq/linq.d.ts" />
 /// <reference path="interfaces.ts" />
+/// <reference path="utils.ts" />
 
 module erecruit.TsT {
 	export interface ExtractorOptions {
@@ -9,7 +10,7 @@ module erecruit.TsT {
 
 	export class Extractor {
 		constructor( private _config: CachedConfig, private _options: ExtractorOptions = {}) {
-			_config.Host.GetIncludedTypingFiles().forEach( f => this.addFile( f ) );
+			ensureArray( _config.Host.GetIncludedTypingFiles() ).forEach( f => this.addFile( f ) );
 		}
 
 		private addFile( f: string ) { this._compiler.addFile( f, this._tsHost.getScriptSnapshot( f ), null, 0, false, [] ); }

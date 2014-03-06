@@ -71449,12 +71449,6 @@ var TypeScript;
             PrimitiveType[PrimitiveType["Number"] = 3] = "Number";
         })(TsT.PrimitiveType || (TsT.PrimitiveType = {}));
         var PrimitiveType = TsT.PrimitiveType;
-
-        function typeName(e) {
-            var t = e, c = e;
-            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && t.Enum.Name) || (t.GenericParameter && t.GenericParameter.Name) || (t.Interface && t.Interface.Name) || (t.PrimitiveType && PrimitiveType[t.PrimitiveType]);
-        }
-        TsT.typeName = typeName;
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
@@ -71507,6 +71501,7 @@ var erecruit;
             }
 
             function compileTemplate(tpl, cfg) {
+                console.log("Compiling template " + tpl);
                 return !tpl ? null : dust.compileFn(tpl[0] == '@' ? host.FetchFile(host.ResolveRelativePath(tpl.substring(1), cfg.ConfigDir)) : tpl);
             }
         }
@@ -71579,6 +71574,29 @@ dust.helpers['fs_relativePath'] = function (chunk, ctx, bodies, params) {
 
     return chunk.write(config.Host.MakeRelativePath(from, to));
 };
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        function ensureArray(a) {
+            var o = a;
+            if (Object.prototype.toString.call(a) === "[object Array]")
+                return a;
+
+            a = [];
+            for (var i = 0; i < o.Length; i++)
+                a.push(o[i]);
+            return a;
+        }
+        TsT.ensureArray = ensureArray;
+
+        function typeName(e) {
+            var t = e, c = e;
+            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && t.Enum.Name) || (t.GenericParameter && t.GenericParameter.Name) || (t.Interface && t.Interface.Name) || (t.PrimitiveType && erecruit.TsT.PrimitiveType[t.PrimitiveType]);
+        }
+        TsT.typeName = typeName;
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
@@ -71692,7 +71710,7 @@ var erecruit;
                         return _this._config.Host.GetParentDirectory(path);
                     }
                 };
-                _config.Host.GetIncludedTypingFiles().forEach(function (f) {
+                erecruit.TsT.ensureArray(_config.Host.GetIncludedTypingFiles()).forEach(function (f) {
                     return _this.addFile(f);
                 });
             }
@@ -71939,7 +71957,7 @@ var erecruit;
             var config = erecruit.TsT.cacheConfig(host, cfg);
             var e = new erecruit.TsT.Extractor(config);
 
-            return Rx.Observable.fromArray(files).selectMany(function (f) {
+            return Rx.Observable.fromArray(erecruit.TsT.ensureArray(files)).selectMany(function (f) {
                 return formatTemplate(f, e.GetModule(f).Types, erecruit.TsT.getFileConfig(config, f), Config.toDustContext(config), erecruit.TsT.typeName);
             }, function (f, x) {
                 return ({ outputFile: x.outputFileName, content: x.content, inputFile: f });
@@ -71968,7 +71986,7 @@ var erecruit;
                     }).select(function (obj) {
                         return Rx.Observable.create(function (or) {
                             cfg.template(baseCtx.push(obj), function (err, out) {
-                                return err ? or.onError(err) : (or.onNext(out), or.onCompleted());
+                                return err ? or.onError(err) : (console.log(out), or.onNext(out), or.onCompleted());
                             });
                             return function () {
                             };
@@ -71987,14 +72005,15 @@ var erecruit;
 
             function formatFileName(sourceFileName, template) {
                 var dir = host.GetParentDirectory(sourceFileName);
-                var name = sourceFileName.substring(dir.length + 1);
+                var name = sourceFileName.substring(dir.length + (dir[dir.length - 1] === '/' || dir[dir.length - 1] === '\\' ? 1 : 0));
                 var nameParts = name.split('.');
 
                 var model = {
-                    Path: host.MakeRelativePath(config.Original.RootDir, dir),
+                    Path: host.MakeRelativePath(config.Original.RootDir || "", dir),
                     Name: nameParts.slice(0, nameParts.length - 1).join('.'),
                     Extension: nameParts[nameParts.length - 1]
                 };
+                console.log("Format filename: " + sourceFileName + " with " + template + " - " + JSON.stringify(nameParts));
 
                 return Rx.Observable.create(function (or) {
                     template(dust.makeBase(model), function (err, out) {
@@ -72072,7 +72091,7 @@ var erecruit;
             function typeNamespace(config, e) {
                 if (!e.Module || !e.Module.Path)
                     return "";
-                var relPath = config.Host.MakeRelativePath(config.Original.RootDir, config.Host.GetParentDirectory(e.Module.Path));
+                var relPath = config.Host.MakeRelativePath(config.Original.RootDir || "", config.Host.GetParentDirectory(e.Module.Path));
                 if (relPath[0] == '.' && relPath[1] == '.')
                     return "";
                 return relPath.replace(/[\.\-\+]/, '_').replace(/[\/\\]/, '.');

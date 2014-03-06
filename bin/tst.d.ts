@@ -75,7 +75,6 @@ declare module erecruit.TsT {
         Parameters: Identifier[];
         ReturnType?: Type;
     }
-    function typeName(e: ModuleElement): string;
 }
 declare module erecruit.TsT {
     interface ConfigPart {
@@ -112,6 +111,10 @@ declare module erecruit.TsT {
     }
     function getFileConfig(config: CachedConfig, fileName: string): CachedConfigPart[];
     function cacheConfig(host: ITsTHost, config: Config): CachedConfig;
+}
+declare module erecruit.TsT {
+    function ensureArray<T>(a: T[]): T[];
+    function typeName(e: ModuleElement): string;
 }
 declare module erecruit.TsT {
     interface ExtractorOptions {

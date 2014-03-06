@@ -75,13 +75,4 @@ module erecruit.TsT {
 		Parameters: Identifier[];
 		ReturnType?: Type;
 	}
-
-	export function typeName( e: ModuleElement ) {
-		var t = <Type>e, c = <Class>e;
-		return c.Kind == ModuleElementKind.Class ? c.Name :
-			( t.Enum && t.Enum.Name )
-			|| ( t.GenericParameter && t.GenericParameter.Name )
-			|| ( t.Interface && t.Interface.Name )
-			|| ( t.PrimitiveType && PrimitiveType[t.PrimitiveType] );
-	}
 }

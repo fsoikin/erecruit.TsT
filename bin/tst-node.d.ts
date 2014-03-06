@@ -75,7 +75,6 @@ declare module "tst" {
         Parameters: Identifier[];
         ReturnType?: Type;
     }
-    function typeName(e: ModuleElement): string;
 
     interface ConfigPart {
         [regex: string]: {
@@ -111,6 +110,9 @@ declare module "tst" {
     }
     function getFileConfig(config: CachedConfig, fileName: string): CachedConfigPart[];
     function cacheConfig(host: ITsTHost, config: Config): CachedConfig;
+
+    function ensureArray<T>(a: T[]): T[];
+    function typeName(e: ModuleElement): string;
 
     interface ExtractorOptions {
         UseCaseSensitiveFileResolution?: boolean;
