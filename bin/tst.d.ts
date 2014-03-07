@@ -103,7 +103,7 @@ declare module erecruit.TsT {
     }
     interface CachedConfig {
         Original: Config;
-        Host: TsT.ITsTHost;
+        Host: ITsTHost;
         File: {
             match: (fileName: string) => boolean;
             types: CachedConfigPart[];
@@ -123,9 +123,9 @@ declare module erecruit.TsT {
     class Extractor {
         private _config;
         private _options;
-        constructor(_config: TsT.CachedConfig, _options?: ExtractorOptions);
+        constructor(_config: CachedConfig, _options?: ExtractorOptions);
         private addFile(f);
-        public GetModule(fileName: string): TsT.Module;
+        public GetModule(fileName: string): Module;
         private GetInternalModule(d);
         private GetType;
         private GetCallSignature;
@@ -145,8 +145,8 @@ declare module erecruit.TsT {
 }
 declare module erecruit.TsT {
     module Config {
-        function fromDustContext(context: dust.Context): TsT.CachedConfig;
-        function toDustContext(config: TsT.CachedConfig): dust.Context;
+        function fromDustContext(context: dust.Context): CachedConfig;
+        function toDustContext(config: CachedConfig): dust.Context;
     }
     interface FileContent {
         OutputFile: string;
