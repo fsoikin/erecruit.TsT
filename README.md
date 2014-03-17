@@ -17,14 +17,14 @@ Replaces a substring with another using regular expression.
 | **replacement** | replacement string. Can include regular JavaScript named and numbered references like $1, $2, $myGroup, etc.|
 
 ```
-   {@replace str={Name} regex="-" replacement="_" /}
+   {@replace str="{Name}" regex="-" replacement="_" /}
 ```
 
 ###test
 Executes the inside block when the given string matches given regex, otherwise executes the `:else` block.
 
 ```
-   {@test str={Name} regex="^I"}
+   {@test str="{Name}" regex="^I"}
       interface
    {:else}
       class
@@ -117,7 +117,7 @@ Given a path, renders the name of the file without extension.
 | **path** | the path out of which to parse the file name.|
 
 ```
-   // This type was defined in the module {@fs_fileNameWithoutExtension path={Module.Path} /}
+   // This type was defined in the module {@fs_fileNameWithoutExtension path="{Module.Path}" /}
    public interface ...
 ```
 
