@@ -20,8 +20,7 @@ dust.helpers['test'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, para
 };
 
 dust.helpers['typeName'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { path: string }) => {
-	var path = params.path && dust.helpers.tap( params.path, chunk, ctx );
-	var type = path && ctx.get( path.toString() );
+	var type: erecruit.TsT.Type = ctx.current();
 	if ( type ) return chunk.write( erecruit.TsT.typeName( type ) );
 	else return chunk;
 };

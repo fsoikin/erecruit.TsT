@@ -217,20 +217,59 @@ module erecruit.TsT.Tests {
 				] );
 			});
 
-			it( "with parameters constrained by other parameters", () => {
-				file = "export interface I<T,S extends T> { X: T[]; Y: S; }";
+			it( "inheriting from other generic interfaces", () => {
+				file = "export interface I<T> extends J<T> { X: T[]; } export interface J<S> { Y: S }";
 				expect( e.GetModule( fileName ).Types ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
-							GenericParameters: [
-								c( { GenericParameter: { Name: 'T', Constraint: null } }),
-								c( { GenericParameter: { Name: 'S', Constraint: c( { GenericParameter: { Name: 'T', Constraint: null } }) } })
-							],
+							GenericParameters: [ c( { GenericParameter: { Name: 'T', Constraint: null } }) ],
+							Extends: [c( {
+								GenericInstantiation: {
+									Definition: c({ Name: 'J', GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })] }),
+									ParameterMaps: [{
+										Parameter: c({ GenericParameter: c( { Name: 'S' }) }),
+										Argument: c({ GenericParameter: c( { Name: 'T' }) })
+									}]
+								}
+							})],
 							Properties: [
 								{ Name: 'X', Type: c( { Array: c( { GenericParameter: { Name: 'T', Constraint: null } }) }) },
-								{ Name: 'Y', Type: c( { GenericParameter: c({ Name: 'S' }) }) },
 							]
+						})
+					}),
+					c( {
+						Interface: c( {
+							Name: 'J',
+							GenericParameters: [ c( { GenericParameter: { Name: 'S', Constraint: null } }) ],
+							Properties: [ { Name: 'Y', Type: c( { GenericParameter: c( { Name: 'S' }) }) } ]
+						})
+					})
+				] );
+			});
+
+			it( "concretely instantiated and used in a base type position", () => {
+				file = "export interface I extends J<number> { } export interface J<S> { Y: S }";
+				expect( e.GetModule( fileName ).Types ).toEqual( [
+					c( {
+						Interface: c( {
+							Name: 'I',
+							Extends: [c( {
+								GenericInstantiation: {
+									Definition: c( { Name: 'J', GenericParameters: [c( { GenericParameter: { Name: 'S', Constraint: null } })] }),
+									ParameterMaps: [{
+										Parameter: c( { GenericParameter: c( { Name: 'S' }) }),
+										Argument: c( { PrimitiveType: PrimitiveType.Number })
+									}]
+								}
+							})]
+						})
+					}),
+					c( {
+						Interface: c( {
+							Name: 'J',
+							GenericParameters: [c( { GenericParameter: { Name: 'S', Constraint: null } })],
+							Properties: [{ Name: 'Y', Type: c( { GenericParameter: c( { Name: 'S' }) }) }]
 						})
 					})
 				] );

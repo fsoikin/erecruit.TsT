@@ -35,7 +35,18 @@ module erecruit.TsT {
 		Enum?: Enum;
 		Interface?: Interface;
 		GenericParameter?: GenericParameter;
+		GenericInstantiation?: GenericInstantiation;
 		Array?: Type;
+	}
+
+	export interface GenericInstantiation {
+		Definition: Interface;
+		ParameterMaps: GenericParameterMap[];
+	}
+
+	export interface GenericParameterMap {
+		Parameter: Type;
+		Argument: Type;
 	}
 
 	export enum PrimitiveType {

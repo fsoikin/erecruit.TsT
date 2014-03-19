@@ -73279,8 +73279,7 @@ dust.helpers['test'] = function (chunk, ctx, bodies, params) {
 };
 
 dust.helpers['typeName'] = function (chunk, ctx, bodies, params) {
-    var path = params.path && dust.helpers.tap(params.path, chunk, ctx);
-    var type = path && ctx.get(path.toString());
+    var type = ctx.current();
     if (type)
         return chunk.write(erecruit.TsT.typeName(type));
     else

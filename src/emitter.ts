@@ -15,7 +15,7 @@ module erecruit.TsT {
 			return context.get( configDustContextKey );
 		}
 		export function toDustContext( config: CachedConfig ) {
-			var c = {}; c[configDustContextKey] = config;
+			var c: any = {}; c[configDustContextKey] = config;
 			return dust.makeBase( c );
 		}
 	}

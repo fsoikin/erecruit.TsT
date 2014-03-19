@@ -101,10 +101,29 @@ module erecruit.TsT {
 			else if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
 			else if ( type.isEnum() ) cached.Enum = this.GetEnum( type );
 			else if ( type.isTypeParameter() ) cached.GenericParameter = this.GetGenericParameter( mod, type );
+			else if ( this.IsGenericInstantiation( type ) ) cached.GenericInstantiation = this.GetGenericInstantiation( mod, <TypeScript.PullTypeReferenceSymbol>type );
 			else cached.Interface = this.GetInterface( mod )( type );
 
 			return cached;
 		};
+
+		private IsGenericInstantiation( type: TypeScript.PullTypeSymbol ) {
+			return ( <TypeScript.PullTypeReferenceSymbol> type ).referencedTypeSymbol && type.getTypeParameters() && type.getTypeParameters().length;
+		}
+
+		private GetGenericInstantiation( mod: Module, type: TypeScript.PullTypeReferenceSymbol ): GenericInstantiation {
+			var t = this.GetType( mod );
+			var def = t( type.referencedTypeSymbol );
+			if ( !def.Interface ) return null; // TODO: this should be an error condition
+
+			return {
+				Definition: def.Interface,
+				ParameterMaps: type.referencedTypeSymbol.getTypeParameters().map( p => <GenericParameterMap> {
+					Parameter: t( p ),
+					Argument: t( type.getTypeParameterArgumentMap()[p.pullSymbolID] )
+				} )
+			};
+		}
 
 		private GetCallSignature = ( mod: Module ) => ( s: TypeScript.PullSignatureSymbol ) => {
 			this.EnsureResolved( s );
@@ -126,9 +145,8 @@ module erecruit.TsT {
 			Enumerable
 				.from( type.getExtendedTypes() )
 				.concat( type.getImplementedTypes() )
-				.concat( type.isClass() ? [type] : [] )
 				.select( this.GetType( mod ) )
-				.where( t => !!t.Interface )
+				.where( t => !!t.Interface || !!t.GenericInstantiation )
 				.toArray();
 
 		private GetInterface = ( mod: Module ) => ( type: TypeScript.PullTypeSymbol ) => ( {
@@ -220,7 +238,7 @@ module erecruit.TsT {
 
 		private _compiler = new TypeScript.TypeScriptCompiler();
 		private _typeCache: { [pullSymbolId: number]: Type } = {};
-		private _snapshots: { [fileName: number]: TypeScript.IScriptSnapshot } = {};
+		private _snapshots: { [fileName: string]: TypeScript.IScriptSnapshot } = {};
 
 		private normalizePath( path: string ): string {
 			return this._config.Host

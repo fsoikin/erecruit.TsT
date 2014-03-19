@@ -73279,8 +73279,7 @@ dust.helpers['test'] = function (chunk, ctx, bodies, params) {
 };
 
 dust.helpers['typeName'] = function (chunk, ctx, bodies, params) {
-    var path = params.path && dust.helpers.tap(params.path, chunk, ctx);
-    var type = path && ctx.get(path.toString());
+    var type = ctx.current();
     if (type)
         return chunk.write(erecruit.TsT.typeName(type));
     else
@@ -73343,7 +73342,7 @@ var erecruit;
 
         function typeName(e) {
             var t = e, c = e;
-            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && t.Enum.Name) || (t.GenericParameter && t.GenericParameter.Name) || (t.Interface && t.Interface.Name) || (t.PrimitiveType && erecruit.TsT.PrimitiveType[t.PrimitiveType]);
+            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && t.Enum.Name) || (t.GenericParameter && t.GenericParameter.Name) || (t.Interface && t.Interface.Name) || (t.PrimitiveType && erecruit.TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && t.GenericInstantiation.Definition.Name);
         }
         TsT.typeName = typeName;
     })(erecruit.TsT || (erecruit.TsT = {}));
@@ -73381,6 +73380,8 @@ var erecruit;
                             cached.Enum = _this.GetEnum(type);
                         else if (type.isTypeParameter())
                             cached.GenericParameter = _this.GetGenericParameter(mod, type);
+                        else if (_this.IsGenericInstantiation(type))
+                            cached.GenericInstantiation = _this.GetGenericInstantiation(mod, type);
                         else
                             cached.Interface = _this.GetInterface(mod)(type);
 
@@ -73403,8 +73404,8 @@ var erecruit;
                 };
                 this.GetBaseTypes = function (mod) {
                     return function (type) {
-                        return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).concat(type.isClass() ? [type] : []).select(_this.GetType(mod)).where(function (t) {
-                            return !!t.Interface;
+                        return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).select(_this.GetType(mod)).where(function (t) {
+                            return !!t.Interface || !!t.GenericInstantiation;
                         }).toArray();
                     };
                 };
@@ -73547,6 +73548,27 @@ var erecruit;
                 }).select(function (p) {
                     return p.name;
                 }).toArray().join(".");
+            };
+
+            Extractor.prototype.IsGenericInstantiation = function (type) {
+                return type.referencedTypeSymbol && type.getTypeParameters() && type.getTypeParameters().length;
+            };
+
+            Extractor.prototype.GetGenericInstantiation = function (mod, type) {
+                var t = this.GetType(mod);
+                var def = t(type.referencedTypeSymbol);
+                if (!def.Interface)
+                    return null;
+
+                return {
+                    Definition: def.Interface,
+                    ParameterMaps: type.referencedTypeSymbol.getTypeParameters().map(function (p) {
+                        return {
+                            Parameter: t(p),
+                            Argument: t(type.getTypeParameterArgumentMap()[p.pullSymbolID])
+                        };
+                    })
+                };
             };
 
             Extractor.prototype.GetPrimitiveType = function (type) {
@@ -74083,20 +74105,59 @@ var erecruit;
                         ]);
                     });
 
-                    it("with parameters constrained by other parameters", function () {
-                        file = "export interface I<T,S extends T> { X: T[]; Y: S; }";
+                    it("inheriting from other generic interfaces", function () {
+                        file = "export interface I<T> extends J<T> { X: T[]; } export interface J<S> { Y: S }";
                         expect(e.GetModule(fileName).Types).toEqual([
                             c({
                                 Interface: c({
                                     Name: 'I',
-                                    GenericParameters: [
-                                        c({ GenericParameter: { Name: 'T', Constraint: null } }),
-                                        c({ GenericParameter: { Name: 'S', Constraint: c({ GenericParameter: { Name: 'T', Constraint: null } }) } })
-                                    ],
+                                    GenericParameters: [c({ GenericParameter: { Name: 'T', Constraint: null } })],
+                                    Extends: [c({
+                                            GenericInstantiation: {
+                                                Definition: c({ Name: 'J', GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })] }),
+                                                ParameterMaps: [{
+                                                        Parameter: c({ GenericParameter: c({ Name: 'S' }) }),
+                                                        Argument: c({ GenericParameter: c({ Name: 'T' }) })
+                                                    }]
+                                            }
+                                        })],
                                     Properties: [
-                                        { Name: 'X', Type: c({ Array: c({ GenericParameter: { Name: 'T', Constraint: null } }) }) },
-                                        { Name: 'Y', Type: c({ GenericParameter: c({ Name: 'S' }) }) }
+                                        { Name: 'X', Type: c({ Array: c({ GenericParameter: { Name: 'T', Constraint: null } }) }) }
                                     ]
+                                })
+                            }),
+                            c({
+                                Interface: c({
+                                    Name: 'J',
+                                    GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })],
+                                    Properties: [{ Name: 'Y', Type: c({ GenericParameter: c({ Name: 'S' }) }) }]
+                                })
+                            })
+                        ]);
+                    });
+
+                    it("concretely instantiated and used in a base type position", function () {
+                        file = "export interface I extends J<number> { } export interface J<S> { Y: S }";
+                        expect(e.GetModule(fileName).Types).toEqual([
+                            c({
+                                Interface: c({
+                                    Name: 'I',
+                                    Extends: [c({
+                                            GenericInstantiation: {
+                                                Definition: c({ Name: 'J', GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })] }),
+                                                ParameterMaps: [{
+                                                        Parameter: c({ GenericParameter: c({ Name: 'S' }) }),
+                                                        Argument: c({ PrimitiveType: 3 /* Number */ })
+                                                    }]
+                                            }
+                                        })]
+                                })
+                            }),
+                            c({
+                                Interface: c({
+                                    Name: 'J',
+                                    GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })],
+                                    Properties: [{ Name: 'Y', Type: c({ GenericParameter: c({ Name: 'S' }) }) }]
                                 })
                             })
                         ]);

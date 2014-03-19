@@ -1,7 +1,7 @@
 module erecruit.TsT {
 	// This function checks if the argument is a native JS array and returns it.
 	// If it's not a native JS array, it is assumed that it's a native .NET array,
-	// and then it is converted to a JS array and then returned.
+	// and then it is converted to a JS array, and then returned.
 	export function ensureArray<T>( a: T[] ): T[] {
 		var o: any = a;
 		if ( Object.prototype.toString.call( a ) === "[object Array]" ) return a;
@@ -17,6 +17,7 @@ module erecruit.TsT {
 			( t.Enum && t.Enum.Name )
 			|| ( t.GenericParameter && t.GenericParameter.Name )
 			|| ( t.Interface && t.Interface.Name )
-			|| ( t.PrimitiveType && PrimitiveType[t.PrimitiveType] );
+			|| ( t.PrimitiveType && PrimitiveType[t.PrimitiveType] )
+			|| ( t.GenericInstantiation && t.GenericInstantiation.Definition.Name );
 	}
 }
