@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reactive.Linq;
 using System.IO;
 using System.Reactive.Subjects;
@@ -7,11 +8,37 @@ using Microsoft.ClearScript.V8;
 using System.Reactive;
 using System.Collections;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace erecruit.TsT
 {
 	public class TsT : IDisposable
 	{
+		public static IObservable<GeneratedFile> Generate( IEnumerable<string> files, string currentDir, string configFileName ) {
+			var items = files.ToLookup( x => x, StringComparer.InvariantCultureIgnoreCase );
+			var configs = files.ToLookup( x => FindConfigFor( x, configFileName ) );
+
+			var noConfigs = configs[""];
+			if ( noConfigs.Any() ) {
+				return Observable.Throw<GeneratedFile>( new Exception( "Cannot find .tstconfig for path " + noConfigs.First() ) );
+			}
+
+			var host = new Host( System.IO.Path.GetDirectoryName( currentDir ) );
+			return Observable
+				.Using( () => new TsT(), tst => 
+					from filesPerConfig in configs.ToObservable()
+					from configContents in ReadContents( filesPerConfig.Key )
+					let configDir = Path.GetDirectoryName( filesPerConfig.Key )
+
+					from result in tst.Emit( configDir, configContents, filesPerConfig.ToArray(), host )
+
+					let outFile = Path.GetFullPath( Path.Combine( configDir, result.OutputFile ) )
+					from written in WriteContents( outFile, result.Content )
+
+					select new GeneratedFile { SourceFiles = result.SourceFiles, OutputFile = outFile }
+			);
+		}
+
 		public IObservable<JS.FileContent> Emit( string configDir, string configJson, string[] files, JS.ITsTHost host ) {
 			return from _ in EnsureInitialized()
 						 from jsonSerialize in _engine.Evaluate( "JSON.stringify" )
@@ -32,6 +59,33 @@ namespace erecruit.TsT
 						 from asJson in _engine.Queue( () => jsonSerialize(r) )
 						 let asPoco = JsonConvert.DeserializeObject<JS.FileContent>( asJson )
 						 select (JS.FileContent)asPoco;
+		}
+
+		static string FindConfigFor( string path, string configFileName ) {
+			return GetDirsUp( Path.GetDirectoryName( path ) )
+				.Select( d => Path.Combine( d, configFileName ) )
+				.FirstOrDefault( System.IO.File.Exists )
+				?? "";
+		}
+
+		static IEnumerable<string> GetDirsUp( string mostNestedDirPath ) {
+			var path = mostNestedDirPath;
+			while ( !string.IsNullOrWhiteSpace( path ) ) {
+				yield return path;
+				path = Path.GetDirectoryName( path );
+			}
+		}
+
+		static IObservable<string> ReadContents( string path ) {
+			return Observable.Using(
+				() => System.IO.File.OpenText( path ),
+				str => Observable.FromAsync( str.ReadToEndAsync ) );
+		}
+
+		static IObservable<Unit> WriteContents( string path, string contents ) {
+			return Observable.Using(
+				() => System.IO.File.CreateText( path ),
+				str => Observable.FromAsync( async () => await str.WriteAsync( contents ) ) );
 		}
 
 		IObservable<Unit> AmendConfig( string configDir, object cc ) {

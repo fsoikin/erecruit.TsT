@@ -70,6 +70,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="GeneratedFile.cs" />
     <Compile Include="TsT.cs" />
     <Compile Include="Host.cs" />
     <Compile Include="JS\emitter.cs" />

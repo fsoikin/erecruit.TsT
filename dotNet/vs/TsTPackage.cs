@@ -1,32 +1,27 @@
 ﻿using System;
-using System.Linq;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.ComponentModel.Design;
-using Microsoft.Win32;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.Shell;
-using EnvDTE80;
-using EnvDTE;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.IO;
+using System.Linq;
 using System.Reactive.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive;
+using System.Runtime.InteropServices;
+using EnvDTE;
+using EnvDTE80;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace erecruit.vs
 {
 	[PackageRegistration( UseManagedResourcesOnly = true )]
 	[InstalledProductRegistration( "#110", "#112", "1.0", IconResourceID = 400 )]
 	[ProvideMenuResource( "Menus.ctmenu", 1 )]
+	[ProvideAutoLoad( UIContextGuids80.SolutionExists )]
 	[Guid( GuidList.guidvsPkgString )]
 	public sealed class TsTPackage : Package
 	{
 		const string TypeScriptExtension = ".ts";
 		const string ConfigFileName = ".tstconfig";
+		const string TranslateFlagName = "TsT_Translate";
 
 		protected override void Initialize() {
 			base.Initialize();
@@ -39,42 +34,27 @@ namespace erecruit.vs
 		}
 
 		void AttachTranslator() {
-			Translate( GetFiles( GetSelectedItems() ) );
+			Translate( GetFiles( GetSelectedItems() ).Where( x => x.Path.EndsWith( TypeScriptExtension ) ) );
 		}
 
 		void Translate( IEnumerable<File> inputFiles ) {
 			var files = inputFiles.ToList();
-			var items = files.ToLookup( x => x.Path, StringComparer.InvariantCultureIgnoreCase );
-			var configs = files.ToLookup( x => FindConfigFor( x.Path ) );
+			var items = files.ToLookup( x => x.Path, x => x.Item, StringComparer.InvariantCultureIgnoreCase );
+			var solutionDir = System.IO.Path.GetDirectoryName( _dte.Solution.FullName );
 
-			var noConfigs = configs[""];
-			if ( noConfigs.Any() ) {
-				_dte.StatusBar.Text = "Cannot find .tstconfig for path " + noConfigs.First().Path;
-				return;
-			}
-			
-			var tst = new TsT.TsT();
-			var tstHost = new TsT.Host( System.IO.Path.GetDirectoryName( _dte.Solution.FullName ) );
-			var process = from filesPerConfig in configs.ToObservable()
-										from configContents in ReadContents( filesPerConfig.Key )
-										let configDir = Path.GetDirectoryName( filesPerConfig.Key )
-
-										from result in tst.Emit( configDir, configContents, filesPerConfig.Select( x => x.Path ).ToArray(), tstHost )
-
-										let item = result.SourceFiles.SelectMany( sf => items[sf] ).FirstOrDefault()
-										where item != null // This shouldn't happen, but just in case it does, bail out
-
-										let outFile = Path.GetFullPath( Path.Combine( configDir, result.OutputFile ) )
-										from written in WriteContents( outFile, result.Content )
-										from included in IncludeInProjectIfNotThere( item.Item, outFile )
-
-										select result.OutputFile;
-
-			process.Subscribe( s => _dte.StatusBar.Text = "Generated " + s, ex => _dte.StatusBar.Text = ex.ToString() );
+			(from g in TsT.TsT.Generate( files.Select( x => x.Path ), solutionDir, ConfigFileName )
+			 let item = g.SourceFiles.SelectMany( x => items[x] ).FirstOrDefault()
+			 from _ in IncludeInProjectIfNotThere( item, g.OutputFile )
+			 select g
+			).Subscribe( 
+				f => _dte.StatusBar.Text = "Generated " + f.OutputFile, 
+				ex => _dte.StatusBar.Text = ex.Message );
 		}
 
 		void BeforeQueryStatus( OleMenuCommand cmd ) {
-			cmd.Enabled = GetSelectedFiles().Select( f => f.Path.EndsWith( TypeScriptExtension ) ).DefaultIfEmpty( false ).First();
+			cmd.Enabled = GetSelectedFiles()
+				.Select( f => f.Path.EndsWith( TypeScriptExtension ) && !GetTranslateFlag( f.Item ) )
+				.DefaultIfEmpty( false ).First();
 		}
 
 		IEnumerable<ProjectItem> GetSelectedItems() {
@@ -95,38 +75,36 @@ namespace erecruit.vs
 
 		IEnumerable<File> GetSelectedFiles() { return GetFiles( GetSelectedItems() ); }
 
-		string FindConfigFor( string path ) {
-			return GetDirsUp( Path.GetDirectoryName( path ) )
-				.Select( d => Path.Combine( d, ConfigFileName ) )
-				.FirstOrDefault( System.IO.File.Exists )
-				?? "";
-		}
-
-		IEnumerable<string> GetDirsUp( string mostNestedDirPath ) {
-			var path = mostNestedDirPath;
-			while ( !string.IsNullOrWhiteSpace( path ) ) {
-				yield return path;
-				path = Path.GetDirectoryName( path );
-			}
-		}
-
-		IObservable<string> ReadContents( string path ) {
-			return Observable.Using(
-				() => System.IO.File.OpenText( path ),
-				str => Observable.FromAsync( str.ReadToEndAsync ) );
-		}
-
-		IObservable<Unit> WriteContents( string path, string contents ) {
-			return Observable.Using(
-				() => System.IO.File.CreateText( path ),
-				str => Observable.FromAsync( async () => await str.WriteAsync( contents ) ) );
-		}
-
 		IEnumerable<int> IncludeInProjectIfNotThere( ProjectItem item, string file ) {
-			if ( !GetFiles( GetItems( item.ProjectItems ) ).Any( x => string.Equals( x.Path, file, StringComparison.InvariantCultureIgnoreCase ) ) ) {
-				item.ProjectItems.AddFromFile( file );
+			if ( item != null ) {
+				SetTranslateFlag( item, true );
+				var subItems = GetFiles( GetItems( item.ProjectItems ) ).ToList();
+				if ( !subItems.Any( x => string.Equals( x.Path, file, StringComparison.InvariantCultureIgnoreCase ) ) ) {
+					item.ProjectItems.AddFromFile( file );
+				}
 			}
 			yield return 0;
+		}
+
+		public static void SetTranslateFlag( ProjectItem item, bool flag ) {
+			IVsHierarchy hierarchy;
+			uint itemID;
+			IVsSolution solution = (IVsSolution)Package.GetGlobalService( typeof( SVsSolution ) );
+			solution.GetProjectOfUniqueName( item.ContainingProject.UniqueName, out hierarchy );
+			hierarchy.ParseCanonicalName( item.FileNames[0], out itemID );
+			(hierarchy as IVsBuildPropertyStorage).SetItemAttribute( itemID, TranslateFlagName, flag.ToString() );
+		}
+
+		public static bool GetTranslateFlag( ProjectItem item ) {
+			IVsHierarchy hierarchy;
+			uint itemID;
+			string result;
+			IVsSolution solution = (IVsSolution)Package.GetGlobalService( typeof( SVsSolution ) );
+			solution.GetProjectOfUniqueName( item.ContainingProject.UniqueName, out hierarchy );
+			hierarchy.ParseCanonicalName( item.FileNames[0], out itemID );
+			(hierarchy as IVsBuildPropertyStorage).GetItemAttribute( itemID, TranslateFlagName, out result );
+
+			return string.Equals( result, true.ToString(), StringComparison.InvariantCultureIgnoreCase );
 		}
 
 		class File
