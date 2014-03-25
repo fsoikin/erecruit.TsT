@@ -1,13 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Guids.cs
+// MUST match guids.h
+using System;
 
-namespace erecruit.TsT.VS
+namespace erecruit.vs
 {
-	static class Guids
-	{
+    static class GuidList
+    {
+        public const string guidvsPkgString = "f95d8dce-65f6-412e-8a3d-512cf66547d9";
+        public const string guidvsCmdSetString = "bd519ccf-306d-445d-9b08-a64144a12dfc";
 
-	}
+        public static readonly Guid guidvsCmdSet = new Guid(guidvsCmdSetString);
+    };
 }

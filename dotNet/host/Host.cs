@@ -15,11 +15,11 @@ namespace erecruit.TsT
 			}
 
 			public string FetchFile( string fileName ) {
-				return fileName == Lib_d_ts ? Properties.Resources.lib_d_ts : File.ReadAllText( fileName );
+				return fileName == Lib_d_ts ? Properties.Resources.lib_d_ts : File.ReadAllText( Path.Combine( _originPath, fileName ) );
 			}
 
 			public string ResolveRelativePath( string path, string directory ) {
-				return MakeRelativePath( _originPath, Path.GetFullPath( Path.Combine( path, directory ) ) );
+				return MakeRelativePath( _originPath, Path.GetFullPath( Path.Combine( directory, path ) ) );
 			}
 
 			public string MakeRelativePath( string from, string to ) {

@@ -22,7 +22,7 @@ namespace erecruit.TsT.Tests
 					} 
 				} }";
 
-			var result = await new TsT().Emit( config, new[] { _fileName }, new MockHost() ).ToList();
+			var result = await new TsT().Emit( ".", config, new[] { _fileName }, new MockHost() ).ToList();
 			result.Select( x => x.OutputFile ).Should().BeEquivalentTo( "file.cs" );
 			result.SelectMany( x => x.SourceFiles ).Should().BeEquivalentTo( _fileName );
 			result.Select( x => x.Content ).Should().BeEquivalentTo( "I\r\nJ" );

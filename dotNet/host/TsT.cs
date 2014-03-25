@@ -12,10 +12,13 @@ namespace erecruit.TsT
 {
 	public class TsT : IDisposable
 	{
-		public IObservable<JS.FileContent> Emit( string configJson, string[] files, JS.ITsTHost host ) {
+		public IObservable<JS.FileContent> Emit( string configDir, string configJson, string[] files, JS.ITsTHost host ) {
 			return from _ in EnsureInitialized()
 						 from jsonSerialize in _engine.Evaluate( "JSON.stringify" )
+						 
 						 from config in _engine.Evaluate( "(" + configJson + ")" )
+						 from amended in AmendConfig( configDir, (object)config )
+
 						 let result = new System.Reactive.Subjects.Subject<dynamic>()
 						 from __ in _engine.QueueAction( () =>
 							 _emit( config, files, host )
@@ -29,6 +32,13 @@ namespace erecruit.TsT
 						 from asJson in _engine.Queue( () => jsonSerialize(r) )
 						 let asPoco = JsonConvert.DeserializeObject<JS.FileContent>( asJson )
 						 select (JS.FileContent)asPoco;
+		}
+
+		IObservable<Unit> AmendConfig( string configDir, object cc ) {
+			dynamic config = cc;
+			config.ConfigDir = configDir;
+			config.RootDir = Path.Combine( configDir, (config.RootDir as string) ?? "" );
+			return Observable.Return( Unit.Default );
 		}
 
 		IObservable<Unit> EnsureInitialized() {

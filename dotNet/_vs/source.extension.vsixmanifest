@@ -1,14 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
 	<Metadata>
-		<Identity Id="f95d8dce-65f6-412e-8a3d-512cf66547d9" Version="1.0" Language="en-US" Publisher="erecruit" />
-		<DisplayName>erecruit.TsT</DisplayName>
+		<Identity Id="erecruit.TsT.VS..5d307730-749a-4f45-9311-a4938a0c6421" Version="1.0" Language="en-US" Publisher="erecruit" />
+		<DisplayName>erecruit.TsT.VS</DisplayName>
 		<Description xml:space="preserve">erecruit TsT - TypeScript Translator.
 Extract type information from your TypeScript files and generate other code (for example, C# classes) from it.</Description>
 		<MoreInfo>https://github.com/erecruit/TsT</MoreInfo>
 		<GettingStartedGuide>https://github.com/erecruit/TsT</GettingStartedGuide>
+		<Tags>TypeScript</Tags>
 	</Metadata>
-	<Installation InstalledByMsi="false">
+	<Installation>
 		<InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Pro" />
 		<InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Premium" />
 		<InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Ultimate" />
@@ -16,13 +17,5 @@ Extract type information from your TypeScript files and generate other code (for
 	</Installation>
 	<Dependencies>
 		<Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
-		<Dependency Id="Microsoft.VisualStudio.MPF.12.0" DisplayName="Visual Studio MPF 12.0" d:Source="Installed" Version="[12.0]" />
 	</Dependencies>
-	<Assets>
-		<Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-		<Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="ClearScriptV8-64.dll" AssemblyName="ClearScriptV8-64, Version=5.3.10.0, Culture=neutral, PublicKeyToken=null" />
-		<Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="ClearScriptV8-32.dll" AssemblyName="ClearScriptV8-32, Version=5.3.10.0, Culture=neutral, PublicKeyToken=null" />
-		<Asset Type="Microsoft.ExtensionSDK" d:Source="File" Path="v8-x64.dll" />
-		<Asset Type="Microsoft.ExtensionSDK" d:Source="File" Path="v8-ia32.dll" />
-	</Assets>
 </PackageManifest>
