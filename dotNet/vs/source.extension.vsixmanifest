@@ -24,5 +24,6 @@ Extract type information from your TypeScript files and generate other code (for
 		<Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="ClearScriptV8-32.dll" AssemblyName="ClearScriptV8-32, Version=5.3.10.0, Culture=neutral, PublicKeyToken=null" />
 		<Asset Type="Microsoft.ExtensionSDK" d:Source="File" Path="v8-x64.dll" />
 		<Asset Type="Microsoft.ExtensionSDK" d:Source="File" Path="v8-ia32.dll" />
+		<Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
 	</Assets>
 </PackageManifest>
