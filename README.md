@@ -8,7 +8,7 @@ The primary intended use for this tool is generating server-side data transfer o
 1. [Basics](#basics)
 2. [Configuration file](#config)
 3. [Templates](#templates)
-4. [Dust.js helpers](#helpers)
+4. [TsT-specific dust.js helpers](#helpers)
 
 
 #<a name="basics"></a>Basics
