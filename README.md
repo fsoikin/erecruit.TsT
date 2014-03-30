@@ -8,14 +8,14 @@ The primary intended use for this tool is generating server-side data transfer o
 1. [Basics](#basics)
 2. [Configuration file](#config)
 3. [Templates](#templates)
-4. [Helpers](#helpers)
+4. [Dust.js helpers](#helpers)
 
 
 #<a name="basics"></a>Basics
 erecruit TS Translator does not have a hard-coded way to generate code based on TypeScript-extracted type information. Instead, it uses user-defined templates for that purpose. The templates are rendered using the [dust.js template engine](http://linkedin.github.io/dustjs/), which is light, sufficiently powerful, and, unlike most modern JavaScript template engines, not focused on HTML.
 
 
-#<a name="helpers"></a>Helpers
+#<a name="helpers"></a>Dust.js helpers
 
 ##General Helpers
 
