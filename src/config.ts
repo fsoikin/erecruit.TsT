@@ -13,11 +13,10 @@ module erecruit.TsT {
 	}
 
 	export interface Config extends FileConfig {
-		Extension?: string;
 		RootDir?: string;
 		ConfigDir?: string;
 		IncludedTypingFiles?: string[];
-		File?: { [regex: string]: FileConfig };
+		Files?: { [regex: string]: FileConfig };
 	}
 
 	export interface CachedConfigPart {

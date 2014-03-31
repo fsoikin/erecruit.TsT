@@ -10,7 +10,7 @@ using Xunit;
 
 namespace erecruit.TsT.Tests
 {
-	public class JSWrapper
+	public class TsT
 	{
 		[Fact]
 		public async Task Should_load_and_run_JS_code() {
@@ -22,13 +22,24 @@ namespace erecruit.TsT.Tests
 					} 
 				} }";
 
-			var result = await new TsT().Emit( ".", config, new[] { _fileName }, new MockHost() ).ToList();
+			var result = await new erecruit.TsT.TsT().Emit( ".", config, new[] { _fileName }, new MockHost() ).ToList();
 			result.Select( x => x.OutputFile ).Should().BeEquivalentTo( "file.cs" );
 			result.SelectMany( x => x.SourceFiles ).Should().BeEquivalentTo( _fileName );
 			result.Select( x => x.Content ).Should().BeEquivalentTo( "I\r\nJ" );
 		}
 
+		[Fact]
+		public async Task Should_propagate_JS_errors() {
+			try {
+				await new erecruit.TsT.TsT().Emit( ".", "{}", new[] { _erroneousFileName }, new MockHost() ).ToList();
+				Assert.True( false, "Didn't throw" );
+			}
+			catch ( ApplicationException ) {
+			}
+		}
+
 		const string _fileName = "file.ts";
+		const string _erroneousFileName = "whack.ts";
 
 		public class MockHost : JS.ITsTHost
 		{
@@ -36,6 +47,7 @@ namespace erecruit.TsT.Tests
 
 			public string FetchFile( string fileName ) {
 				if ( fileName == _fileName ) return "export interface I {} export interface J {}";
+				if ( fileName == _erroneousFileName ) throw new Exception( "Whack!" );
 				return null;
 			}
 

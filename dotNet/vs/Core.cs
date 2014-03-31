@@ -12,7 +12,6 @@ namespace erecruit.vs
 	public static class Core
 	{
 		public const string TypeScriptExtension = ".ts";
-		public const string ConfigFileName = ".tstconfig";
 		public const string TranslateFlagName = "TsTranslate";
 
 		public static void Translate( IEnumerable<File> inputFiles ) {
@@ -21,7 +20,7 @@ namespace erecruit.vs
 			var items = files.ToLookup( x => x.Path, x => x.Item, StringComparer.InvariantCultureIgnoreCase );
 			var solutionDir = System.IO.Path.GetDirectoryName( dte.Solution.FullName );
 
-			(from g in TsT.TsT.Generate( files.Select( x => x.Path ), solutionDir, ConfigFileName )
+			(from g in TsT.TsT.Generate( files.Select( x => x.Path ), solutionDir, TsT.TsT.AutoDiscoverConfigFile() )
 			 let item = g.SourceFiles.SelectMany( x => items[x] ).FirstOrDefault()
 			 from _ in IncludeInProjectIfNotThere( item, g.OutputFile )
 			 select g

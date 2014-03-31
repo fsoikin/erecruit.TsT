@@ -118,10 +118,8 @@ module erecruit.TsT {
 
 			return {
 				Definition: def.Interface,
-				ParameterMaps: type.referencedTypeSymbol.getTypeParameters().map( p => <GenericParameterMap> {
-					Parameter: t( p ),
-					Argument: t( type.getTypeParameterArgumentMap()[p.pullSymbolID] )
-				} )
+				Arguments: type.referencedTypeSymbol.getTypeParameters()
+					.map( p => t( type.getTypeParameterArgumentMap()[p.pullSymbolID] ) )
 			};
 		}
 

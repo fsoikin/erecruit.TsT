@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "erecruit.TsT.Tests", "dotNe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "erecruit.TsT.VS", "dotNet\vs\erecruit.TsT.VS.csproj", "{934F80F0-5D03-40BC-BEC5-CCB3C48C5C23}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "erecruit.TsT.Console", "dotNet\tstc\erecruit.TsT.Console.csproj", "{3FD63D25-E6B5-4823-995E-8DAAA2972F2B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +34,10 @@ Global
 		{934F80F0-5D03-40BC-BEC5-CCB3C48C5C23}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{934F80F0-5D03-40BC-BEC5-CCB3C48C5C23}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{934F80F0-5D03-40BC-BEC5-CCB3C48C5C23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FD63D25-E6B5-4823-995E-8DAAA2972F2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FD63D25-E6B5-4823-995E-8DAAA2972F2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FD63D25-E6B5-4823-995E-8DAAA2972F2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FD63D25-E6B5-4823-995E-8DAAA2972F2B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

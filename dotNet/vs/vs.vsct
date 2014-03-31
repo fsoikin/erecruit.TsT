@@ -63,9 +63,9 @@
 
       <Button guid="guidvsCmdSet" id="cmdidAddTranslated" priority="0x0100" type="Button">
         <Parent guid="guidvsCmdSet" id="TsTMenuGroup" />
-        <Icon guid="guidImages" id="bmpPic1" />
+        <Icon guid="translateIcon" id="translateIcon" />
         <Strings>
-          <ButtonText>Translate</ButtonText>
+          <ButtonText>Translate TypeScript</ButtonText>
         </Strings>
       </Button>
 
@@ -80,7 +80,7 @@
             bitmap strip containing the bitmaps and then there are the numeric ids of the elements used 
             inside a button definition. An important aspect of this declaration is that the element id 
             must be the actual index (1-based) of the bitmap inside the bitmap strip. -->
-      <Bitmap guid="guidImages" href="Resources\Images.png" usedList="bmpPic1, bmpPic2, bmpPicSearch, bmpPicX, bmpPicArrows"/>
+      <Bitmap guid="translateIcon" href="Resources\erecruit.TsT.png" usedList="translateIcon"/>
       
     </Bitmaps>
  
@@ -103,13 +103,8 @@
     
     
     
-    <GuidSymbol name="guidImages" value="{36c36289-7bb4-478d-b260-fca9820226a4}" >
-      <IDSymbol name="bmpPic1" value="1" />
-      <IDSymbol name="bmpPic2" value="2" />
-      <IDSymbol name="bmpPicSearch" value="3" />
-      <IDSymbol name="bmpPicX" value="4" />
-      <IDSymbol name="bmpPicArrows" value="5" />
-      <IDSymbol name="bmpPicStrikethrough" value="6" />
+    <GuidSymbol name="translateIcon" value="{36c36289-7bb4-478d-b260-fca9820226a4}" >
+      <IDSymbol name="translateIcon" value="1" />
     </GuidSymbol>
   </Symbols>
 

@@ -36,7 +36,16 @@ declare module "tst" {
         Enum?: Enum;
         Interface?: Interface;
         GenericParameter?: GenericParameter;
+        GenericInstantiation?: GenericInstantiation;
         Array?: Type;
+    }
+    interface GenericInstantiation {
+        Definition: Interface;
+        ParameterMaps: GenericParameterMap[];
+    }
+    interface GenericParameterMap {
+        Parameter: Type;
+        Argument: Type;
     }
     enum PrimitiveType {
         Any = 0,
@@ -87,7 +96,6 @@ declare module "tst" {
         Types?: ConfigPart;
     }
     interface Config extends FileConfig {
-        Extension?: string;
         RootDir?: string;
         ConfigDir?: string;
         IncludedTypingFiles?: string[];
@@ -125,6 +133,8 @@ declare module "tst" {
         public GetModule(fileName: string): Module;
         private GetInternalModule(d);
         private GetType;
+        private IsGenericInstantiation(type);
+        private GetGenericInstantiation(mod, type);
         private GetCallSignature;
         private GetPrimitiveType(type);
         private GetBaseTypes;

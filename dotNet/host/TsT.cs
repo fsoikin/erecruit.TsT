@@ -14,9 +14,11 @@ namespace erecruit.TsT
 {
 	public class TsT : IDisposable
 	{
-		public static IObservable<GeneratedFile> Generate( IEnumerable<string> files, string currentDir, string configFileName ) {
+		public const string DefaultConfigFileName = ".tstconfig";
+
+		public static IObservable<GeneratedFile> Generate( IEnumerable<string> files, string currentDir, Func<string, string> discoverConfigFile ) {
 			var items = files.ToLookup( x => x, StringComparer.InvariantCultureIgnoreCase );
-			var configs = files.ToLookup( x => FindConfigFor( x, configFileName ) );
+			var configs = files.ToLookup( discoverConfigFile );
 
 			var noConfigs = configs[""];
 			if ( noConfigs.Any() ) {
@@ -39,10 +41,17 @@ namespace erecruit.TsT
 			);
 		}
 
+		public static Func<string, string> AutoDiscoverConfigFile( string configFileName = DefaultConfigFileName ) {
+			return path => GetDirsUp( Path.GetDirectoryName( path ) )
+				.Select( d => Path.Combine( d, configFileName ) )
+				.FirstOrDefault( System.IO.File.Exists )
+				?? "";
+		}
+
 		public IObservable<JS.FileContent> Emit( string configDir, string configJson, string[] files, JS.ITsTHost host ) {
 			return from _ in EnsureInitialized()
 						 from jsonSerialize in _engine.Evaluate( "JSON.stringify" )
-						 
+
 						 from config in _engine.Evaluate( "(" + configJson + ")" )
 						 from amended in AmendConfig( configDir, (object)config )
 
@@ -51,21 +60,14 @@ namespace erecruit.TsT
 							 _emit( config, files, host )
 							 .subscribe( new {
 								 onNext = new Action<dynamic>( result.OnNext ),
-								 onError = new Action<object>( err => result.OnError( new Exception( Convert.ToString( err ) ) ) ),
+								 onError = new Action<object>( err => { result.OnError( new Exception( Convert.ToString( err ) ) ); result.OnCompleted(); } ),
 								 onCompleted = new Action( result.OnCompleted )
 							 } ) )
 
 						 from r in result
-						 from asJson in _engine.Queue( () => jsonSerialize(r) )
+						 from asJson in _engine.Queue( () => jsonSerialize( r ) )
 						 let asPoco = JsonConvert.DeserializeObject<JS.FileContent>( asJson )
 						 select (JS.FileContent)asPoco;
-		}
-
-		static string FindConfigFor( string path, string configFileName ) {
-			return GetDirsUp( Path.GetDirectoryName( path ) )
-				.Select( d => Path.Combine( d, configFileName ) )
-				.FirstOrDefault( System.IO.File.Exists )
-				?? "";
 		}
 
 		static IEnumerable<string> GetDirsUp( string mostNestedDirPath ) {

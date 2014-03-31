@@ -14,7 +14,7 @@ module erecruit.TsT {
 		Types: Type[];
 	}
 
-	export enum ModuleElementKind { Class, Type }
+	export enum ModuleElementKind { Class = 0, Type = 1 }
 
 	export interface ModuleElement {
 		Module: Module;
@@ -41,7 +41,7 @@ module erecruit.TsT {
 
 	export interface GenericInstantiation {
 		Definition: Interface;
-		ParameterMaps: GenericParameterMap[];
+		Arguments: Type[];
 	}
 
 	export interface GenericParameterMap {
@@ -50,7 +50,7 @@ module erecruit.TsT {
 	}
 
 	export enum PrimitiveType {
-		Any, String, Boolean, Number
+		Any = 0, String = 1, Boolean = 2, Number = 3
 	}
 
 	export interface GenericParameter {

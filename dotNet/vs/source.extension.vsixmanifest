@@ -6,7 +6,9 @@
 		<Description xml:space="preserve">erecruit TsT - TypeScript Translator.
 Extract type information from your TypeScript files and generate other code (for example, C# classes) from it.</Description>
 		<MoreInfo>https://github.com/erecruit/TsT</MoreInfo>
-		<GettingStartedGuide>https://github.com/erecruit/TsT</GettingStartedGuide>
+		<GettingStartedGuide>https://github.com/erecruit/TsT/tree/master/dotNet/vs</GettingStartedGuide>
+		<Icon>Resources\erecruit.TsT.ico</Icon>
+		<Tags>TypeScript Type Data DTO Interface</Tags>
 	</Metadata>
 	<Installation InstalledByMsi="false">
 		<InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Pro" />

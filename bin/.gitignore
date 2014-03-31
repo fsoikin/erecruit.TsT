@@ -1,3 +1,9 @@
 !*.js
 *.*proj
 *.sln
+*.xml
+Resources/
+*.pkgdef
+dotNet/*.xml
+dotNet/*.pdb
+dotNet/*.exe.config
