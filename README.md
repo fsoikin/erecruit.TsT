@@ -1,9 +1,21 @@
 TsT
 ===
 
-TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.
+erecruit TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.
 
-#Helpers
+The primary intended use for this tool is generating server-side data transfer objects in strongly typed languages, such as C#.
+
+1. [Basics](#basics)
+2. [Configuration file](#config)
+3. [Templates](#templates)
+4. [TsT-specific dust.js helpers](#helpers)
+
+
+#<a name="basics"></a>Basics
+erecruit TS Translator does not have a hard-coded way to generate code based on TypeScript-extracted type information. Instead, it uses user-defined templates for that purpose. The templates are rendered using the [dust.js template engine](http://linkedin.github.io/dustjs/), which is light, sufficiently powerful, and, unlike most modern JavaScript template engines, not focused on HTML.
+
+
+#<a name="helpers"></a>Dust.js helpers
 
 ##General Helpers
 
