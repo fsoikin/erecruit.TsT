@@ -24,14 +24,14 @@ namespace erecruit.TsT
 			}
 
 			public string ResolveRelativePath( string path, string directory ) {
-				return MakeRelativePath( _originPath, Path.GetFullPath( Path.Combine( directory, path ) ) );
+				return MakeRelativePath( _originPath, Path.GetFullPath( Path.Combine( Path.Combine( _originPath, directory ), path ) ) );
 			}
 
 			public string MakeRelativePath( string from, string to ) {
 				if ( string.IsNullOrEmpty( from ) ) return to;
 				if ( string.IsNullOrEmpty( to ) ) return from;
-				var fromUri = new Uri( Path.GetFullPath( from ) + "/x" );
-				var toUri = new Uri( Path.GetFullPath( to ) );
+				var fromUri = new Uri( Path.GetFullPath( Path.Combine( _originPath, from ) ) + "/x" );
+				var toUri = new Uri( Path.GetFullPath( Path.Combine( _originPath, to ) ) );
 				return fromUri.Scheme != toUri.Scheme ? to : Uri.UnescapeDataString( fromUri.MakeRelativeUri( toUri ).ToString() );
 			}
 

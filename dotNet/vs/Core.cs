@@ -20,7 +20,9 @@ namespace erecruit.vs
 			var items = files.ToLookup( x => x.Path, x => x.Item, StringComparer.InvariantCultureIgnoreCase );
 			var solutionDir = System.IO.Path.GetDirectoryName( dte.Solution.FullName );
 
-			(from g in TsT.TsT.Generate( files.Select( x => x.Path ), solutionDir, TsT.TsT.AutoDiscoverConfigFile() )
+			// TODO: should use a shared instance of TsT across multiple calls
+			Observable.Using( () => new TsT.TsT(), tst =>
+			 from g in tst.Emit( files.Select( x => x.Path ), solutionDir, TsT.TsT.AutoDiscoverConfigFile() )
 			 let item = g.SourceFiles.SelectMany( x => items[x] ).FirstOrDefault()
 			 from _ in IncludeInProjectIfNotThere( item, g.OutputFile )
 			 select g

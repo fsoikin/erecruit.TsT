@@ -54,11 +54,10 @@ module erecruit.TsT {
 					.from( objects )
 					.where( obj => cfg.match( objectName( obj ) ) )
 					.select( obj =>
-						Rx.Observable.create<string>( or => {
-							cfg.template( baseCtx.push( obj ), ( err, out ) => err ? or.onError( err ) : ( console.log( out ), or.onNext( out ), or.onCompleted() ) );
-							return () => { };
-						}).zip( formatFileName( sourceFileName, cfg.fileName ),
+						callDustJs( cfg.template, baseCtx.push( obj ) )
+						.zip( formatFileName( sourceFileName, cfg.fileName ),
 							( content, fileName ) => ( { outputFileName: fileName, content: content }) )
+						.take(1)
 					)
 				)
 				.where( e => !!e )
@@ -67,7 +66,7 @@ module erecruit.TsT {
 
 		function formatFileName( sourceFileName: string, template: dust.RenderFn ) {
 			var dir = host.GetParentDirectory( sourceFileName );
-			var name = sourceFileName.substring( dir.length + ( dir[dir.length-1] === '/' || dir[dir.length-1] === '\\' ? 1 : 0) );
+			var name = sourceFileName.substring( dir.length + ( (dir[dir.length-1] === '/' || dir[dir.length-1] === '\\') ? 0 : 1) );
 			var nameParts = name.split( '.' );
 
 			var model = {
@@ -75,10 +74,17 @@ module erecruit.TsT {
 				Name: nameParts.slice( 0, nameParts.length - 1 ).join( '.' ),
 				Extension: nameParts[nameParts.length - 1]
 			};
-			console.log( "Format filename: " + sourceFileName + " with " + template + " - " + JSON.stringify( nameParts ) );
+			console.log( "Format filename: " + sourceFileName + " with " + JSON.stringify( nameParts ) );
 
+			return callDustJs( template, dust.makeBase( model ) );
+		}
+
+		function callDustJs( template: dust.RenderFn, ctx: dust.Context ) {
 			return Rx.Observable.create<string>( or => {
-				template( dust.makeBase( model ), ( err, out ) => err ? or.onError( err ) : ( or.onNext( out ), or.onCompleted() ) );
+				template( ctx, ( err, out ) => {
+					err ? or.onError( err ) : ( console.log( out ), or.onNext( out ) );
+					or.onCompleted();
+				});
 				return () => { };
 			});
 		}

@@ -49,9 +49,11 @@ namespace erecruit.TsT
 		public void Dispose() {
 			var r = _runtime;
 			var e = _engine;
+			var q = _runningQueue;
 			_runtime = null; _engine = null;
-			if ( r != null ) r.Dispose();
+			if ( q != null ) q.Dispose();
 			if ( e != null ) e.Dispose();
+			if ( r != null ) r.Dispose();
 		}
 
 		Subject<Action> _queue = new Subject<Action>();

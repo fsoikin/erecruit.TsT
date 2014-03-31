@@ -10,6 +10,7 @@ var args = require( "optimist" )
 	.demand( "c" ).alias( "c", "config" ).describe( "c", "Configuration file." )
 	.argv;
 
+// TODO: need to support config autodiscovery
 main();
 
 function main() {

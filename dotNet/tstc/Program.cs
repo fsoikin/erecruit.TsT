@@ -31,10 +31,10 @@ namespace erecruit.TsT
 			}
 
 			var commonRoot = CalculateCommonRoot( inputFiles );
-			var result = (
-				 from f in TsT.Generate( inputFiles, commonRoot, configFile == null ? TsT.AutoDiscoverConfigFile() : (_ => configFile) )
-				 from s in f.SourceFiles
-				 select new { s, f.OutputFile }
+			var result = Observable.Using( () => new TsT(), tst =>
+				from f in tst.Emit( inputFiles, commonRoot, configFile == null ? TsT.AutoDiscoverConfigFile() : (_ => configFile) )
+				from s in f.SourceFiles
+				select new { s, f.OutputFile }
 				)
 				.Do( x => Console.WriteLine( "{0} -> {1}", x.s, x.OutputFile ) )
 				.SubscribeOn( ThreadPoolScheduler.Instance )

@@ -9,6 +9,7 @@ using System.Reactive;
 using System.Collections;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace erecruit.TsT
 {
@@ -16,7 +17,7 @@ namespace erecruit.TsT
 	{
 		public const string DefaultConfigFileName = ".tstconfig";
 
-		public static IObservable<GeneratedFile> Generate( IEnumerable<string> files, string currentDir, Func<string, string> discoverConfigFile ) {
+		public IObservable<GeneratedFile> Emit( IEnumerable<string> files, string currentDir, Func<string, string> discoverConfigFile ) {
 			var items = files.ToLookup( x => x, StringComparer.InvariantCultureIgnoreCase );
 			var configs = files.ToLookup( discoverConfigFile );
 
@@ -26,19 +27,16 @@ namespace erecruit.TsT
 			}
 
 			var host = new Host( System.IO.Path.GetDirectoryName( currentDir ) );
-			return Observable
-				.Using( () => new TsT(), tst => 
-					from filesPerConfig in configs.ToObservable()
-					from configContents in ReadContents( filesPerConfig.Key )
-					let configDir = Path.GetDirectoryName( filesPerConfig.Key )
+			return from filesPerConfig in configs.ToObservable()
+						 from configContents in ReadContents( filesPerConfig.Key )
+						 let configDir = Path.GetDirectoryName( filesPerConfig.Key )
 
-					from result in tst.Emit( configDir, configContents, filesPerConfig.ToArray(), host )
+						 from result in Emit( configDir, configContents, filesPerConfig.ToArray(), host )
 
-					let outFile = Path.GetFullPath( Path.Combine( configDir, result.OutputFile ) )
-					from written in WriteContents( outFile, result.Content )
+						 let outFile = Path.GetFullPath( Path.Combine( configDir, result.OutputFile ) )
+						 from written in WriteContents( outFile, result.Content )
 
-					select new GeneratedFile { SourceFiles = result.SourceFiles, OutputFile = outFile }
-			);
+						 select new GeneratedFile { SourceFiles = result.SourceFiles, OutputFile = outFile };
 		}
 
 		public static Func<string, string> AutoDiscoverConfigFile( string configFileName = DefaultConfigFileName ) {
@@ -61,9 +59,9 @@ namespace erecruit.TsT
 							 .subscribe( new {
 								 onNext = new Action<dynamic>( result.OnNext ),
 								 onError = new Action<object>( err => { result.OnError( new Exception( Convert.ToString( err ) ) ); result.OnCompleted(); } ),
-								 onCompleted = new Action( result.OnCompleted )
+								 onCompleted = new Action( () => result.OnCompleted() )
 							 } ) )
-
+							 
 						 from r in result
 						 from asJson in _engine.Queue( () => jsonSerialize( r ) )
 						 let asPoco = JsonConvert.DeserializeObject<JS.FileContent>( asJson )

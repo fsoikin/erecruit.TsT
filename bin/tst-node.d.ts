@@ -41,7 +41,7 @@ declare module "tst" {
     }
     interface GenericInstantiation {
         Definition: Interface;
-        ParameterMaps: GenericParameterMap[];
+        Arguments: Type[];
     }
     interface GenericParameterMap {
         Parameter: Type;
@@ -99,7 +99,7 @@ declare module "tst" {
         RootDir?: string;
         ConfigDir?: string;
         IncludedTypingFiles?: string[];
-        File?: {
+        Files?: {
             [regex: string]: FileConfig;
         };
     }

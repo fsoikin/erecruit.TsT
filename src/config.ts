@@ -46,7 +46,7 @@ module erecruit.TsT {
 			Original: config,
 			Host: host,
 			File: Enumerable
-				.from( config.File )
+				.from( config.Files )
 				.concat( [{ key: '.', value: <FileConfig>config }] )
 				.where( x => !!x.key )
 				.select( x => {

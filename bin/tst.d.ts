@@ -41,7 +41,7 @@ declare module erecruit.TsT {
     }
     interface GenericInstantiation {
         Definition: Interface;
-        ParameterMaps: GenericParameterMap[];
+        Arguments: Type[];
     }
     interface GenericParameterMap {
         Parameter: Type;
@@ -100,7 +100,7 @@ declare module erecruit.TsT {
         RootDir?: string;
         ConfigDir?: string;
         IncludedTypingFiles?: string[];
-        File?: {
+        Files?: {
             [regex: string]: FileConfig;
         };
     }

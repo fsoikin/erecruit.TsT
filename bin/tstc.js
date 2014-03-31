@@ -73220,7 +73220,7 @@ var erecruit;
             return {
                 Original: config,
                 Host: host,
-                File: Enumerable.from(config.File).concat([{ key: '.', value: config }]).where(function (x) {
+                File: Enumerable.from(config.Files).concat([{ key: '.', value: config }]).where(function (x) {
                     return !!x.key;
                 }).select(function (x) {
                     var regex = new RegExp(x.key);
@@ -73562,11 +73562,8 @@ var erecruit;
 
                 return {
                     Definition: def.Interface,
-                    ParameterMaps: type.referencedTypeSymbol.getTypeParameters().map(function (p) {
-                        return {
-                            Parameter: t(p),
-                            Argument: t(type.getTypeParameterArgumentMap()[p.pullSymbolID])
-                        };
+                    Arguments: type.referencedTypeSymbol.getTypeParameters().map(function (p) {
+                        return t(type.getTypeParameterArgumentMap()[p.pullSymbolID]);
                     })
                 };
             };
@@ -73758,15 +73755,9 @@ var erecruit;
                     return !cfg.template || !cfg.fileName ? null : Enumerable.from(objects).where(function (obj) {
                         return cfg.match(objectName(obj));
                     }).select(function (obj) {
-                        return Rx.Observable.create(function (or) {
-                            cfg.template(baseCtx.push(obj), function (err, out) {
-                                return err ? or.onError(err) : (console.log(out), or.onNext(out), or.onCompleted());
-                            });
-                            return function () {
-                            };
-                        }).zip(formatFileName(sourceFileName, cfg.fileName), function (content, fileName) {
+                        return callDustJs(cfg.template, baseCtx.push(obj)).zip(formatFileName(sourceFileName, cfg.fileName), function (content, fileName) {
                             return ({ outputFileName: fileName, content: content });
-                        });
+                        }).take(1);
                     });
                 }).where(function (e) {
                     return !!e;
@@ -73779,7 +73770,7 @@ var erecruit;
 
             function formatFileName(sourceFileName, template) {
                 var dir = host.GetParentDirectory(sourceFileName);
-                var name = sourceFileName.substring(dir.length + (dir[dir.length - 1] === '/' || dir[dir.length - 1] === '\\' ? 1 : 0));
+                var name = sourceFileName.substring(dir.length + ((dir[dir.length - 1] === '/' || dir[dir.length - 1] === '\\') ? 0 : 1));
                 var nameParts = name.split('.');
 
                 var model = {
@@ -73787,11 +73778,16 @@ var erecruit;
                     Name: nameParts.slice(0, nameParts.length - 1).join('.'),
                     Extension: nameParts[nameParts.length - 1]
                 };
-                console.log("Format filename: " + sourceFileName + " with " + template + " - " + JSON.stringify(nameParts));
+                console.log("Format filename: " + sourceFileName + " with " + JSON.stringify(nameParts));
 
+                return callDustJs(template, dust.makeBase(model));
+            }
+
+            function callDustJs(template, ctx) {
                 return Rx.Observable.create(function (or) {
-                    template(dust.makeBase(model), function (err, out) {
-                        return err ? or.onError(err) : (or.onNext(out), or.onCompleted());
+                    template(ctx, function (err, out) {
+                        err ? or.onError(err) : (console.log(out), or.onNext(out));
+                        or.onCompleted();
                     });
                     return function () {
                     };
@@ -73865,10 +73861,12 @@ var erecruit;
             function typeNamespace(config, e) {
                 if (!e.Module || !e.Module.Path)
                     return "";
-                var relPath = config.Host.MakeRelativePath(config.Original.RootDir || "", config.Host.GetParentDirectory(e.Module.Path));
-                if (relPath[0] == '.' && relPath[1] == '.')
+                var relPath = config.Host.MakeRelativePath(".", config.Host.GetParentDirectory(e.Module.Path));
+                if (relPath[0] === '.' && relPath[1] === '.')
                     return "";
-                return relPath.replace(/[\.\-\+]/, '_').replace(/[\/\\]/, '.');
+                if (relPath === '.')
+                    return "";
+                return relPath.replace(/[\.\-\+]/g, '_').replace(/[\/\\]/g, '.');
             }
         })(TsT.CSharp || (TsT.CSharp = {}));
         var CSharp = TsT.CSharp;
