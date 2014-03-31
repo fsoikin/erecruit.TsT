@@ -7,3 +7,4 @@ Resources/
 dotNet/*.xml
 dotNet/*.pdb
 dotNet/*.exe.config
+dotNet/*vshost*
