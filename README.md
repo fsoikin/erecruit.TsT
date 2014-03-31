@@ -5,6 +5,8 @@ erecruit TypeScript Translator: parse type information out of TypeScript files a
 
 The primary intended use for this tool is generating server-side data transfer objects in strongly typed languages, such as C#.
 
+<img src="https://raw.githubusercontent.com/erecruit/TsT/master/doc/screenshot3.png">
+
 1. [Basics](#basics)
 2. [Configuration file](#config)
 3. [Templates and the simplified AST data structure](#templates)
