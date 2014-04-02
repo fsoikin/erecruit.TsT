@@ -57,6 +57,11 @@
     <TypeScriptModuleKind>AMD</TypeScriptModuleKind>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="doc\diagram.png" />
+    <Content Include="doc\License.txt" />
+    <Content Include="doc\screenshot1.png" />
+    <Content Include="doc\screenshot2.png" />
+    <Content Include="doc\screenshot3.png" />
     <Content Include="package.json" />
     <Content Include="README.md" />
     <TypeScriptCompile Include="build\jakefile.ts" />
@@ -65,6 +70,7 @@
     <Content Include="examples\self\data.cs.tpl" />
     <Content Include="examples\self\host.cs.tpl" />
     <Content Include="examples\csharp\.tstconfig" />
+    <Content Include="doc\diagram.gliffy" />
     <None Include="jakefile" />
     <TypeScriptCompile Include="lib\jake\jake.d.ts" />
     <TypeScriptCompile Include="lib\jasmine\jasmine.d.ts" />

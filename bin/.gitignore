@@ -3,10 +3,13 @@
 *.sln
 *.xml
 Resources/
-*.pkgdef
-*.vsixmanifest
 *.lastcodeanalysissucceeded
+
 dotNet/*.xml
 dotNet/*.pdb
 dotNet/*.exe.config
 dotNet/*vshost*
+
+*.pkgdef
+*.vsixmanifest
+License.txt
