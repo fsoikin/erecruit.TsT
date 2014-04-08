@@ -121,12 +121,26 @@ The format of that structure for Type (can be found in src/interfaces.ts):
 // the GenericInstantiation option contains a reference
 // to another Type data structure, as do many others.
 {
-    // The TypeScript module (i.e. file) from which this type came
-    Module: {
-        Path: 'path/to/the/module.ts', // Relative to RootDir in config file
-        Classes: [ /* all classes in this module */ ],
-        Types: [ /* all types in this module */ ]
+    // The TypeScript document (i.e. file) from which this type came
+    Document: {
+        Path: 'lib/path/to/file.ts', // Relative to RootDir in config file
+        Classes: [ /* all classes in this document */ ],
+        Types: [ /* all types in this document */ ]
     },
+
+    // Name of the module as it appears for external inclusion (i.e. require() call)
+    // External module name usually matches the file name (or path),
+    // but not always. The exception is explicitly declared external
+    // modules residing in .d.ts files. For example, if the file tsd/jQuery.d.ts
+    // contains the declaration of "declare module "jQuery" { ... }", then
+    // Document.Path will be tsd/jQuery.d.ts, but ExternalModule will
+    // be "jQuery".
+    // Note the double quotes around the module name. This is not a typo,
+    // this is how TypeScript names external modules.
+    ExternalModule: '"lib/path/to/file.ts"',
+
+    // Alternatively:
+    // ExternalModule: '"jQuery"',
     
     // If the type is nested in an internal module (in TS sense),
     // this is that module's full name
