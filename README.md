@@ -73,7 +73,8 @@ The config file format is the following:
             // The actual template to be used for rendering the type.
             // Normally, the string is treated as the template itself.
             // If the string starts with the '@' symbol, then the rest
-            // of it is treated as the path to a file (relative to RootDir)
+            // of it is treated as the path to a file (relative to the 
+            // config file itself).
             // from which the template should be loaded.
             // The same '@' convention also works for FileName (above).
             // REQUIRED
