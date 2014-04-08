@@ -33,7 +33,7 @@ module erecruit.TsT {
 		return Rx.Observable
 			.fromArray( ensureArray( files ) )
 			.selectMany(
-				f => formatTemplate( f, e.GetModule( f ).Types, getFileConfig( config, f ), Config.toDustContext( config ), typeName ),
+				f => formatTemplate( f, e.GetDocument( f ).Types, getFileConfig( config, f ), Config.toDustContext( config ), typeName ),
 				(f, x) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )
 			.groupBy( x => x.outputFile, x => x )
 			.selectMany(

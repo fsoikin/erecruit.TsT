@@ -11,18 +11,25 @@ module erecruit.TsT.Tests {
 
 		var e: Extractor;
 		var file: string;
+		var files: { [name: string]: string };
 		var fileName = "a.ts";
 
 		beforeEach( () => {
+			file = null;
+			files = {};
 			e = new Extractor( <CachedConfig>{
 				Original: { RootDir: '.', ConfigDir: '.' },
 				File: [{ match: null, types: null }],
 				Host: {
 					DirectoryExists: _ => false,
-					FetchFile: name => name === fileName ? file : fs.existsSync( name ) ? fs.readFileSync( name, { encoding: 'utf8' }) : null,
+					FetchFile: name =>
+						( name === fileName && file ) ||
+						files[name] ||
+						fs.existsSync( name ) && fs.readFileSync( name, { encoding: 'utf8' })
+						|| null,
 					GetParentDirectory: _ => "",
 					MakeRelativePath: (from, to) => to,
-					ResolveRelativePath: _ => "",
+					ResolveRelativePath: (path, directory) => path,
 					GetIncludedTypingFiles: () => [require.resolve( '../lib.d.ts' )]
 				}
 			});
@@ -38,7 +45,7 @@ module erecruit.TsT.Tests {
 		describe( "should correctly parse data structure", () => {
 			it( " - simple", () => {
 				file = "export interface X { A: string; B: number; }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [c({
+				expect( e.GetDocument( fileName ).Types ).toEqual( [c({
 					Interface: c( {
 						Name: 'X',
 						Properties: [
@@ -51,7 +58,7 @@ module erecruit.TsT.Tests {
 
 			it( "with a substructure", () => {
 				file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c({
 						Interface: c( {
 							Name: 'X',
@@ -76,7 +83,7 @@ module erecruit.TsT.Tests {
 		describe( "should correctly parse an interface", () => {
 			it( "with methods", () => {
 				file = "export interface I { M( x: string ): number; N( x: number ): string; }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -103,7 +110,7 @@ module erecruit.TsT.Tests {
 
 			it( "with multiple method overloads", () => {
 				file = "export interface I { M( x: string ): number; M( x: number ): string; }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -131,7 +138,7 @@ module erecruit.TsT.Tests {
 		describe( "should correctly parse enums", () => {
 			it( "with implicit values", () => {
 				file = "export enum X { A, B, C }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c({
 						Enum: c( {
 							Name: 'X',
@@ -143,7 +150,7 @@ module erecruit.TsT.Tests {
 
 			it( "with explicit values", () => {
 				file = "export enum X { A = 5, B = 8, C = 10 }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c({
 						Enum: c( {
 							Name: 'X',
@@ -158,7 +165,7 @@ module erecruit.TsT.Tests {
 					D = A | B, E = B & C, F = ~B \
 					G = A + B, H = B - C, I = C ^ B, \
 					J = -B }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c({
 						Enum: c( {
 							Name: 'X',
@@ -174,7 +181,7 @@ module erecruit.TsT.Tests {
 
 		it( "should correctly parse array-typed properties", () => {
 			file = "export interface I { X: string[]; Y: number[]; Z: J[]; } export interface J {}";
-			expect( e.GetModule( fileName ).Types ).toEqual( [
+			expect( e.GetDocument( fileName ).Types ).toEqual( [
 				c( {
 					Interface: c( {
 						Name: 'I',
@@ -192,7 +199,7 @@ module erecruit.TsT.Tests {
 		describe( "should correctly parse generic interfaces", () => {
 			it( "with one parameter", () => {
 				file = "export interface I<T> { X: T[]; Y: T; }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -208,7 +215,7 @@ module erecruit.TsT.Tests {
 
 			it( "with two parameters", () => {
 				file = "export interface I<T,S> { X: T[]; Y: S; }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -227,7 +234,7 @@ module erecruit.TsT.Tests {
 
 			it( "inheriting from other generic interfaces", () => {
 				file = "export interface I<T> extends J<T> { X: T[]; } export interface J<S> { Y: S }";
-				expect( trimTypes( e.GetModule( fileName ).Types ) ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					{
 						Interface: c( {
 							Name: 'I',
@@ -255,7 +262,7 @@ module erecruit.TsT.Tests {
 
 			it( "concretely instantiated and used in a base type position", () => {
 				file = "export interface I extends J<number> { } export interface J<S> { Y: S }";
-				expect( trimTypes( e.GetModule( fileName ).Types ) ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					{
 						Interface: c({
 							Name: 'I',
@@ -279,7 +286,7 @@ module erecruit.TsT.Tests {
 
 			it( "with parameters constrained by regular types", () => {
 				file = "export interface I<T extends J> { X: T; } export interface J {}";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
+				expect( e.GetDocument( fileName ).Types ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -299,9 +306,47 @@ module erecruit.TsT.Tests {
 
 		it( "should ignore private properties on interfaces", () => {
 			file = "export class I { X: string; private Y: number; }";
-			var types = trimTypes( e.GetModule( fileName ).Types );
+			var types = trimTypes( e.GetDocument( fileName ).Types );
 			expect( types ).toEqual( [c( { Interface: c( { Name: 'I' } ) } )] );
 			expect( types[0].Interface.Properties ).toEqual( [c( { Name: 'X' } ) ] );
+		});
+
+		it( "should interpret declarations from explicitly declared external modules as coming from their own files", () => {
+			files['x.d.ts'] = "decalre module 'x' { export interface I { X: string; } }";
+			file = "/// <reference path='x.d.ts' />\r\n import x = require('x'); export interface J { i: x.I; }";
+			var types = e.GetDocument( fileName ).Types;
+			expect( types.length ).toEqual( 1 );
+			expect( types ).toEqual( [c( { Interface: c( { Name: 'J' }) })] );
+			expect( types[0].Interface.Properties ).toEqual( [c( { Name: 'i' })] );
+			expect( types[0].Interface.Properties[0].Type ).toEqual(
+				c( { 
+					Document: c( { Path: "x.d.ts" }),
+					ExternalModule: '"x"',
+					Interface: c({ Name: 'I' })
+				})
+				);
+			expect( types[0].Interface.Properties[0].Type.InternalModule ).toBeFalsy();
+		});
+
+		it( "should not return any InternalModule for top-level types", () => {
+			file = "export interface I { }";
+			var types = e.GetDocument( fileName ).Types;
+			expect( types.length ).toEqual( 1 );
+			expect( types[0].InternalModule ).toBeFalsy();
+		});
+
+		it( "should, for regular .ts files, return ExternalModule as quoted file name", () => {
+			file = "export interface I { }";
+			var types = e.GetDocument( fileName ).Types;
+			expect( types.length ).toEqual( 1 );
+			expect( types[0].ExternalModule ).toEqual( '"' + fileName + '"' );
+		});
+
+		it( "should, for .d.ts files, return ExternalModule exactly as declared", () => {
+			files["x.d.ts"] = "declare module 'module' { export interface I { } }";
+			var types = e.GetDocument( "x.d.ts" ).Types;
+			expect( types.length ).toEqual( 1 );
+			expect( types[0].ExternalModule ).toEqual( '"module"' );
 		});
 	});
 
@@ -312,10 +357,11 @@ module erecruit.TsT.Tests {
 
 	/* Removes unnecessary back references for better readability of error messages */
 	function trimType( type: Type ): Type {
-		if ( !type || !(<any>type).hasOwnProperty( 'Module' ) ) return type;
-		delete type.Module;
+		if ( !type || !(<any>type).hasOwnProperty( 'Document' ) ) return type;
+		delete type.Document;
 		delete type.Kind;
 		delete type.InternalModule;
+		delete type.ExternalModule;
 
 		if ( type.Interface ) trimIntf( type.Interface );
 		if ( type.GenericParameter ) {

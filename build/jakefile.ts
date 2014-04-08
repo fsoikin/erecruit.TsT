@@ -90,7 +90,7 @@ function compileTs( outFile: string, sources: string[], prefixes: string[], disa
 			" -removeComments -propagateEnumConstants -noImplicitAny --module commonjs " +
 			( disableTypings ? "" : "-declaration " ) +
 			sources.join( " " ) +
-			( mergeOutput ? ( " -out " + outFile ) : (" -outDir temp.tmp") );
+			( mergeOutput ? ( " -out " + outFile ) : ( " -outDir temp.tmp" ) );
 
 		var ex = jake.createExec( [cmd] );
 		ex.addListener( "stdout", (o: any) => process.stdout.write( o ) );

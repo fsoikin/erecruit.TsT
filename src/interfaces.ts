@@ -8,7 +8,7 @@ module erecruit.TsT {
 		GetIncludedTypingFiles(): string[];
 	}
 
-	export interface Module {
+	export interface Document {
 		Path: string;
 		Classes: Class[];
 		Types: Type[];
@@ -17,7 +17,8 @@ module erecruit.TsT {
 	export enum ModuleElementKind { Class = 0, Type = 1 }
 
 	export interface ModuleElement {
-		Module: Module;
+		Document: Document;
+		ExternalModule: string;
 		InternalModule: string;
 		Kind: ModuleElementKind;
 	}

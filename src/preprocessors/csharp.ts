@@ -50,8 +50,8 @@ module erecruit.TsT.CSharp {
 	}
 
 	function typeNamespace( config: CachedConfig, e: ModuleElement ) {
-		if ( !e.Module || !e.Module.Path ) return "";
-		var relPath = config.Host.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( e.Module.Path ) );
+		if ( !e.Document || !e.Document.Path ) return "";
+		var relPath = config.Host.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( e.Document.Path ) );
 		if ( !relPath || relPath === '.' ) return "";
 		if ( relPath[0] === '.' && relPath[1] === '.' ) return "";
 		return relPath
