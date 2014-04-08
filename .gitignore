@@ -1,5 +1,6 @@
 /**/*.js
 /**/*.map
+!build/jakefile.js
 *.suo
 *.user
 *.dll

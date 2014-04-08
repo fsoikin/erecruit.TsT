@@ -50,7 +50,7 @@ module erecruit.TsT {
 					var variable = this._compiler.getSymbolOfDeclaration( d );
 					this.EnsureResolved( variable );
 					var varType = variable.isType() && ( <TypeScript.PullTypeSymbol>variable );
-					var sigs = variable.type.getConstructSignatures()
+					var sigs = variable.type.getConstructSignatures();
 					var ctor = variable.type.getConstructorMethod();
 					if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
 
@@ -151,12 +151,12 @@ module erecruit.TsT {
 			Name: type.name,
 			Extends: this.GetBaseTypes( mod )( type ),
 			GenericParameters: Enumerable.from( type.getTypeParameters() ).select( this.GetType( mod ) ).toArray(),
-			Properties: type.getMembers().filter( m => m.isProperty() ).map( m => {
+			Properties: type.getMembers().filter( m => m.isProperty() && m.isExternallyVisible() ).map( m => {
 				this.EnsureResolved( m );
 				return <Identifier>{ Name: m.name, Type: this.GetType( mod )( m.type ) };
 			}),
 			Methods: Enumerable.from( type.getMembers() )
-				.where( m => m.isMethod() )
+				.where( m => m.isMethod() && m.isExternallyVisible() )
 				.groupBy( m => m.name, m => m, ( name, ms ) => <Method>{
 					Name: name,
 					Signatures: ms.selectMany( m => {
@@ -177,7 +177,7 @@ module erecruit.TsT {
 					var value: any = ( <TypeScript.PullEnumElementDecl>decl ).constantValue;
 					if ( typeof value !== "number" ) {
 						var expr = doc && <TypeScript.EnumElement>doc._getASTForDecl( decl );
-						var eval = expr && evalExpr( expr.equalsValueClause.value );
+						var eval = expr && expr.equalsValueClause && evalExpr( expr.equalsValueClause.value );
 						if ( eval ) value = eval.errorMessage || eval.result;
 					}
 					values[decl.name] = value;
@@ -247,7 +247,6 @@ module erecruit.TsT {
 		private _tsHost: TypeScript.IReferenceResolverHost = {
 			getScriptSnapshot: fileName => {
 				return this._snapshots[fileName] || ( this._snapshots[fileName] = ( () => {
-					console.log( "Fetching " + fileName );
 					var content = this._config.Host.FetchFile( fileName );
 					return content ? TypeScript.ScriptSnapshot.fromString( content ) : null;
 				})() );

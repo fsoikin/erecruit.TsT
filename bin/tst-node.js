@@ -73583,7 +73583,7 @@ var erecruit;
                     var value = decl.constantValue;
                     if (typeof value !== "number") {
                         var expr = doc && doc._getASTForDecl(decl);
-                        var eval = expr && evalExpr(expr.equalsValueClause.value);
+                        var eval = expr && expr.equalsValueClause && evalExpr(expr.equalsValueClause.value);
                         if (eval)
                             value = eval.errorMessage || eval.result;
                     }
@@ -73861,10 +73861,10 @@ var erecruit;
             function typeNamespace(config, e) {
                 if (!e.Module || !e.Module.Path)
                     return "";
-                var relPath = config.Host.MakeRelativePath(".", config.Host.GetParentDirectory(e.Module.Path));
-                if (relPath[0] === '.' && relPath[1] === '.')
+                var relPath = config.Host.MakeRelativePath(config.Original.RootDir, config.Host.GetParentDirectory(e.Module.Path));
+                if (!relPath || relPath === '.')
                     return "";
-                if (relPath === '.')
+                if (relPath[0] === '.' && relPath[1] === '.')
                     return "";
                 return relPath.replace(/[\.\-\+]/g, '_').replace(/[\/\\]/g, '.');
             }

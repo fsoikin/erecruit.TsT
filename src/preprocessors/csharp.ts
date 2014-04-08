@@ -51,9 +51,9 @@ module erecruit.TsT.CSharp {
 
 	function typeNamespace( config: CachedConfig, e: ModuleElement ) {
 		if ( !e.Module || !e.Module.Path ) return "";
-		var relPath = config.Host.MakeRelativePath( ".", config.Host.GetParentDirectory( e.Module.Path ) );
+		var relPath = config.Host.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( e.Module.Path ) );
+		if ( !relPath || relPath === '.' ) return "";
 		if ( relPath[0] === '.' && relPath[1] === '.' ) return "";
-		if ( relPath === '.' ) return "";
 		return relPath
 			.replace( /[\.\-\+]/g, '_' )
 			.replace( /[\/\\]/g, '.' );

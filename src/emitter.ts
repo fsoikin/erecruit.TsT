@@ -74,7 +74,6 @@ module erecruit.TsT {
 				Name: nameParts.slice( 0, nameParts.length - 1 ).join( '.' ),
 				Extension: nameParts[nameParts.length - 1]
 			};
-			console.log( "Format filename: " + sourceFileName + " with " + JSON.stringify( nameParts ) );
 
 			return callDustJs( template, dust.makeBase( model ) );
 		}
@@ -82,7 +81,7 @@ module erecruit.TsT {
 		function callDustJs( template: dust.RenderFn, ctx: dust.Context ) {
 			return Rx.Observable.create<string>( or => {
 				template( ctx, ( err, out ) => {
-					err ? or.onError( err ) : ( console.log( out ), or.onNext( out ) );
+					err ? or.onError( err ) : or.onNext( out );
 					or.onCompleted();
 				});
 				return () => { };

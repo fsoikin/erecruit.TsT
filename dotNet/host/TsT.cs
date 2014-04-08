@@ -32,11 +32,9 @@ namespace erecruit.TsT
 						 let configDir = Path.GetDirectoryName( filesPerConfig.Key )
 
 						 from result in Emit( configDir, configContents, filesPerConfig.ToArray(), host )
+						 from written in WriteContents( result.OutputFile, result.Content )
 
-						 let outFile = Path.GetFullPath( Path.Combine( configDir, result.OutputFile ) )
-						 from written in WriteContents( outFile, result.Content )
-
-						 select new GeneratedFile { SourceFiles = result.SourceFiles, OutputFile = outFile };
+						 select new GeneratedFile { SourceFiles = result.SourceFiles, OutputFile = result.OutputFile };
 		}
 
 		public static Func<string, string> AutoDiscoverConfigFile( string configFileName = DefaultConfigFileName ) {
@@ -58,14 +56,23 @@ namespace erecruit.TsT
 							 _emit( config, files, host )
 							 .subscribe( new {
 								 onNext = new Action<dynamic>( result.OnNext ),
-								 onError = new Action<object>( err => { result.OnError( new Exception( Convert.ToString( err ) ) ); result.OnCompleted(); } ),
+								 onError = new Action<object>( err => { result.OnError( new DynamicException( err ) ); result.OnCompleted(); } ),
 								 onCompleted = new Action( () => result.OnCompleted() )
 							 } ) )
-							 
+
 						 from r in result
+								.Catch( ( DynamicException ex ) => _engine
+									.Queue( () => _formatError( ex.Object ) )
+									.SelectMany( str => Observable.Throw<dynamic>( new Exception( str ) ) ) )
+
 						 from asJson in _engine.Queue( () => jsonSerialize( r ) )
-						 let asPoco = JsonConvert.DeserializeObject<JS.FileContent>( asJson )
-						 select (JS.FileContent)asPoco;
+						 let asPoco = (JS.FileContent)JsonConvert.DeserializeObject<JS.FileContent>( asJson )
+						 let rootDir = (string)config.RootDir
+						 select new JS.FileContent {
+							 Content = asPoco.Content,
+							 OutputFile = Path.GetFullPath( Path.Combine( rootDir, asPoco.OutputFile ) ),
+							 SourceFiles = asPoco.SourceFiles.Select( f => Path.GetFullPath( Path.Combine( rootDir, f ) ) ).ToArray()
+						 };
 		}
 
 		static IEnumerable<string> GetDirsUp( string mostNestedDirPath ) {
@@ -102,18 +109,33 @@ namespace erecruit.TsT
 
 			return _engine
 				.Execute( "tst.js", Properties.Resources.tst_js.Replace( "\xEF\xBB\xBF", "" ) )
+				
 				.SelectMany( _ => _engine.Evaluate( "erecruit.TsT.Emit" ) )
 				.Do( e => _emit = e )
+				
+				.SelectMany( _ => _engine.Evaluate( "(function(x) { return x + ' ' + JSON.stringify(x); })" ) )
+				.Do( f => _formatError = f )
+
 				.Select( _ => Unit.Default );
 		}
 
 		public void Dispose() {
 			var e = _engine;
-			_engine = null; _emit = null;
+			_engine = null; _emit = null; _formatError = null;
 			if ( e != null ) e.Dispose();
 		}
 
 		ScriptEngine _engine = new ScriptEngine();
 		dynamic _emit;
+		dynamic _formatError;
+	}
+
+	public class DynamicException : Exception
+	{
+		public dynamic Object { get; private set; }
+
+		public DynamicException( dynamic obj ) : base( Convert.ToString( (object)obj ) ) {
+			Object = obj;
+		}
 	}
 }

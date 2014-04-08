@@ -73220,7 +73220,7 @@ var erecruit;
             return {
                 Original: config,
                 Host: host,
-                File: Enumerable.from(config.File).concat([{ key: '.', value: config }]).where(function (x) {
+                File: Enumerable.from(config.Files).concat([{ key: '.', value: config }]).where(function (x) {
                     return !!x.key;
                 }).select(function (x) {
                     var regex = new RegExp(x.key);
@@ -73416,13 +73416,13 @@ var erecruit;
                             Extends: _this.GetBaseTypes(mod)(type),
                             GenericParameters: Enumerable.from(type.getTypeParameters()).select(_this.GetType(mod)).toArray(),
                             Properties: type.getMembers().filter(function (m) {
-                                return m.isProperty();
+                                return m.isProperty() && m.isExternallyVisible();
                             }).map(function (m) {
                                 _this.EnsureResolved(m);
                                 return { Name: m.name, Type: _this.GetType(mod)(m.type) };
                             }),
                             Methods: Enumerable.from(type.getMembers()).where(function (m) {
-                                return m.isMethod();
+                                return m.isMethod() && m.isExternallyVisible();
                             }).groupBy(function (m) {
                                 return m.name;
                             }, function (m) {
@@ -73445,7 +73445,6 @@ var erecruit;
                 this._tsHost = {
                     getScriptSnapshot: function (fileName) {
                         return _this._snapshots[fileName] || (_this._snapshots[fileName] = (function () {
-                            console.log("Fetching " + fileName);
                             var content = _this._config.Host.FetchFile(fileName);
                             return content ? TypeScript.ScriptSnapshot.fromString(content) : null;
                         })());
@@ -73562,11 +73561,8 @@ var erecruit;
 
                 return {
                     Definition: def.Interface,
-                    ParameterMaps: type.referencedTypeSymbol.getTypeParameters().map(function (p) {
-                        return {
-                            Parameter: t(p),
-                            Argument: t(type.getTypeParameterArgumentMap()[p.pullSymbolID])
-                        };
+                    Arguments: type.referencedTypeSymbol.getTypeParameters().map(function (p) {
+                        return t(type.getTypeParameterArgumentMap()[p.pullSymbolID]);
                     })
                 };
             };
@@ -73586,7 +73582,7 @@ var erecruit;
                     var value = decl.constantValue;
                     if (typeof value !== "number") {
                         var expr = doc && doc._getASTForDecl(decl);
-                        var eval = expr && evalExpr(expr.equalsValueClause.value);
+                        var eval = expr && expr.equalsValueClause && evalExpr(expr.equalsValueClause.value);
                         if (eval)
                             value = eval.errorMessage || eval.result;
                     }
@@ -73758,15 +73754,9 @@ var erecruit;
                     return !cfg.template || !cfg.fileName ? null : Enumerable.from(objects).where(function (obj) {
                         return cfg.match(objectName(obj));
                     }).select(function (obj) {
-                        return Rx.Observable.create(function (or) {
-                            cfg.template(baseCtx.push(obj), function (err, out) {
-                                return err ? or.onError(err) : (console.log(out), or.onNext(out), or.onCompleted());
-                            });
-                            return function () {
-                            };
-                        }).zip(formatFileName(sourceFileName, cfg.fileName), function (content, fileName) {
+                        return callDustJs(cfg.template, baseCtx.push(obj)).zip(formatFileName(sourceFileName, cfg.fileName), function (content, fileName) {
                             return ({ outputFileName: fileName, content: content });
-                        });
+                        }).take(1);
                     });
                 }).where(function (e) {
                     return !!e;
@@ -73779,7 +73769,7 @@ var erecruit;
 
             function formatFileName(sourceFileName, template) {
                 var dir = host.GetParentDirectory(sourceFileName);
-                var name = sourceFileName.substring(dir.length + (dir[dir.length - 1] === '/' || dir[dir.length - 1] === '\\' ? 1 : 0));
+                var name = sourceFileName.substring(dir.length + ((dir[dir.length - 1] === '/' || dir[dir.length - 1] === '\\') ? 0 : 1));
                 var nameParts = name.split('.');
 
                 var model = {
@@ -73787,11 +73777,15 @@ var erecruit;
                     Name: nameParts.slice(0, nameParts.length - 1).join('.'),
                     Extension: nameParts[nameParts.length - 1]
                 };
-                console.log("Format filename: " + sourceFileName + " with " + template + " - " + JSON.stringify(nameParts));
 
+                return callDustJs(template, dust.makeBase(model));
+            }
+
+            function callDustJs(template, ctx) {
                 return Rx.Observable.create(function (or) {
-                    template(dust.makeBase(model), function (err, out) {
-                        return err ? or.onError(err) : (or.onNext(out), or.onCompleted());
+                    template(ctx, function (err, out) {
+                        err ? or.onError(err) : or.onNext(out);
+                        or.onCompleted();
                     });
                     return function () {
                     };
@@ -73865,10 +73859,12 @@ var erecruit;
             function typeNamespace(config, e) {
                 if (!e.Module || !e.Module.Path)
                     return "";
-                var relPath = config.Host.MakeRelativePath(config.Original.RootDir || "", config.Host.GetParentDirectory(e.Module.Path));
-                if (relPath[0] == '.' && relPath[1] == '.')
+                var relPath = config.Host.MakeRelativePath(config.Original.RootDir, config.Host.GetParentDirectory(e.Module.Path));
+                if (!relPath || relPath === '.')
                     return "";
-                return relPath.replace(/[\.\-\+]/, '_').replace(/[\/\\]/, '.');
+                if (relPath[0] === '.' && relPath[1] === '.')
+                    return "";
+                return relPath.replace(/[\.\-\+]/g, '_').replace(/[\/\\]/g, '.');
             }
         })(TsT.CSharp || (TsT.CSharp = {}));
         var CSharp = TsT.CSharp;
@@ -73913,6 +73909,17 @@ var erecruit;
                             }
                         }
                     });
+                });
+
+                var oldStringify;
+                beforeEach(function () {
+                    oldStringify = JSON.stringify;
+                    JSON['stringify'] = function (obj, replacer) {
+                        return oldStringify(obj, replacer, '\t');
+                    };
+                });
+                afterEach(function () {
+                    return JSON['stringify'] = oldStringify;
                 });
 
                 describe("should correctly parse data structure", function () {
@@ -73980,6 +73987,7 @@ var erecruit;
                             })
                         ]);
                     });
+
                     it("with multiple method overloads", function () {
                         file = "export interface I { M( x: string ): number; M( x: number ): string; }";
                         expect(e.GetModule(fileName).Types).toEqual([
@@ -74107,59 +74115,53 @@ var erecruit;
 
                     it("inheriting from other generic interfaces", function () {
                         file = "export interface I<T> extends J<T> { X: T[]; } export interface J<S> { Y: S }";
-                        expect(e.GetModule(fileName).Types).toEqual([
-                            c({
+                        expect(trimTypes(e.GetModule(fileName).Types)).toEqual([
+                            {
                                 Interface: c({
                                     Name: 'I',
-                                    GenericParameters: [c({ GenericParameter: { Name: 'T', Constraint: null } })],
+                                    GenericParameters: [{ GenericParameter: { Name: 'T', Constraint: null } }],
                                     Extends: [c({
                                             GenericInstantiation: {
-                                                Definition: c({ Name: 'J', GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })] }),
-                                                ParameterMaps: [{
-                                                        Parameter: c({ GenericParameter: c({ Name: 'S' }) }),
-                                                        Argument: c({ GenericParameter: c({ Name: 'T' }) })
-                                                    }]
+                                                Definition: 'J',
+                                                Arguments: [{ GenericParameter: c({ Name: 'T' }) }]
                                             }
                                         })],
                                     Properties: [
-                                        { Name: 'X', Type: c({ Array: c({ GenericParameter: { Name: 'T', Constraint: null } }) }) }
+                                        { Name: 'X', Type: { Array: { GenericParameter: { Name: 'T', Constraint: null } } } }
                                     ]
                                 })
-                            }),
-                            c({
+                            },
+                            {
                                 Interface: c({
                                     Name: 'J',
-                                    GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })],
-                                    Properties: [{ Name: 'Y', Type: c({ GenericParameter: c({ Name: 'S' }) }) }]
+                                    GenericParameters: [{ GenericParameter: { Name: 'S', Constraint: null } }],
+                                    Properties: [{ Name: 'Y', Type: { GenericParameter: c({ Name: 'S' }) } }]
                                 })
-                            })
+                            }
                         ]);
                     });
 
                     it("concretely instantiated and used in a base type position", function () {
                         file = "export interface I extends J<number> { } export interface J<S> { Y: S }";
-                        expect(e.GetModule(fileName).Types).toEqual([
-                            c({
+                        expect(trimTypes(e.GetModule(fileName).Types)).toEqual([
+                            {
                                 Interface: c({
                                     Name: 'I',
-                                    Extends: [c({
+                                    Extends: [{
                                             GenericInstantiation: {
-                                                Definition: c({ Name: 'J', GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })] }),
-                                                ParameterMaps: [{
-                                                        Parameter: c({ GenericParameter: c({ Name: 'S' }) }),
-                                                        Argument: c({ PrimitiveType: 3 /* Number */ })
-                                                    }]
+                                                Definition: 'J',
+                                                Arguments: [c({ PrimitiveType: 3 /* Number */ })]
                                             }
-                                        })]
+                                        }]
                                 })
-                            }),
-                            c({
+                            },
+                            {
                                 Interface: c({
                                     Name: 'J',
-                                    GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })],
-                                    Properties: [{ Name: 'Y', Type: c({ GenericParameter: c({ Name: 'S' }) }) }]
+                                    GenericParameters: [{ GenericParameter: { Name: 'S', Constraint: null } }],
+                                    Properties: [{ Name: 'Y', Type: { GenericParameter: c({ Name: 'S' }) } }]
                                 })
-                            })
+                            }
                         ]);
                     });
 
@@ -74181,9 +74183,80 @@ var erecruit;
                         ]);
                     });
                 });
+
+                it("should ignore private properties on interfaces", function () {
+                    file = "export class I { X: string; private Y: number; }";
+                    var types = trimTypes(e.GetModule(fileName).Types);
+                    expect(types).toEqual([c({ Interface: c({ Name: 'I' }) })]);
+                    expect(types[0].Interface.Properties).toEqual([c({ Name: 'X' })]);
+                });
             });
+
+            function trimTypes(types) {
+                return types.map(trimType);
+            }
+
+            function trimType(type) {
+                if (!type || !type.hasOwnProperty('Module'))
+                    return type;
+                delete type.Module;
+                delete type.Kind;
+                delete type.InternalModule;
+
+                if (type.Interface)
+                    trimIntf(type.Interface);
+                if (type.GenericParameter) {
+                    trimType(type.GenericParameter.Constraint);
+                }
+                if (type.GenericInstantiation) {
+                    type.GenericInstantiation.Definition = type.GenericInstantiation.Definition.Name;
+                    trimTypes(type.GenericInstantiation.Arguments);
+                }
+                if (type.Array)
+                    trimType(type.Array);
+
+                return type;
+            }
+
+            function trimIntf(i) {
+                trimTypes(i.GenericParameters);
+                trimTypes(i.Extends);
+                i.Properties.forEach(function (p) {
+                    return trimType(p.Type);
+                });
+                i.Methods.forEach(function (p) {
+                    return p.Signatures.forEach(function (s) {
+                        trimType(s.ReturnType);
+                        s.GenericParameters.forEach(function (t) {
+                            return trimType(t);
+                        });
+                        s.Parameters.forEach(function (p) {
+                            return trimType(p.Type);
+                        });
+                    });
+                });
+            }
         })(TsT.Tests || (TsT.Tests = {}));
         var Tests = TsT.Tests;
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
+
+var globalIndent = 0;
+
+jasmine.StringPrettyPrinter.prototype.append = function (value) {
+    var prefixNewLine = false;
+    var suffixNewLine = false;
+
+    if (value === '{ ' || value === '[ ') {
+        globalIndent++;
+        suffixNewLine = true;
+    } else if (value === ' }' || value === ' ]') {
+        globalIndent--;
+        prefixNewLine = true;
+    }
+
+    var prefix = prefixNewLine ? '\r\n' + new Array(globalIndent + 1).join('\t') : '';
+    var suffix = suffixNewLine ? '\r\n' + new Array(globalIndent + 1).join('\t') : '';
+    this.string += prefix + value + suffix;
+};

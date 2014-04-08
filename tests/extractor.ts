@@ -28,6 +28,13 @@ module erecruit.TsT.Tests {
 			});
 		});
 
+		var oldStringify: (obj:any, replacer: any, space: string) => string;
+		beforeEach( () => {
+			oldStringify = JSON.stringify;
+			(<any>JSON)['stringify'] = ( obj: any, replacer: any ) => oldStringify( obj, replacer, '\t' );
+		});
+		afterEach( () => ( <any>JSON )['stringify'] = oldStringify );
+
 		describe( "should correctly parse data structure", () => {
 			it( " - simple", () => {
 				file = "export interface X { A: string; B: number; }";
@@ -93,6 +100,7 @@ module erecruit.TsT.Tests {
 					})
 				] );
 			});
+
 			it( "with multiple method overloads", () => {
 				file = "export interface I { M( x: string ): number; M( x: number ): string; }";
 				expect( e.GetModule( fileName ).Types ).toEqual( [
@@ -219,59 +227,53 @@ module erecruit.TsT.Tests {
 
 			it( "inheriting from other generic interfaces", () => {
 				file = "export interface I<T> extends J<T> { X: T[]; } export interface J<S> { Y: S }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
-					c( {
+				expect( trimTypes( e.GetModule( fileName ).Types ) ).toEqual( [
+					{
 						Interface: c( {
 							Name: 'I',
-							GenericParameters: [ c( { GenericParameter: { Name: 'T', Constraint: null } }) ],
+							GenericParameters: [ { GenericParameter: { Name: 'T', Constraint: null } } ],
 							Extends: [c( {
 								GenericInstantiation: {
-									Definition: c({ Name: 'J', GenericParameters: [c({ GenericParameter: { Name: 'S', Constraint: null } })] }),
-									ParameterMaps: [{
-										Parameter: c({ GenericParameter: c( { Name: 'S' }) }),
-										Argument: c({ GenericParameter: c( { Name: 'T' }) })
-									}]
+									Definition: 'J',
+									Arguments: [ { GenericParameter: c( { Name: 'T' }) } ]
 								}
 							})],
 							Properties: [
-								{ Name: 'X', Type: c( { Array: c( { GenericParameter: { Name: 'T', Constraint: null } }) }) },
+								{ Name: 'X', Type: { Array: { GenericParameter: { Name: 'T', Constraint: null } } } },
 							]
 						})
-					}),
-					c( {
-						Interface: c( {
+					},
+					{
+						Interface: c({
 							Name: 'J',
-							GenericParameters: [ c( { GenericParameter: { Name: 'S', Constraint: null } }) ],
-							Properties: [ { Name: 'Y', Type: c( { GenericParameter: c( { Name: 'S' }) }) } ]
+							GenericParameters: [ { GenericParameter: { Name: 'S', Constraint: null } } ],
+							Properties: [ { Name: 'Y', Type: { GenericParameter: c( { Name: 'S' }) } } ]
 						})
-					})
+					}
 				] );
 			});
 
 			it( "concretely instantiated and used in a base type position", () => {
 				file = "export interface I extends J<number> { } export interface J<S> { Y: S }";
-				expect( e.GetModule( fileName ).Types ).toEqual( [
-					c( {
-						Interface: c( {
+				expect( trimTypes( e.GetModule( fileName ).Types ) ).toEqual( [
+					{
+						Interface: c({
 							Name: 'I',
-							Extends: [c( {
+							Extends: [ {
 								GenericInstantiation: {
-									Definition: c( { Name: 'J', GenericParameters: [c( { GenericParameter: { Name: 'S', Constraint: null } })] }),
-									ParameterMaps: [{
-										Parameter: c( { GenericParameter: c( { Name: 'S' }) }),
-										Argument: c( { PrimitiveType: PrimitiveType.Number })
-									}]
+									Definition: 'J',
+									Arguments: [c( { PrimitiveType: PrimitiveType.Number })]
 								}
-							})]
+							} ]
 						})
-					}),
-					c( {
-						Interface: c( {
+					},
+					{
+						Interface: c({
 							Name: 'J',
-							GenericParameters: [c( { GenericParameter: { Name: 'S', Constraint: null } })],
-							Properties: [{ Name: 'Y', Type: c( { GenericParameter: c( { Name: 'S' }) }) }]
+							GenericParameters: [ { GenericParameter: { Name: 'S', Constraint: null } } ],
+							Properties: [{ Name: 'Y', Type: { GenericParameter: c( { Name: 'S' }) } }]
 						})
-					})
+					}
 				] );
 			});
 
@@ -294,5 +296,68 @@ module erecruit.TsT.Tests {
 			});
 
 		});
+
+		it( "should ignore private properties on interfaces", () => {
+			file = "export class I { X: string; private Y: number; }";
+			var types = trimTypes( e.GetModule( fileName ).Types );
+			expect( types ).toEqual( [c( { Interface: c( { Name: 'I' } ) } )] );
+			expect( types[0].Interface.Properties ).toEqual( [c( { Name: 'X' } ) ] );
+		});
 	});
+
+	/* Removes unnecessary back references for better readability of error messages */
+	function trimTypes( types: Type[] ) {
+		return types.map( trimType );
+	}
+
+	/* Removes unnecessary back references for better readability of error messages */
+	function trimType( type: Type ): Type {
+		if ( !type || !(<any>type).hasOwnProperty( 'Module' ) ) return type;
+		delete type.Module;
+		delete type.Kind;
+		delete type.InternalModule;
+
+		if ( type.Interface ) trimIntf( type.Interface );
+		if ( type.GenericParameter ) {
+			trimType( type.GenericParameter.Constraint );
+		}
+		if ( type.GenericInstantiation ) {
+			type.GenericInstantiation.Definition = <any>type.GenericInstantiation.Definition.Name;
+			trimTypes( type.GenericInstantiation.Arguments );
+		}
+		if ( type.Array ) trimType( type.Array );
+
+		return type;
+	}
+
+	function trimIntf( i: Interface ) {
+		trimTypes( i.GenericParameters );
+		trimTypes( i.Extends );
+		i.Properties.forEach( p => trimType( p.Type ) );
+		i.Methods.forEach( p => p.Signatures.forEach( s => {
+			trimType( s.ReturnType );
+			s.GenericParameters.forEach( t => trimType( t ) );
+			s.Parameters.forEach( p => trimType( p.Type ) );
+		}) );
+	}
 }
+
+var globalIndent = 0;
+
+( <any>jasmine ).StringPrettyPrinter.prototype.append = function ( value: string ) {
+	var prefixNewLine = false;
+	var suffixNewLine = false;
+
+	if ( value === '{ ' || value === '[ ' ) {
+		globalIndent++;
+		suffixNewLine = true;
+	}
+	else if ( value === ' }' || value === ' ]' ) {
+		globalIndent--;
+		prefixNewLine = true;
+	}
+
+	var prefix = prefixNewLine ? '\r\n' + new Array( globalIndent + 1 ).join( '\t' ) : '';
+	var suffix = suffixNewLine ? '\r\n' + new Array( globalIndent + 1 ).join( '\t' ) : '';
+	this.string += prefix + value + suffix;
+};
