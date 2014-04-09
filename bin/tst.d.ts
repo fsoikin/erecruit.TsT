@@ -11,7 +11,7 @@ declare module erecruit.TsT {
         GetParentDirectory(path: string): string;
         GetIncludedTypingFiles(): string[];
     }
-    interface Module {
+    interface Document {
         Path: string;
         Classes: Class[];
         Types: Type[];
@@ -21,7 +21,8 @@ declare module erecruit.TsT {
         Type = 1,
     }
     interface ModuleElement {
-        Module: Module;
+        Document: Document;
+        ExternalModule: string;
         InternalModule: string;
         Kind: ModuleElementKind;
     }
@@ -133,21 +134,26 @@ declare module erecruit.TsT {
         private _options;
         constructor(_config: CachedConfig, _options?: ExtractorOptions);
         private addFile(f);
-        public GetModule(fileName: string): Module;
+        public GetDocument(fileName: string): Document;
+        private GetCachedDoc(path);
+        private GetCachedDocFromDecl(d);
+        private GetCachedDocFromSymbol(s);
         private GetInternalModule(d);
-        private GetType;
+        private GetExternalModule(d);
+        private GetType(type);
         private IsGenericInstantiation(type);
-        private GetGenericInstantiation(mod, type);
-        private GetCallSignature;
+        private GetGenericInstantiation(type);
+        private GetCallSignature(s);
         private GetPrimitiveType(type);
-        private GetBaseTypes;
-        private GetInterface;
+        private GetBaseTypes(type);
+        private GetInterface(type);
         private GetEnum(type);
         private GetDocumentForDecl(d);
-        private GetGenericParameter(mod, type);
+        private GetGenericParameter(type);
         private EnsureResolved(s);
         private _compiler;
         private _typeCache;
+        private _docCache;
         private _snapshots;
         private normalizePath(path);
         private _tsHost;

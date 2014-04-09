@@ -73342,12 +73342,15 @@ var erecruit;
 
         function typeName(e) {
             var t = e, c = e;
-            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && t.Enum.Name) || (t.GenericParameter && t.GenericParameter.Name) || (t.Interface && t.Interface.Name) || (t.PrimitiveType && erecruit.TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && t.GenericInstantiation.Definition.Name);
+            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && t.Enum.Name) || (t.GenericParameter && t.GenericParameter.Name) || (t.Interface && t.Interface.Name) || (t.PrimitiveType && TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && t.GenericInstantiation.Definition.Name);
         }
         TsT.typeName = typeName;
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
+var ts = TypeScript;
+var PEKind = ts.PullElementKind;
+
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
@@ -73357,97 +73360,15 @@ var erecruit;
                 var _this = this;
                 this._config = _config;
                 this._options = _options;
-                this.GetType = function (mod) {
-                    return function (type) {
-                        if (!type)
-                            return null;
-                        var cached = _this._typeCache[type.pullSymbolID];
-                        if (cached)
-                            return cached;
-
-                        _this._typeCache[type.pullSymbolID] = cached = {
-                            Module: mod,
-                            Kind: 1 /* Type */,
-                            InternalModule: _this.GetInternalModule(type.getDeclarations()[0])
-                        };
-
-                        _this.EnsureResolved(type);
-                        if (type.getElementType())
-                            cached.Array = _this.GetType(mod)(type.getElementType());
-                        else if (type.isPrimitive())
-                            cached.PrimitiveType = _this.GetPrimitiveType(type);
-                        else if (type.isEnum())
-                            cached.Enum = _this.GetEnum(type);
-                        else if (type.isTypeParameter())
-                            cached.GenericParameter = _this.GetGenericParameter(mod, type);
-                        else if (_this.IsGenericInstantiation(type))
-                            cached.GenericInstantiation = _this.GetGenericInstantiation(mod, type);
-                        else
-                            cached.Interface = _this.GetInterface(mod)(type);
-
-                        return cached;
-                    };
-                };
-                this.GetCallSignature = function (mod) {
-                    return function (s) {
-                        _this.EnsureResolved(s);
-                        return {
-                            GenericParameters: s.getTypeParameters().map(function (t) {
-                                return _this.GetType(mod)(t.type);
-                            }),
-                            Parameters: s.parameters.map(function (p) {
-                                return { Name: p.name, Type: _this.GetType(mod)(p.type) };
-                            }),
-                            ReturnType: _this.GetType(mod)(s.returnType)
-                        };
-                    };
-                };
-                this.GetBaseTypes = function (mod) {
-                    return function (type) {
-                        return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).select(_this.GetType(mod)).where(function (t) {
-                            return !!t.Interface || !!t.GenericInstantiation;
-                        }).toArray();
-                    };
-                };
-                this.GetInterface = function (mod) {
-                    return function (type) {
-                        return ({
-                            Name: type.name,
-                            Extends: _this.GetBaseTypes(mod)(type),
-                            GenericParameters: Enumerable.from(type.getTypeParameters()).select(_this.GetType(mod)).toArray(),
-                            Properties: type.getMembers().filter(function (m) {
-                                return m.isProperty();
-                            }).map(function (m) {
-                                _this.EnsureResolved(m);
-                                return { Name: m.name, Type: _this.GetType(mod)(m.type) };
-                            }),
-                            Methods: Enumerable.from(type.getMembers()).where(function (m) {
-                                return m.isMethod();
-                            }).groupBy(function (m) {
-                                return m.name;
-                            }, function (m) {
-                                return m;
-                            }, function (name, ms) {
-                                return {
-                                    Name: name,
-                                    Signatures: ms.selectMany(function (m) {
-                                        _this.EnsureResolved(m);
-                                        return Enumerable.from(m.type.getCallSignatures()).select(_this.GetCallSignature(mod));
-                                    }).toArray()
-                                };
-                            }).toArray()
-                        });
-                    };
-                };
-                this._compiler = new TypeScript.TypeScriptCompiler();
+                this._compiler = new ts.TypeScriptCompiler();
                 this._typeCache = {};
+                this._docCache = {};
                 this._snapshots = {};
                 this._tsHost = {
                     getScriptSnapshot: function (fileName) {
                         return _this._snapshots[fileName] || (_this._snapshots[fileName] = (function () {
-                            console.log("Fetching " + fileName);
                             var content = _this._config.Host.FetchFile(fileName);
-                            return content ? TypeScript.ScriptSnapshot.fromString(content) : null;
+                            return content ? ts.ScriptSnapshot.fromString(content) : null;
                         })());
                     },
                     resolveRelativePath: function (path, directory) {
@@ -73463,7 +73384,7 @@ var erecruit;
                         return _this._config.Host.GetParentDirectory(path);
                     }
                 };
-                erecruit.TsT.ensureArray(_config.Host.GetIncludedTypingFiles()).forEach(function (f) {
+                TsT.ensureArray(_config.Host.GetIncludedTypingFiles()).forEach(function (f) {
                     return _this.addFile(f);
                 });
             }
@@ -73471,14 +73392,14 @@ var erecruit;
                 this._compiler.addFile(f, this._tsHost.getScriptSnapshot(f), null, 0, false, []);
             };
 
-            Extractor.prototype.GetModule = function (fileName) {
+            Extractor.prototype.GetDocument = function (fileName) {
                 var _this = this;
                 fileName = this.normalizePath(fileName);
 
                 if (!this._compiler.getDocument(fileName)) {
                     this.addFile(fileName);
 
-                    var resolved = TypeScript.ReferenceResolver.resolve([fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution);
+                    var resolved = ts.ReferenceResolver.resolve([fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution);
                     Enumerable.from(resolved && resolved.resolvedFiles).where(function (f) {
                         return !_this._compiler.getDocument(f.path);
                     }).forEach(function (f) {
@@ -73507,7 +73428,7 @@ var erecruit;
                 }
                 allModuleDecls = flatten(allModuleDecls);
 
-                var result = { Path: fileName, Classes: null, Types: null };
+                var result = this.GetCachedDoc(fileName);
 
                 result.Classes = allModuleDecls.where(function (d) {
                     return d.kind == 512 /* Variable */;
@@ -73522,12 +73443,17 @@ var erecruit;
 
                     return {
                         Name: d.name,
-                        Module: result,
+                        Document: result,
                         InternalModule: _this.GetInternalModule(d),
+                        ExternalModule: _this.GetExternalModule(d),
                         Kind: 0 /* Class */,
-                        Implements: varType && _this.GetBaseTypes(result)(varType),
-                        GenericParameters: varType && varType.getTypeParameters().map(_this.GetType(result)),
-                        Constructors: sigs.map(_this.GetCallSignature(result))
+                        Implements: varType && _this.GetBaseTypes(varType),
+                        GenericParameters: varType && varType.getTypeParameters().map(function (x) {
+                            return _this.GetType(x);
+                        }),
+                        Constructors: sigs.map(function (x) {
+                            return _this.GetCallSignature(x);
+                        })
                     };
                 }).where(function (c) {
                     return c.Constructors.length > 0;
@@ -73537,9 +73463,23 @@ var erecruit;
                     return d.kind == 16 /* Interface */ || d.kind == 64 /* Enum */ || d.kind == 8 /* Class */;
                 }).select(function (d) {
                     return _this._compiler.getSymbolOfDeclaration(d);
-                }).doAction(this.EnsureResolved).select(this.GetType(result)).toArray();
+                }).doAction(this.EnsureResolved).select(function (x) {
+                    return _this.GetType(x);
+                }).toArray();
 
                 return result;
+            };
+
+            Extractor.prototype.GetCachedDoc = function (path) {
+                return this._docCache[path] || (this._docCache[path] = { Path: path, Types: null, Classes: null });
+            };
+
+            Extractor.prototype.GetCachedDocFromDecl = function (d) {
+                return this.GetCachedDoc((d && d.getParentPath()[0].name) || "");
+            };
+
+            Extractor.prototype.GetCachedDocFromSymbol = function (s) {
+                return this.GetCachedDocFromDecl(s && s.getDeclarations()[0]);
             };
 
             Extractor.prototype.GetInternalModule = function (d) {
@@ -73550,26 +73490,122 @@ var erecruit;
                 }).toArray().join(".");
             };
 
+            Extractor.prototype.GetExternalModule = function (d) {
+                return d && Enumerable.from(d.getParentPath()).where(function (p) {
+                    return p.kind == 32 /* DynamicModule */;
+                }).select(function (p) {
+                    return p.name;
+                }).firstOrDefault();
+            };
+
+            Extractor.prototype.GetType = function (type) {
+                if (!type)
+                    return null;
+                var cached = this._typeCache[type.pullSymbolID];
+                if (cached)
+                    return cached;
+
+                this._typeCache[type.pullSymbolID] = cached = {
+                    Document: this.GetCachedDocFromSymbol(type),
+                    Kind: 1 /* Type */,
+                    ExternalModule: this.GetExternalModule(type.getDeclarations()[0]),
+                    InternalModule: this.GetInternalModule(type.getDeclarations()[0])
+                };
+
+                this.EnsureResolved(type);
+                if (type.getElementType())
+                    cached.Array = this.GetType(type.getElementType());
+                else if (type.isPrimitive())
+                    cached.PrimitiveType = this.GetPrimitiveType(type);
+                else if (type.isEnum())
+                    cached.Enum = this.GetEnum(type);
+                else if (type.isTypeParameter())
+                    cached.GenericParameter = this.GetGenericParameter(type);
+                else if (this.IsGenericInstantiation(type))
+                    cached.GenericInstantiation = this.GetGenericInstantiation(type);
+                else
+                    cached.Interface = this.GetInterface(type);
+
+                return cached;
+            };
+
             Extractor.prototype.IsGenericInstantiation = function (type) {
                 return type.referencedTypeSymbol && type.getTypeParameters() && type.getTypeParameters().length;
             };
 
-            Extractor.prototype.GetGenericInstantiation = function (mod, type) {
-                var t = this.GetType(mod);
-                var def = t(type.referencedTypeSymbol);
+            Extractor.prototype.GetGenericInstantiation = function (type) {
+                var _this = this;
+                var def = this.GetType(type.referencedTypeSymbol);
                 if (!def.Interface)
                     return null;
 
                 return {
                     Definition: def.Interface,
                     Arguments: type.referencedTypeSymbol.getTypeParameters().map(function (p) {
-                        return t(type.getTypeParameterArgumentMap()[p.pullSymbolID]);
+                        return _this.GetType(type.getTypeParameterArgumentMap()[p.pullSymbolID]);
                     })
+                };
+            };
+
+            Extractor.prototype.GetCallSignature = function (s) {
+                var _this = this;
+                this.EnsureResolved(s);
+                return {
+                    GenericParameters: s.getTypeParameters().map(function (t) {
+                        return _this.GetType(t.type);
+                    }),
+                    Parameters: s.parameters.map(function (p) {
+                        return { Name: p.name, Type: _this.GetType(p.type) };
+                    }),
+                    ReturnType: this.GetType(s.returnType)
                 };
             };
 
             Extractor.prototype.GetPrimitiveType = function (type) {
                 return type.name === "string" ? 1 /* String */ : type.name === "boolean" ? 2 /* Boolean */ : type.name === "number" ? 3 /* Number */ : 0 /* Any */;
+            };
+
+            Extractor.prototype.GetBaseTypes = function (type) {
+                var _this = this;
+                return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).select(function (x) {
+                    return _this.GetType(x);
+                }).where(function (t) {
+                    return !!t.Interface || !!t.GenericInstantiation;
+                }).toArray();
+            };
+
+            Extractor.prototype.GetInterface = function (type) {
+                var _this = this;
+                return {
+                    Name: type.name,
+                    Extends: this.GetBaseTypes(type),
+                    GenericParameters: Enumerable.from(type.getTypeParameters()).select(function (t) {
+                        return _this.GetType(t);
+                    }).toArray(),
+                    Properties: type.getMembers().filter(function (m) {
+                        return m.isProperty() && m.isExternallyVisible();
+                    }).map(function (m) {
+                        _this.EnsureResolved(m);
+                        return { Name: m.name, Type: _this.GetType(m.type) };
+                    }),
+                    Methods: Enumerable.from(type.getMembers()).where(function (m) {
+                        return m.isMethod() && m.isExternallyVisible();
+                    }).groupBy(function (m) {
+                        return m.name;
+                    }, function (m) {
+                        return m;
+                    }, function (name, ms) {
+                        return {
+                            Name: name,
+                            Signatures: ms.selectMany(function (m) {
+                                _this.EnsureResolved(m);
+                                return Enumerable.from(m.type.getCallSignatures()).select(function (s) {
+                                    return _this.GetCallSignature(s);
+                                });
+                            }).toArray()
+                        };
+                    }).toArray()
+                };
             };
 
             Extractor.prototype.GetEnum = function (type) {
@@ -73602,7 +73638,7 @@ var erecruit;
                         return { result: values[e.text()] };
                     }
 
-                    if (e instanceof TypeScript.BinaryExpression) {
+                    if (e instanceof ts.BinaryExpression) {
                         var b = e;
                         var bop = binaryOp(e.kind());
                         var left = evalExpr(b.left);
@@ -73616,7 +73652,7 @@ var erecruit;
                         return { result: bop(left.result, right.result) };
                     }
 
-                    if (e instanceof TypeScript.PrefixUnaryExpression) {
+                    if (e instanceof ts.PrefixUnaryExpression) {
                         var uop = unaryOp(e.kind());
                         var arg = evalExpr(e.operand);
                         if (!uop)
@@ -73627,7 +73663,7 @@ var erecruit;
                     }
 
                     function err() {
-                        return { errorMessage: TypeScript.SyntaxKind[e.kind()] + " is not supported." };
+                        return { errorMessage: ts.SyntaxKind[e.kind()] + " is not supported." };
                     }
                 }
             };
@@ -73638,9 +73674,9 @@ var erecruit;
                 return fileName && this._compiler.getDocument(fileName);
             };
 
-            Extractor.prototype.GetGenericParameter = function (mod, type) {
+            Extractor.prototype.GetGenericParameter = function (type) {
                 var g = type;
-                return { Name: type.name, Constraint: this.GetType(mod)(g.getConstraint()) };
+                return { Name: type.name, Constraint: this.GetType(g.getConstraint()) };
             };
 
             Extractor.prototype.EnsureResolved = function (s) {
@@ -73725,11 +73761,11 @@ var erecruit;
         var Config = TsT.Config;
 
         function Emit(cfg, files, host) {
-            var config = erecruit.TsT.cacheConfig(host, cfg);
-            var e = new erecruit.TsT.Extractor(config);
+            var config = TsT.cacheConfig(host, cfg);
+            var e = new TsT.Extractor(config);
 
-            return Rx.Observable.fromArray(erecruit.TsT.ensureArray(files)).selectMany(function (f) {
-                return formatTemplate(f, e.GetModule(f).Types, erecruit.TsT.getFileConfig(config, f), Config.toDustContext(config), erecruit.TsT.typeName);
+            return Rx.Observable.fromArray(TsT.ensureArray(files)).selectMany(function (f) {
+                return formatTemplate(f, e.GetDocument(f).Types, TsT.getFileConfig(config, f), Config.toDustContext(config), TsT.typeName);
             }, function (f, x) {
                 return ({ outputFile: x.outputFileName, content: x.content, inputFile: f });
             }).groupBy(function (x) {
@@ -73778,7 +73814,6 @@ var erecruit;
                     Name: nameParts.slice(0, nameParts.length - 1).join('.'),
                     Extension: nameParts[nameParts.length - 1]
                 };
-                console.log("Format filename: " + sourceFileName + " with " + JSON.stringify(nameParts));
 
                 return callDustJs(template, dust.makeBase(model));
             }
@@ -73786,7 +73821,7 @@ var erecruit;
             function callDustJs(template, ctx) {
                 return Rx.Observable.create(function (or) {
                     template(ctx, function (err, out) {
-                        err ? or.onError(err) : (console.log(out), or.onNext(out));
+                        err ? or.onError(err) : or.onNext(out);
                         or.onCompleted();
                     });
                     return function () {
@@ -73810,7 +73845,7 @@ var erecruit;
 
             dust.helpers['cs_whenEmptyNamespace'] = function (chunk, ctx, bodies, params) {
                 var type = ctx.current();
-                var config = erecruit.TsT.Config.fromDustContext(ctx);
+                var config = TsT.Config.fromDustContext(ctx);
                 if (!type || !config || type.Kind !== 1 /* Type */)
                     return chunk;
                 if (typeNamespace(config, type))
@@ -73821,7 +73856,7 @@ var erecruit;
             function typeHelper(name, render) {
                 dust.helpers['cs_' + name] = function (chunk, ctx, bodies, params) {
                     var type = ctx.current();
-                    var config = erecruit.TsT.Config.fromDustContext(ctx);
+                    var config = TsT.Config.fromDustContext(ctx);
                     if (!type || !config || type.Kind !== 1 /* Type */)
                         return chunk;
                     return chunk.write(render(config, type));
@@ -73845,7 +73880,7 @@ var erecruit;
                 if (type.PrimitiveType)
                     return primitiveTypeMap[type.PrimitiveType] || "object";
 
-                var n = erecruit.TsT.typeName(type);
+                var n = TsT.typeName(type);
                 if (!n)
                     return "object";
                 if (type.GenericParameter)
@@ -73859,9 +73894,9 @@ var erecruit;
             }
 
             function typeNamespace(config, e) {
-                if (!e.Module || !e.Module.Path)
+                if (!e.Document || !e.Document.Path)
                     return "";
-                var relPath = config.Host.MakeRelativePath(config.Original.RootDir, config.Host.GetParentDirectory(e.Module.Path));
+                var relPath = config.Host.MakeRelativePath(config.Original.RootDir, config.Host.GetParentDirectory(e.Document.Path));
                 if (!relPath || relPath === '.')
                     return "";
                 if (relPath[0] === '.' && relPath[1] === '.')
@@ -73875,14 +73910,19 @@ var erecruit;
 })(erecruit || (erecruit = {}));
 var fs = require('fs');
 var path = require('path');
-var args = require("optimist").alias("i", "input").describe("i", "A text file containing the list of input TypeScript files.").demand("c").alias("c", "config").describe("c", "Configuration file.").argv;
+var args = require("minimist")(process.argv.slice(2));
 
 main();
 
 function main() {
-    var files = loadFiles();
+    var files = args._;
+    var configPath = args.c || args.config;
 
-    var configPath = args.c;
+    if (!files || !files.length || !configPath) {
+        showUsage();
+        process.exit(1);
+    }
+
     var config = eval("(" + readFile(configPath) + ")");
     config.ConfigDir = path.dirname(configPath);
     config.RootDir = path.resolve(config.ConfigDir, config.RootDir || '.');
@@ -73928,19 +73968,14 @@ function readFile(f) {
     return fs.readFileSync(f, { encoding: "utf8" });
 }
 
-function loadFiles() {
-    var files = args._;
-    if (!files || !files.length) {
-        if (args.i) {
-            files = readFile(args.i).split('\n').map(function (s) {
-                return s.trim();
-            });
-        }
-    }
-    if (!files || !files.length) {
-        console.error("No input files specified.");
-        process.exit(1);
-    }
-
-    return files;
+function showUsage() {
+    console.log("\
+Version 0.2\r\n\
+\r\n\
+Usage:    tstc <options> <source-files> \r\n\
+See:      https://github.com/erecruit/TsT\r\n\
+\r\n\
+Options: \r\n\
+	-c, --config    Path to config file, .tstconfig\
+	");
 }

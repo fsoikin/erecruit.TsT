@@ -29,8 +29,8 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("0.2.0.0")]
+[assembly: AssemblyFileVersion("0.2.0.0")]
 
 [assembly: InternalsVisibleTo("vs_IntegrationTests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100b79395d234dbe24ea3641d0ca2055497d76901b0905419f7c884c1259d6396f6d342a854448278c50b8f349572d4b4a5761b6e42f02d811dd4300b41c91e0079242fb4eab3474d59e5797c8fe9de052847438da7aac207062f4af9b25b4c372d7d1474b5f6aae1025b15d03b8c1f9077403dd6a9050e8330f4e50bdb57bdb7cc")]
 [assembly: InternalsVisibleTo("vs_UnitTests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100b79395d234dbe24ea3641d0ca2055497d76901b0905419f7c884c1259d6396f6d342a854448278c50b8f349572d4b4a5761b6e42f02d811dd4300b41c91e0079242fb4eab3474d59e5797c8fe9de052847438da7aac207062f4af9b25b4c372d7d1474b5f6aae1025b15d03b8c1f9077403dd6a9050e8330f4e50bdb57bdb7cc")]

@@ -1,31 +1,29 @@
 {
-  "name": "tst",
+  "name": "erecruit-tst",
+  "version": "0.2.0",
   "description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
+  "main": "./bin/tst-node.js",
+  "bin": { "tstc": "./bin/tstc.js" },
+	"files": ["bin/lib.d.ts", "bin/tst-node.d.ts","bin/tst-node.js","bin/tst.d.ts","bin/tst.js","bin/tstc.js"],
+
+	"license": "MIT",
   "keywords": [
     "typescript",
     "type",
     "javascript"
   ],
-  "version": "0.1.0",
   "author": "Fyodor Soikin <fsoikin@erecruit.com> (http://erecruit.com)",
-  "bin": {
-    "tst": "./bin/tstc.js"
-  },
-  "main": "./bin/tst-node.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/erecruit/tst.git"
   },
   "preferGlobal": true,
   "dependencies": {
-    "optimist": "0.2.x"
+    "minimist": "0.0.8"
   },
   "devDependencies": {
     "typescript": "0.9.x",
     "jake": "0.7.x",
-		"jasmine-node": "1.13.x"
-  },
-  "engines": {
-    "node": "*"
+		"jasmine-focused": "1.0.x"
   }
 }

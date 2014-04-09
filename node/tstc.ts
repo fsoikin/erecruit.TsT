@@ -5,18 +5,21 @@
 
 import fs = require( 'fs' );
 import path = require( 'path' );
-var args = require( "optimist" )
-	.alias( "i", "input" ).describe( "i", "A text file containing the list of input TypeScript files." )
-	.demand( "c" ).alias( "c", "config" ).describe( "c", "Configuration file." )
-	.argv;
+var args = require( "minimist" )( process.argv.slice( 2 ) );
 
 // TODO: need to support config autodiscovery
 main();
 
 function main() {
-	var files = loadFiles();
+	var files: string[] = args._;
+	var configPath = args.c || args.config;
 
-	var configPath = args.c;
+	if ( !files || !files.length || !configPath ) {
+		showUsage();
+		process.exit( 1 );
+	}
+
+
 	var config: erecruit.TsT.Config = eval( "(" + readFile( configPath ) + ")" );
 	config.ConfigDir = path.dirname( configPath );
 	config.RootDir = path.resolve( config.ConfigDir, config.RootDir || '.' );
@@ -49,17 +52,15 @@ function readFile( f: string ): string {
 	return ( <any>fs ).readFileSync( f, { encoding: "utf8" });
 }
 
-function loadFiles() {
-	var files: string[] = args._;
-	if ( !files || !files.length ) {
-		if ( args.i ) {
-			files = readFile( args.i ).split( '\n' ).map( s => s.trim() );
-		}
-	}
-	if ( !files || !files.length ) {
-		console.error( "No input files specified." );
-		process.exit( 1 );
-	}
-
-	return files;
+function showUsage() {
+	console.log( "\
+erecruit TsT\r\n\
+Version 0.2\r\n\
+\r\n\
+Usage:    tstc <options> <source-files> \r\n\
+See:      https://github.com/erecruit/TsT\r\n\
+\r\n\
+Options: \r\n\
+	-c, --config    Path to config file, .tstconfig\
+	" );
 }

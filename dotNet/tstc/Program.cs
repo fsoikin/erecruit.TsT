@@ -12,10 +12,10 @@ namespace erecruit.TsT
 	{
 		static void Main( string[] args ) {
 			string configFile = null;
-			var inputFiles = new OptionSet() { 
-					{ "c|config=", "Full path to the config file (discovered automatically if not specified).", v => configFile = v }
-				}
-				.Parse( args );
+			var opts = new OptionSet() { 
+				{ "c|config=", "Full path to the config file (discovered automatically if not specified).", v => configFile = v }
+			};
+			var inputFiles = opts.Parse( args );
 
 			if ( inputFiles.Count == 1 && inputFiles[0][0] == '@' ) {
 				try {
@@ -27,7 +27,8 @@ namespace erecruit.TsT
 				}
 			}
 			if ( !inputFiles.Any() ) {
-				Console.Error.WriteLine( "No input files specified" );
+				ShowUsage( opts );
+				return;
 			}
 
 			var commonRoot = CalculateCommonRoot( inputFiles );
@@ -47,6 +48,18 @@ namespace erecruit.TsT
 			var parts = firstFile.Split( '\\' );
 			var prefixes = Enumerable.Range( 0, parts.Length ).Select( idx => string.Join( "\\", parts.Take( parts.Length - idx ) ) ).ToList();
 			return prefixes.FirstOrDefault( pref => inputFiles.All( f => f.StartsWith( pref ) ) );
+		}
+
+		static void ShowUsage( OptionSet opts ) {
+			Console.WriteLine( @"
+erecruit TsT
+Version 0.2
+
+Usage:    tstc <options> <source-files> 
+See:      https://github.com/erecruit/TsT
+
+Options: " );
+			opts.WriteOptionDescriptions( Console.Out );
 		}
 	}
 }
