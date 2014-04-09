@@ -73437,9 +73437,6 @@ var erecruit;
                     _this.EnsureResolved(variable);
                     var varType = variable.isType() && variable;
                     var sigs = variable.type.getConstructSignatures();
-                    var ctor = variable.type.getConstructorMethod();
-                    if (ctor)
-                        sigs = sigs.concat(ctor.type.getConstructSignatures());
 
                     return {
                         Name: d.name,
@@ -73970,6 +73967,7 @@ function readFile(f) {
 
 function showUsage() {
     console.log("\
+erecruit TsT\r\n\
 Version 0.2\r\n\
 \r\n\
 Usage:    tstc <options> <source-files> \r\n\

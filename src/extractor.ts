@@ -55,8 +55,8 @@ module erecruit.TsT {
 					this.EnsureResolved( variable );
 					var varType = variable.isType() && ( <ts.PullTypeSymbol>variable );
 					var sigs = variable.type.getConstructSignatures();
-					var ctor = variable.type.getConstructorMethod();
-					if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
+					//var ctor = variable.type.getConstructorMethod();
+					//if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
 
 					return <Class> {
 						Name: d.name,

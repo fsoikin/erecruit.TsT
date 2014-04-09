@@ -73437,9 +73437,6 @@ var erecruit;
                     _this.EnsureResolved(variable);
                     var varType = variable.isType() && variable;
                     var sigs = variable.type.getConstructSignatures();
-                    var ctor = variable.type.getConstructorMethod();
-                    if (ctor)
-                        sigs = sigs.concat(ctor.type.getConstructSignatures());
 
                     return {
                         Name: d.name,
