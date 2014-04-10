@@ -64,11 +64,14 @@ The config file format is the following:
             // Name of output file to which the generated result
             // will be written. This string is actually a dust.js
             // template with allowed properties: {Path}, {Name}, {Extension},
-            // which refer to the source file.
+            // which refer to the source file. The {Path} includes
+            // the trailing slash (when not empty). The {Extension}
+            // does not include the leading dot.
+            //
             // When multiple types end up targeted to the same
             // output file, their contents are simply concatenated.
             // REQUIRED
-            FileName: '{Path}/{Name}.cs',
+            FileName: '{Path}{Name}.cs',
                     
             // The actual template to be used for rendering the type.
             // Normally, the string is treated as the template itself.
@@ -87,7 +90,7 @@ The config file format is the following:
     // Works the same way as the Types map.
     Classes: {
         '.': {
-            FileName: '{Path}/{Name}.cs',
+            FileName: '{Path}{Name}.cs',
             Template: '@./templates/class.cs.tpl'
         }
     }
@@ -103,7 +106,7 @@ The config file format is the following:
     Files: {
         'legacy/.*\.ts$': {
            Types: {
-               FileName: '{Path}/{Name}.cs',
+               FileName: '{Path}{Name}.cs',
                Template: '@./templates/legacy.type.cs.tpl'
            }
         }
