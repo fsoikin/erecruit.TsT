@@ -29,19 +29,25 @@ module erecruit.TsT {
 	export function Emit( cfg: Config, files: string[], host: ITsTHost ): Rx.IObservable<FileContent> {
 		var config = cacheConfig( host, cfg );
 		var e = new Extractor( config );
+		console.log( "Emit: config = " + JSON.stringify( cfg ) );
 
 		return Rx.Observable
 			.fromArray( ensureArray( files ) )
 			.selectMany(
 				f => formatTemplate( f, e.GetDocument( f ).Types, getFileConfig( config, f ), Config.toDustContext( config ), typeName ),
 				(f, x) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )
+			.doAction( x => console.log( "Finished generation: " + x.outputFile ) )
 			.groupBy( x => x.outputFile, x => x )
 			.selectMany(
 				x => x.takeLastBuffer( Number.MAX_VALUE ),
 				(x, xs) => <FileContent>{
-					OutputFile: x.key,
-					SourceFiles: Enumerable.from( xs ).select( k => k.inputFile ).distinct().toArray(), 
-					Content: xs.map( k => k.content ).join( '\r\n' )
+					OutputFile: config.Host.ResolveRelativePath( x.key, config.Original.RootDir ),
+					Content: xs.map( k => k.content ).join( '\r\n' ),
+					SourceFiles: Enumerable
+						.from( xs )
+						.select( k => config.Host.ResolveRelativePath( k.inputFile, config.Original.RootDir ) )
+						.distinct()
+						.toArray()
 				});
 
 		function formatTemplate<TObject>( sourceFileName: string, objects: TObject[], config: CachedConfigPart[], baseCtx: dust.Context, objectName: ( o: TObject ) => string )
@@ -65,16 +71,22 @@ module erecruit.TsT {
 		}
 
 		function formatFileName( sourceFileName: string, template: dust.RenderFn ) {
+
 			var dir = host.GetParentDirectory( sourceFileName );
-			var name = sourceFileName.substring( dir.length + ( (dir[dir.length-1] === '/' || dir[dir.length-1] === '\\') ? 0 : 1) );
+			if ( dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\' ) dir += '/';
+
+			var name = dir && sourceFileName.substr( 0, dir.length ) === dir
+				? sourceFileName.substring( dir.length )
+				: sourceFileName;
 			var nameParts = name.split( '.' );
 
 			var model = {
-				Path: host.MakeRelativePath( config.Original.RootDir || "", dir ),
+				Path: dir || '',
 				Name: nameParts.slice( 0, nameParts.length - 1 ).join( '.' ),
 				Extension: nameParts[nameParts.length - 1]
 			};
 
+			console.log( "formatFileName: model = " + JSON.stringify( model ) );
 			return callDustJs( template, dust.makeBase( model ) );
 		}
 

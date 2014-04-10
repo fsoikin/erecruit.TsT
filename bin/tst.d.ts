@@ -157,6 +157,8 @@ declare module erecruit.TsT {
         private _snapshots;
         private normalizePath(path);
         private _tsHost;
+        private rootRelPath(realPath);
+        private realPath(pathRelativeToRoot);
     }
 }
 declare module erecruit.TsT {

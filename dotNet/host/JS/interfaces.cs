@@ -1,5 +1,5 @@
 namespace erecruit.TsT.JS { 
-	public class Module { 
+	public class Document { 
 		public string Path { get; set; } 
 		public Class[] Classes { get; set; } 
 		public Type[] Types { get; set; } 
@@ -15,7 +15,8 @@ namespace erecruit.TsT.JS {
 
 namespace erecruit.TsT.JS { 
 	public class ModuleElement { 
-		public Module Module { get; set; } 
+		public Document Document { get; set; } 
+		public string ExternalModule { get; set; } 
 		public string InternalModule { get; set; } 
 		public ModuleElementKind Kind { get; set; } 
 	}
@@ -36,7 +37,22 @@ namespace erecruit.TsT.JS {
 		public Enum Enum { get; set; } 
 		public Interface Interface { get; set; } 
 		public GenericParameter GenericParameter { get; set; } 
+		public GenericInstantiation GenericInstantiation { get; set; } 
 		public Type Array { get; set; } 
+	}
+} 
+
+namespace erecruit.TsT.JS { 
+	public class GenericInstantiation { 
+		public Interface Definition { get; set; } 
+		public Type[] Arguments { get; set; } 
+	}
+} 
+
+namespace erecruit.TsT.JS { 
+	public class GenericParameterMap { 
+		public Type Parameter { get; set; } 
+		public Type Argument { get; set; } 
 	}
 } 
 

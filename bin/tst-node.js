@@ -73253,8 +73253,8 @@ var erecruit;
             }
 
             function compileTemplate(tpl, cfg) {
-                console.log("Compiling template " + tpl);
-                return !tpl ? null : dust.compileFn(tpl[0] == '@' ? host.FetchFile(host.ResolveRelativePath(tpl.substring(1), cfg.ConfigDir)) : tpl);
+                console.log("compileTemplate: " + tpl);
+                return !tpl ? null : dust.compileFn(tpl[0] == '@' ? host.FetchFile(host.ResolveRelativePath(tpl.substring(1), host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir))) : tpl);
             }
         }
         TsT.cacheConfig = cacheConfig;
@@ -73366,22 +73366,28 @@ var erecruit;
                 this._snapshots = {};
                 this._tsHost = {
                     getScriptSnapshot: function (fileName) {
-                        return _this._snapshots[fileName] || (_this._snapshots[fileName] = (function () {
-                            var content = _this._config.Host.FetchFile(fileName);
-                            return content ? ts.ScriptSnapshot.fromString(content) : null;
-                        })());
+                        fileName = _this.realPath(fileName);
+                        var cached = _this._snapshots[fileName];
+                        if (cached !== undefined)
+                            return cached;
+
+                        console.log("getScriptSnapshot: fetching: " + fileName);
+                        var content = _this._config.Host.FetchFile(fileName);
+                        return _this._snapshots[fileName] = content || content === "" ? ts.ScriptSnapshot.fromString(content) : null;
                     },
                     resolveRelativePath: function (path, directory) {
-                        return _this.normalizePath(_this._config.Host.ResolveRelativePath(path, directory));
+                        return _this.rootRelPath(_this._config.Host.ResolveRelativePath(path, _this.realPath(directory)));
                     },
                     fileExists: function (path) {
                         return !!_this._tsHost.getScriptSnapshot(path);
                     },
                     directoryExists: function (path) {
-                        return _this._config.Host.DirectoryExists(path);
+                        return _this._config.Host.DirectoryExists(_this.realPath(path));
                     },
                     getParentDirectory: function (path) {
-                        return _this._config.Host.GetParentDirectory(path);
+                        console.log("getParentDirectory: " + path);
+                        var result = _this._config.Host.GetParentDirectory(_this.realPath(path));
+                        return result ? _this.rootRelPath(result) : result;
                     }
                 };
                 TsT.ensureArray(_config.Host.GetIncludedTypingFiles()).forEach(function (f) {
@@ -73389,15 +73395,22 @@ var erecruit;
                 });
             }
             Extractor.prototype.addFile = function (f) {
-                this._compiler.addFile(f, this._tsHost.getScriptSnapshot(f), null, 0, false, []);
+                console.log("addFile: " + f);
+                var snapshot = this._tsHost.getScriptSnapshot(f);
+                if (snapshot)
+                    this._compiler.addFile(f, snapshot, null, 0, false, []);
+                return !!snapshot;
             };
 
             Extractor.prototype.GetDocument = function (fileName) {
                 var _this = this;
                 fileName = this.normalizePath(fileName);
+                console.log("GetDocument: " + fileName);
 
                 if (!this._compiler.getDocument(fileName)) {
-                    this.addFile(fileName);
+                    if (!this.addFile(fileName)) {
+                        throw "Cannot read file " + fileName;
+                    }
 
                     var resolved = ts.ReferenceResolver.resolve([fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution);
                     Enumerable.from(resolved && resolved.resolvedFiles).where(function (f) {
@@ -73463,6 +73476,8 @@ var erecruit;
                 }).doAction(this.EnsureResolved).select(function (x) {
                     return _this.GetType(x);
                 }).toArray();
+
+                console.log("GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types.");
 
                 return result;
             };
@@ -73683,7 +73698,15 @@ var erecruit;
             };
 
             Extractor.prototype.normalizePath = function (path) {
-                return this._config.Host.MakeRelativePath('.', path).replace(/\\/g, '/');
+                return (path || "").replace(/\\/g, '/');
+            };
+
+            Extractor.prototype.rootRelPath = function (realPath) {
+                return this._config.Host.MakeRelativePath(this._config.Original.RootDir, realPath);
+            };
+
+            Extractor.prototype.realPath = function (pathRelativeToRoot) {
+                return this._config.Host.ResolveRelativePath(pathRelativeToRoot, this._config.Original.RootDir);
             };
             return Extractor;
         })();
@@ -73760,11 +73783,14 @@ var erecruit;
         function Emit(cfg, files, host) {
             var config = TsT.cacheConfig(host, cfg);
             var e = new TsT.Extractor(config);
+            console.log("Emit: config = " + JSON.stringify(cfg));
 
             return Rx.Observable.fromArray(TsT.ensureArray(files)).selectMany(function (f) {
                 return formatTemplate(f, e.GetDocument(f).Types, TsT.getFileConfig(config, f), Config.toDustContext(config), TsT.typeName);
             }, function (f, x) {
                 return ({ outputFile: x.outputFileName, content: x.content, inputFile: f });
+            }).doAction(function (x) {
+                return console.log("Finished generation: " + x.outputFile);
             }).groupBy(function (x) {
                 return x.outputFile;
             }, function (x) {
@@ -73773,13 +73799,13 @@ var erecruit;
                 return x.takeLastBuffer(Number.MAX_VALUE);
             }, function (x, xs) {
                 return {
-                    OutputFile: x.key,
-                    SourceFiles: Enumerable.from(xs).select(function (k) {
-                        return k.inputFile;
-                    }).distinct().toArray(),
+                    OutputFile: config.Host.ResolveRelativePath(x.key, config.Original.RootDir),
                     Content: xs.map(function (k) {
                         return k.content;
-                    }).join('\r\n')
+                    }).join('\r\n'),
+                    SourceFiles: Enumerable.from(xs).select(function (k) {
+                        return config.Host.ResolveRelativePath(k.inputFile, config.Original.RootDir);
+                    }).distinct().toArray()
                 };
             });
 
@@ -73803,15 +73829,19 @@ var erecruit;
 
             function formatFileName(sourceFileName, template) {
                 var dir = host.GetParentDirectory(sourceFileName);
-                var name = sourceFileName.substring(dir.length + ((dir[dir.length - 1] === '/' || dir[dir.length - 1] === '\\') ? 0 : 1));
+                if (dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\')
+                    dir += '/';
+
+                var name = dir && sourceFileName.substr(0, dir.length) === dir ? sourceFileName.substring(dir.length) : sourceFileName;
                 var nameParts = name.split('.');
 
                 var model = {
-                    Path: host.MakeRelativePath(config.Original.RootDir || "", dir),
+                    Path: dir || '',
                     Name: nameParts.slice(0, nameParts.length - 1).join('.'),
                     Extension: nameParts[nameParts.length - 1]
                 };
 
+                console.log("formatFileName: model = " + JSON.stringify(model));
                 return callDustJs(template, dust.makeBase(model));
             }
 

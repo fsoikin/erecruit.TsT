@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
+VisualStudioVersion = 12.0.30324.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "erecruit.TsT", "erecruit.TsT.csproj", "{7A72A9D3-68AE-4315-BA87-13663DDAB33C}"
 EndProject
@@ -21,7 +21,6 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{7A72A9D3-68AE-4315-BA87-13663DDAB33C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7A72A9D3-68AE-4315-BA87-13663DDAB33C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7A72A9D3-68AE-4315-BA87-13663DDAB33C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1E23ABC1-B233-46B2-A27F-8347ABE67FB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1E23ABC1-B233-46B2-A27F-8347ABE67FB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E23ABC1-B233-46B2-A27F-8347ABE67FB7}.Release|Any CPU.ActiveCfg = Release|Any CPU

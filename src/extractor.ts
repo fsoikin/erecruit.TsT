@@ -17,13 +17,21 @@ module erecruit.TsT {
 			ensureArray( _config.Host.GetIncludedTypingFiles() ).forEach( f => this.addFile( f ) );
 		}
 
-		private addFile( f: string ) { this._compiler.addFile( f, this._tsHost.getScriptSnapshot( f ), null, 0, false, [] ); }
+		private addFile( f: string ) {
+			console.log( "addFile: " + f );
+			var snapshot = this._tsHost.getScriptSnapshot( f );
+			if ( snapshot ) this._compiler.addFile( f, snapshot, null, 0, false, [] );
+			return !!snapshot;
+		}
 
 		GetDocument( fileName: string ): Document {
 			fileName = this.normalizePath( fileName ); // Have to normalize file path to avoid duplicates
+			console.log( "GetDocument: " + fileName );
 
 			if ( !this._compiler.getDocument( fileName ) ) {
-				this.addFile( fileName );
+				if ( !this.addFile( fileName ) ) {
+					throw "Cannot read file " + fileName;
+				}
 
 				var resolved = ts.ReferenceResolver.resolve( [fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution );
 				Enumerable.from( resolved && resolved.resolvedFiles )
@@ -78,6 +86,8 @@ module erecruit.TsT {
 				.doAction( this.EnsureResolved )
 				.select( x => this.GetType( <ts.PullTypeSymbol>x ) )
 				.toArray();
+
+			console.log( "GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types." );
 
 			return result;
 		}
@@ -267,23 +277,37 @@ module erecruit.TsT {
 		private _snapshots: { [fileName: string]: ts.IScriptSnapshot } = {};
 
 		private normalizePath( path: string ): string {
-			return this._config.Host
-				.MakeRelativePath( '.', path )
-				.replace( /\\/g, '/' );
+			return (path||"").replace( /\\/g, '/' );
 		}
 
 		private _tsHost: ts.IReferenceResolverHost = {
 			getScriptSnapshot: fileName => {
-				return this._snapshots[fileName] || ( this._snapshots[fileName] = ( () => {
-					var content = this._config.Host.FetchFile( fileName );
-					return content ? ts.ScriptSnapshot.fromString( content ) : null;
-				})() );
+				fileName = this.realPath( fileName );
+				var cached = this._snapshots[fileName];
+				if ( cached !== undefined ) return cached;
+
+				console.log( "getScriptSnapshot: fetching: " + fileName );
+				var content = this._config.Host.FetchFile( fileName );
+				return this._snapshots[fileName] =
+					content || content === "" ? ts.ScriptSnapshot.fromString( content ) : null;
 			},
-			resolveRelativePath: ( path, directory ) => this.normalizePath( this._config.Host.ResolveRelativePath( path, directory ) ),
+			resolveRelativePath: ( path, directory ) => this.rootRelPath( this._config.Host.ResolveRelativePath( path, this.realPath( directory ) ) ),
 			fileExists: path => !!this._tsHost.getScriptSnapshot( path ),
-			directoryExists: path => this._config.Host.DirectoryExists( path ),
-			getParentDirectory: path => this._config.Host.GetParentDirectory( path )
+			directoryExists: path => this._config.Host.DirectoryExists( this.realPath( path ) ),
+			getParentDirectory: path => {
+				console.log( "getParentDirectory: " + path );
+				var result = this._config.Host.GetParentDirectory( this.realPath( path ) );
+				return result ? this.rootRelPath( result ) : result;
+			}
 		};
+
+		private rootRelPath( realPath: string ) {
+			return this._config.Host.MakeRelativePath( this._config.Original.RootDir, realPath );
+		}
+
+		private realPath( pathRelativeToRoot: string ) {
+			return this._config.Host.ResolveRelativePath( pathRelativeToRoot, this._config.Original.RootDir );
+		}
 	}
 
 	function binaryOp( op: ts.SyntaxKind ): (x: number, y: number) => number {

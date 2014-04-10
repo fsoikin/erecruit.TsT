@@ -64,6 +64,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="JS\config.cs" />
     <Compile Include="ScriptEngine.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -71,6 +72,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="GeneratedFile.cs" />
+    <Compile Include="PathUtil.cs" />
     <Compile Include="TsT.cs" />
     <Compile Include="Host.cs" />
     <Compile Include="JS\emitter.cs" />

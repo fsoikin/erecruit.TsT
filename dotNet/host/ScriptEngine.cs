@@ -15,7 +15,9 @@ namespace erecruit.TsT
 			_engine = _runtime.CreateScriptEngine();
 			_engine.AddHostObject( "setTimeout", new Func<dynamic, int, int>( setTimeout ) );
 			_engine.AddHostObject( "clearTimeout", new Action<int>( clearTimeout ) );
-			_engine.AddHostObject( "console", new { log = new Action<object>( o => Debug.WriteLine( o ) ) } );
+
+			Action<object> debugWrite = o => Debug.WriteLine( o );
+			_engine.AddHostObject( "console", new { log = debugWrite, debug = debugWrite, error = debugWrite, warn = debugWrite } );
 
 			IConnectableObservable<Action> runQueue = null;
 			runQueue = _queue

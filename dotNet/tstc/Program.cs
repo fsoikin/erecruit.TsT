@@ -10,10 +10,12 @@ namespace erecruit.TsT
 {
 	class Program
 	{
-		static void Main( string[] args ) {
+		static int Main( string[] args ) {
 			string configFile = null;
+			string root = null;
 			var opts = new OptionSet() { 
-				{ "c|config=", "Full path to the config file (discovered automatically if not specified).", v => configFile = v }
+				{ "c|config=", "Path to the config file (discovered automatically if not specified).", v => configFile = v },
+				{ "r|root=", "Path to the directory, which is to be considered the common root of all input files (discovered automatically if not specified).", v => root = v }
 			};
 			var inputFiles = opts.Parse( args );
 
@@ -23,23 +25,32 @@ namespace erecruit.TsT
 				}
 				catch ( Exception ex ) {
 					Console.Error.WriteLine( ex );
-					return;
+					return 1;
 				}
 			}
 			if ( !inputFiles.Any() ) {
 				ShowUsage( opts );
-				return;
+				return 1;
 			}
 
-			var commonRoot = CalculateCommonRoot( inputFiles );
-			var result = Observable.Using( () => new TsT(), tst =>
-				from f in tst.Emit( inputFiles, commonRoot, configFile == null ? TsT.AutoDiscoverConfigFile() : (_ => configFile) )
-				from s in f.SourceFiles
-				select new { s, f.OutputFile }
-				)
-				.Do( x => Console.WriteLine( "{0} -> {1}", x.s, x.OutputFile ) )
-				.SubscribeOn( ThreadPoolScheduler.Instance )
-				.Wait();
+			var commonRoot = string.IsNullOrWhiteSpace( root ) ? CalculateCommonRoot( inputFiles ) : root;
+			try {
+				var result = Observable.Using( () => new TsT(), tst =>
+					from f in tst.Emit( inputFiles.Select( Path.GetFullPath ), Path.GetFullPath( commonRoot ), configFile == null ? TsT.AutoDiscoverConfigFile() : (_ => configFile) )
+					from s in f.SourceFiles
+					select new { s, f.OutputFile }
+					)
+					.Do( x => Console.WriteLine( "{0} -> {1}", x.s, x.OutputFile ) )
+					.SubscribeOn( ThreadPoolScheduler.Instance )
+					.DefaultIfEmpty()
+					.Wait();
+			}
+			catch ( Exception ex ) {
+				Console.Error.WriteLine( ex.Message );
+				return 1;
+			}
+
+			return 0;
 		}
 
 		private static string CalculateCommonRoot( IEnumerable<string> inputFiles ) {

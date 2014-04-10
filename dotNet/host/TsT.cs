@@ -23,18 +23,22 @@ namespace erecruit.TsT
 
 			var noConfigs = configs[""];
 			if ( noConfigs.Any() ) {
-				return Observable.Throw<GeneratedFile>( new Exception( "Cannot find .tstconfig for path " + noConfigs.First() ) );
+				return Observable.Throw<GeneratedFile>( new Exception( "Cannot find .tstconfig for file(s): " + string.Join( ", ", noConfigs ) ) );
 			}
 
-			var host = new Host( System.IO.Path.GetDirectoryName( currentDir ) );
+			var originDir = System.IO.Path.GetFullPath( currentDir );
+			var host = new Host( originDir );
 			return from filesPerConfig in configs.ToObservable()
 						 from configContents in ReadContents( filesPerConfig.Key )
 						 let configDir = Path.GetDirectoryName( filesPerConfig.Key )
 
-						 from result in Emit( configDir, configContents, filesPerConfig.ToArray(), host )
-						 from written in WriteContents( result.OutputFile, result.Content )
+						 from result in Emit( configDir, configContents, filesPerConfig, host )
+						 from written in WriteContents( Path.Combine( originDir, result.OutputFile ), result.Content )
 
-						 select new GeneratedFile { SourceFiles = result.SourceFiles, OutputFile = result.OutputFile };
+						 select new GeneratedFile {
+							 SourceFiles = result.SourceFiles,
+							 OutputFile = result.OutputFile
+						 };
 		}
 
 		public static Func<string, string> AutoDiscoverConfigFile( string configFileName = DefaultConfigFileName ) {
@@ -44,18 +48,20 @@ namespace erecruit.TsT
 				?? "";
 		}
 
-		public IObservable<JS.FileContent> Emit( string configDir, string configJson, string[] files, JS.ITsTHost host ) {
+		public IObservable<JS.FileContent> Emit( string configDir, string configJson, IEnumerable<string> files, JS.ITsTHost host ) {
 			return from _ in EnsureInitialized()
 						 from jsonSerialize in _engine.Evaluate( "JSON.stringify" )
 
 						 from config in _engine.Evaluate( "(" + configJson + ")" )
-						 from amended in AmendConfig( configDir, (object)config )
+						 let rootDir = (string)( config.RootDir = host.ResolveRelativePath( (config.RootDir as string) ?? "", configDir ) )
+						 let _2 = config.ConfigDir = host.MakeRelativePath( config.RootDir, configDir )
+						 let filesRelativeToRoot = files.Select( f => host.MakeRelativePath( rootDir, f ) )
 
 						 let result = new System.Reactive.Subjects.Subject<dynamic>()
 						 from __ in _engine.QueueAction( () =>
-							 _emit( config, files, host )
+							 _emit( config, filesRelativeToRoot.ToArray(), host )
 							 .subscribe( new {
-								 onNext = new Action<dynamic>( result.OnNext ),
+								 onNext = new Action<dynamic>( x => result.OnNext( x ) ),
 								 onError = new Action<object>( err => { result.OnError( new DynamicException( err ) ); result.OnCompleted(); } ),
 								 onCompleted = new Action( () => result.OnCompleted() )
 							 } ) )
@@ -66,13 +72,7 @@ namespace erecruit.TsT
 									.SelectMany( str => Observable.Throw<dynamic>( new Exception( str ) ) ) )
 
 						 from asJson in _engine.Queue( () => jsonSerialize( r ) )
-						 let asPoco = (JS.FileContent)JsonConvert.DeserializeObject<JS.FileContent>( asJson )
-						 let rootDir = (string)config.RootDir
-						 select new JS.FileContent {
-							 Content = asPoco.Content,
-							 OutputFile = Path.GetFullPath( Path.Combine( rootDir, asPoco.OutputFile ) ),
-							 SourceFiles = asPoco.SourceFiles.Select( f => Path.GetFullPath( Path.Combine( rootDir, f ) ) ).ToArray()
-						 };
+						 select (JS.FileContent)JsonConvert.DeserializeObject<JS.FileContent>( asJson );
 		}
 
 		static IEnumerable<string> GetDirsUp( string mostNestedDirPath ) {
@@ -95,10 +95,9 @@ namespace erecruit.TsT
 				str => Observable.FromAsync( async () => await str.WriteAsync( contents ) ) );
 		}
 
-		IObservable<Unit> AmendConfig( string configDir, object cc ) {
-			dynamic config = cc;
-			config.ConfigDir = configDir;
-			config.RootDir = Path.Combine( configDir, (config.RootDir as string) ?? "" );
+		IObservable<Unit> AmendConfig( string configDir, JS.Config c ) {
+			c.RootDir = Path.Combine( configDir, (c.RootDir as string) ?? "" );
+			c.ConfigDir = PathUtil.MakeRelativePath( c.RootDir, configDir );
 			return Observable.Return( Unit.Default );
 		}
 

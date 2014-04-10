@@ -1,0 +1,14 @@
+{
+	RootDir: '../../src', 
+
+	Types: {
+		'^(?!ITsTHost|Cached|FileConfig).': {
+			FileName: "../dotNet/host/JS/{Path}/{Name}.cs",
+			Template: "@./data.cs.tpl"
+		},
+		'^ITsTHost$': {
+			FileName: "../dotNet/host/JS/{Path}/{Name}.cs",
+			Template: "@./host.cs.tpl"
+		}
+	}
+}
