@@ -90,7 +90,7 @@ The config file format is the following:
     // Works the same way as the Types map.
     Classes: {
         '.': {
-            FileName: '{Path}/{Name}.cs',
+            FileName: '{Path}{Name}.cs',
             Template: '@./templates/class.cs.tpl'
         }
     }
@@ -106,7 +106,7 @@ The config file format is the following:
     Files: {
         'legacy/.*\.ts$': {
            Types: {
-               FileName: '{Path}/{Name}.cs',
+               FileName: '{Path}{Name}.cs',
                Template: '@./templates/legacy.type.cs.tpl'
            }
         }
