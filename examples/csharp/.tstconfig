@@ -8,7 +8,7 @@
 		'.': {
 			// Dump all definitions into this file (path relative to where config.json is located)
 			// Variables are: {Path}, {Name}, {Extension}
-			FileName: "out/{Path}/{Name}.cs",
+			FileName: "out/{Path}{Name}.cs",
 
 			// Use this template (The '@' symbol in front means 'load from file'. otherwise the string itself will be the template)
 			Template: "@./type.cs.tpl"

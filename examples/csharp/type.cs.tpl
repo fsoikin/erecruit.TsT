@@ -9,7 +9,7 @@ namespace erecruit.JS{@cs_whenEmptyNamespace}{:else}.{/cs_whenEmptyNamespace}{@c
 	{@whenType}
 		{#Interface}{?Properties}
 			{@indent/}
-			public class {Name}{+genericParams/} { {~n}
+			public class {Name}{>genericParams/} { {~n}
 				{#Properties}
 					{@indent count=2/}
 					public {#Type}{@cs_typeFullName/}{/Type} {Name} { get; set; } {~n}
@@ -34,7 +34,7 @@ namespace erecruit.JS{@cs_whenEmptyNamespace}{:else}.{/cs_whenEmptyNamespace}{@c
 
 	{@whenClass}
 		{@indent/}
-		public partial class {@fs_fileNameWithoutExtension path="Module.Path"/}{+genericParams/} { {~n}
+		public partial class {@fs_fileNameWithoutExtension path="Module.Path"/}{>genericParams/} { {~n}
 			{#Constructors}
 				{@indent count="2"/}
 				public static string {Name}(
@@ -49,7 +49,3 @@ namespace erecruit.JS{@cs_whenEmptyNamespace}{:else}.{/cs_whenEmptyNamespace}{@c
 
 {~n}
 } {~n}
-
-{<genericParams}
-	{?GenericParameters}<{#GenericParameters}{GenericParameter.Name}{@sep},{/sep}{/GenericParameters}>{/GenericParameters}
-{/genericParams}

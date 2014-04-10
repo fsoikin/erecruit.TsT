@@ -1,6 +1,7 @@
 declare module dust {
 	function compileFn( source: string ): RenderFn;
 	function makeBase( obj: any ): Context;
+	function onLoad( name: string, cb: ( out: string, err?: any ) => void ): void;
 
 	interface Callback {
 		( err: string, out: string ): void;

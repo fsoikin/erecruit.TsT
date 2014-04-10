@@ -27,6 +27,17 @@ module erecruit.TsT {
 	}
 
 	export function Emit( cfg: Config, files: string[], host: ITsTHost ): Rx.IObservable<FileContent> {
+		// TODO: this is really a hole in dustjs design. What if some other component also uses dustjs and wants a different implementation of onLoad?
+		dust.onLoad = ( name, cb ) => {
+			try {
+				if ( name.indexOf( '.' ) < 0 ) name += ".tpl";
+				console.log( "Emit: fetching " + name );
+				var content = host.FetchFile( host.ResolveRelativePath( name, cfg.ConfigDir ) );
+				cb( content ? undefined : "Cannot read " + name, content || undefined );
+			}
+			catch ( err ) { cb( err ); }
+		};
+
 		var config = cacheConfig( host, cfg );
 		var e = new Extractor( config );
 		console.log( "Emit: config = " + JSON.stringify( cfg ) );

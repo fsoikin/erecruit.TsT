@@ -52,7 +52,7 @@ function main() {
 	function showUsage() {
 		consoleLog( "\
 erecruit TsT\r\n\
-Version 0.2\r\n\
+Version 0.3\r\n\
 \r\n\
 Usage:    tstc <options> <source-files> \r\n\
 See:      https://github.com/erecruit/TsT\r\n\

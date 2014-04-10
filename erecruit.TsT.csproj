@@ -71,6 +71,7 @@
     <Content Include="examples\csharp\.tstconfig" />
     <Content Include="doc\diagram.gliffy" />
     <Content Include="examples\self\.tstconfig" />
+    <None Include="examples\csharp\genericParams.tpl" />
     <None Include="jakefile" />
     <TypeScriptCompile Include="lib\jake\jake.d.ts" />
     <TypeScriptCompile Include="lib\jasmine\jasmine.d.ts" />
@@ -98,9 +99,7 @@
     <Content Include="lib\rx\rx.js" />
     <Content Include="lib\typescript\typescript.js" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="examples\csharp-multiple-ouputs\" />
-  </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <TypeScriptNoImplicitAny>True</TypeScriptNoImplicitAny>
   </PropertyGroup>

@@ -73781,6 +73781,18 @@ var erecruit;
         var Config = TsT.Config;
 
         function Emit(cfg, files, host) {
+            dust.onLoad = function (name, cb) {
+                try  {
+                    if (name.indexOf('.') < 0)
+                        name += ".tpl";
+                    console.log("Emit: fetching " + name);
+                    var content = host.FetchFile(host.ResolveRelativePath(name, cfg.ConfigDir));
+                    cb(content ? undefined : "Cannot read " + name, content || undefined);
+                } catch (err) {
+                    cb(err);
+                }
+            };
+
             var config = TsT.cacheConfig(host, cfg);
             var e = new TsT.Extractor(config);
             console.log("Emit: config = " + JSON.stringify(cfg));
@@ -74003,7 +74015,7 @@ function main() {
     function showUsage() {
         consoleLog("\
 erecruit TsT\r\n\
-Version 0.2\r\n\
+Version 0.3\r\n\
 \r\n\
 Usage:    tstc <options> <source-files> \r\n\
 See:      https://github.com/erecruit/TsT\r\n\

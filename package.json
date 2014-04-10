@@ -1,10 +1,14 @@
 {
   "name": "erecruit-tst",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
   "main": "./bin/tst-node.js",
   "bin": { "tstc": "./bin/tstc.js" },
 	"files": ["bin/lib.d.ts", "bin/tst-node.d.ts","bin/tst-node.js","bin/tst.d.ts","bin/tst.js","bin/tstc.js"],
+
+	"scripts": {
+		"prepublish": "jake"
+	},
 
 	"license": "MIT",
   "keywords": [

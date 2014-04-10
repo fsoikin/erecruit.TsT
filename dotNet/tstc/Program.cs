@@ -64,12 +64,12 @@ namespace erecruit.TsT
 		static void ShowUsage( OptionSet opts ) {
 			Console.WriteLine( @"
 erecruit TsT
-Version 0.2
+Version {0}
 
 Usage:    tstc <options> <source-files> 
 See:      https://github.com/erecruit/TsT
 
-Options: " );
+Options: ", typeof( Program ).Assembly.GetName().Version );
 			opts.WriteOptionDescriptions( Console.Out );
 		}
 	}
