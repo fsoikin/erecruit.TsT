@@ -86,7 +86,7 @@ module erecruit.TsT {
 			var dir = host.GetParentDirectory( sourceFileName );
 			if ( dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\' ) dir += '/';
 
-			var name = dir && sourceFileName.substr( 0, dir.length ) === dir
+			var name = dir && sourceFileName.substr( 0, dir.length-1 ) === dir.substring( 0, dir.length-1 )
 				? sourceFileName.substring( dir.length )
 				: sourceFileName;
 			var nameParts = name.split( '.' );

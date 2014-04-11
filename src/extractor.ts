@@ -132,6 +132,7 @@ module erecruit.TsT {
 			};
 
 			this.EnsureResolved( type );
+			console.log( type.docComments() );
 			if ( type.getElementType() ) cached.Array = this.GetType( type.getElementType() )
 			else if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
 			else if ( type.isEnum() ) cached.Enum = this.GetEnum( type );

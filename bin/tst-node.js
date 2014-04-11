@@ -73525,6 +73525,7 @@ var erecruit;
                 };
 
                 this.EnsureResolved(type);
+                console.log(type.docComments());
                 if (type.getElementType())
                     cached.Array = this.GetType(type.getElementType());
                 else if (type.isPrimitive())
@@ -73844,7 +73845,7 @@ var erecruit;
                 if (dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\')
                     dir += '/';
 
-                var name = dir && sourceFileName.substr(0, dir.length) === dir ? sourceFileName.substring(dir.length) : sourceFileName;
+                var name = dir && sourceFileName.substr(0, dir.length - 1) === dir.substring(0, dir.length - 1) ? sourceFileName.substring(dir.length) : sourceFileName;
                 var nameParts = name.split('.');
 
                 var model = {
