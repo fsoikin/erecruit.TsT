@@ -7,6 +7,10 @@ import fs = require( 'fs' );
 import path = require( 'path' );
 var args = require( "minimist" )( process.argv.slice( 2 ) );
 
+// TODO: instead of this hack, I should have a log method in ITsTHost
+var consoleLog = console.log;
+if ( !args.v && !args.verbose ) console.log = () => { };
+
 main();
 
 function main() {
@@ -17,10 +21,6 @@ function main() {
 		showUsage();
 		process.exit( 1 );
 	}
-
-	// TODO: instead of this hack, I should have a log method in ITsTHost
-	var consoleLog = console.log;
-	if ( !args.v && !args.verbose ) console.log = () => { };
 
 	// TODO: need to support config autodiscovery
 	var config: erecruit.TsT.Config = eval( "(" + readFile( configPath ) + ")" );
@@ -51,14 +51,14 @@ function main() {
 
 	function showUsage() {
 		consoleLog( "\
-erecruit TsT\r\n\
+erecruit TsTranslator\r\n\
 Version 0.3\r\n\
 \r\n\
 Usage:    tstc <options> <source-files> \r\n\
 See:      https://github.com/erecruit/TsT\r\n\
 \r\n\
 Options: \r\n\
-	-c, --config    Path to config file, .tstconfig\
+	-c, --config    Path to config file, .tstconfig\r\n\
 	-v, --verbose   Display diagnostic output\
 	" );
 	}

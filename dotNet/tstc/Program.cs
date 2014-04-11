@@ -63,7 +63,7 @@ namespace erecruit.TsT
 
 		static void ShowUsage( OptionSet opts ) {
 			Console.WriteLine( @"
-erecruit TsT
+erecruit TsTranslator
 Version {0}
 
 Usage:    tstc <options> <source-files> 
