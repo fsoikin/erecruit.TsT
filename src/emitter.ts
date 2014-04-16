@@ -28,6 +28,7 @@ module erecruit.TsT {
 
 	export function Emit( cfg: Config, files: string[], host: ITsTHost ): Rx.IObservable<FileContent> {
 		// TODO: this is really a hole in dustjs design. What if some other component also uses dustjs and wants a different implementation of onLoad?
+		// See https://github.com/linkedin/dustjs/issues/452
 		dust.onLoad = ( name, cb ) => {
 			try {
 				if ( name.indexOf( '.' ) < 0 ) name += ".tpl";

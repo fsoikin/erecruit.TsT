@@ -73453,6 +73453,7 @@ var erecruit;
 
                     return {
                         Name: d.name,
+                        Comment: variable.docComments() || (varType && varType.docComments()),
                         Document: result,
                         InternalModule: _this.GetInternalModule(d),
                         ExternalModule: _this.GetExternalModule(d),
@@ -73521,11 +73522,11 @@ var erecruit;
                     Document: this.GetCachedDocFromSymbol(type),
                     Kind: 1 /* Type */,
                     ExternalModule: this.GetExternalModule(type.getDeclarations()[0]),
-                    InternalModule: this.GetInternalModule(type.getDeclarations()[0])
+                    InternalModule: this.GetInternalModule(type.getDeclarations()[0]),
+                    Comment: type.docComments()
                 };
 
                 this.EnsureResolved(type);
-                console.log(type.docComments());
                 if (type.getElementType())
                     cached.Array = this.GetType(type.getElementType());
                 else if (type.isPrimitive())
@@ -73568,9 +73569,10 @@ var erecruit;
                         return _this.GetType(t.type);
                     }),
                     Parameters: s.parameters.map(function (p) {
-                        return { Name: p.name, Type: _this.GetType(p.type) };
+                        return { Name: p.name, Type: _this.GetType(p.type), Comment: p.docComments() };
                     }),
-                    ReturnType: this.GetType(s.returnType)
+                    ReturnType: this.GetType(s.returnType),
+                    Comment: s.docComments()
                 };
             };
 
@@ -73599,7 +73601,7 @@ var erecruit;
                         return m.isProperty() && m.isExternallyVisible();
                     }).map(function (m) {
                         _this.EnsureResolved(m);
-                        return { Name: m.name, Type: _this.GetType(m.type) };
+                        return { Name: m.name, Type: _this.GetType(m.type), Comment: m.docComments() };
                     }),
                     Methods: Enumerable.from(type.getMembers()).where(function (m) {
                         return m.isMethod() && m.isExternallyVisible();
@@ -73948,6 +73950,13 @@ var erecruit;
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        TsT.Version = "0.3.2";
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
 var fs = require('fs');
 var path = require('path');
 var args = require("minimist")(process.argv.slice(2));
@@ -74016,7 +74025,7 @@ function main() {
     function showUsage() {
         consoleLog("\
 erecruit TsTranslator\r\n\
-Version 0.3\r\n\
+Version " + erecruit.TsT.Version + "\r\n\
 \r\n\
 Usage:    tstc <options> <source-files> \r\n\
 See:      https://github.com/erecruit/TsT\r\n\

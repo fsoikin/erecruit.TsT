@@ -68,6 +68,7 @@ module erecruit.TsT {
 
 					return <Class> {
 						Name: d.name,
+						Comment: variable.docComments() || (varType && varType.docComments()),
 						Document: result,
 						InternalModule: this.GetInternalModule( d ),
 						ExternalModule: this.GetExternalModule( d ),
@@ -128,11 +129,11 @@ module erecruit.TsT {
 				Document: this.GetCachedDocFromSymbol( type ),
 				Kind: ModuleElementKind.Type,
 				ExternalModule: this.GetExternalModule( type.getDeclarations()[0] ),
-				InternalModule: this.GetInternalModule( type.getDeclarations()[0] )
+				InternalModule: this.GetInternalModule( type.getDeclarations()[0] ),
+				Comment: type.docComments()
 			};
 
 			this.EnsureResolved( type );
-			console.log( type.docComments() );
 			if ( type.getElementType() ) cached.Array = this.GetType( type.getElementType() )
 			else if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
 			else if ( type.isEnum() ) cached.Enum = this.GetEnum( type );
@@ -162,8 +163,9 @@ module erecruit.TsT {
 			this.EnsureResolved( s );
 			return {
 				GenericParameters: s.getTypeParameters().map( t => this.GetType( t.type ) ),
-				Parameters: s.parameters.map( p => <Identifier>{ Name: p.name, Type: this.GetType( p.type ) }),
-				ReturnType: this.GetType( s.returnType )
+				Parameters: s.parameters.map( p => <Identifier>{ Name: p.name, Type: this.GetType( p.type ), Comment: p.docComments() }),
+				ReturnType: this.GetType( s.returnType ),
+				Comment: s.docComments()
 			};
 		}
 
@@ -190,7 +192,7 @@ module erecruit.TsT {
 				GenericParameters: Enumerable.from( type.getTypeParameters() ).select( t => this.GetType( t ) ).toArray(),
 				Properties: type.getMembers().filter( m => m.isProperty() && m.isExternallyVisible() ).map( m => {
 					this.EnsureResolved( m );
-					return <Identifier>{ Name: m.name, Type: this.GetType( m.type ) };
+					return <Identifier>{ Name: m.name, Type: this.GetType( m.type ), Comment: m.docComments() };
 				}),
 				Methods: Enumerable.from( type.getMembers() )
 					.where( m => m.isMethod() && m.isExternallyVisible() )

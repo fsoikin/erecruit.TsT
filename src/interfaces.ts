@@ -16,7 +16,11 @@ module erecruit.TsT {
 
 	export enum ModuleElementKind { Class = 0, Type = 1 }
 
-	export interface ModuleElement {
+	export interface Declaration {
+		Comment: string;
+	}
+
+	export interface ModuleElement extends Declaration {
 		Document: Document;
 		ExternalModule: string;
 		InternalModule: string;
@@ -77,12 +81,12 @@ module erecruit.TsT {
 		Signatures: CallSignature[];
 	}
 
-	export interface Identifier {
+	export interface Identifier extends Declaration {
 		Name: string;
 		Type: Type;
 	}
 
-	export interface CallSignature {
+	export interface CallSignature extends Declaration {
 		GenericParameters?: Type[];
 		Parameters: Identifier[];
 		ReturnType?: Type;

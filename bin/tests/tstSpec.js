@@ -73253,8 +73253,8 @@ var erecruit;
             }
 
             function compileTemplate(tpl, cfg) {
-                console.log("Compiling template " + tpl);
-                return !tpl ? null : dust.compileFn(tpl[0] == '@' ? host.FetchFile(host.ResolveRelativePath(tpl.substring(1), cfg.ConfigDir)) : tpl);
+                console.log("compileTemplate: " + tpl);
+                return !tpl ? null : dust.compileFn(tpl[0] == '@' ? host.FetchFile(host.ResolveRelativePath(tpl.substring(1), host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir))) : tpl);
             }
         }
         TsT.cacheConfig = cacheConfig;
@@ -73366,22 +73366,28 @@ var erecruit;
                 this._snapshots = {};
                 this._tsHost = {
                     getScriptSnapshot: function (fileName) {
-                        return _this._snapshots[fileName] || (_this._snapshots[fileName] = (function () {
-                            var content = _this._config.Host.FetchFile(fileName);
-                            return content ? ts.ScriptSnapshot.fromString(content) : null;
-                        })());
+                        fileName = _this.realPath(fileName);
+                        var cached = _this._snapshots[fileName];
+                        if (cached !== undefined)
+                            return cached;
+
+                        console.log("getScriptSnapshot: fetching: " + fileName);
+                        var content = _this._config.Host.FetchFile(fileName);
+                        return _this._snapshots[fileName] = content || content === "" ? ts.ScriptSnapshot.fromString(content) : null;
                     },
                     resolveRelativePath: function (path, directory) {
-                        return _this.normalizePath(_this._config.Host.ResolveRelativePath(path, directory));
+                        return _this.rootRelPath(_this._config.Host.ResolveRelativePath(path, _this.realPath(directory)));
                     },
                     fileExists: function (path) {
                         return !!_this._tsHost.getScriptSnapshot(path);
                     },
                     directoryExists: function (path) {
-                        return _this._config.Host.DirectoryExists(path);
+                        return _this._config.Host.DirectoryExists(_this.realPath(path));
                     },
                     getParentDirectory: function (path) {
-                        return _this._config.Host.GetParentDirectory(path);
+                        console.log("getParentDirectory: " + path);
+                        var result = _this._config.Host.GetParentDirectory(_this.realPath(path));
+                        return result ? _this.rootRelPath(result) : result;
                     }
                 };
                 TsT.ensureArray(_config.Host.GetIncludedTypingFiles()).forEach(function (f) {
@@ -73389,15 +73395,22 @@ var erecruit;
                 });
             }
             Extractor.prototype.addFile = function (f) {
-                this._compiler.addFile(f, this._tsHost.getScriptSnapshot(f), null, 0, false, []);
+                console.log("addFile: " + f);
+                var snapshot = this._tsHost.getScriptSnapshot(f);
+                if (snapshot)
+                    this._compiler.addFile(f, snapshot, null, 0, false, []);
+                return !!snapshot;
             };
 
             Extractor.prototype.GetDocument = function (fileName) {
                 var _this = this;
                 fileName = this.normalizePath(fileName);
+                console.log("GetDocument: " + fileName);
 
                 if (!this._compiler.getDocument(fileName)) {
-                    this.addFile(fileName);
+                    if (!this.addFile(fileName)) {
+                        throw "Cannot read file " + fileName;
+                    }
 
                     var resolved = ts.ReferenceResolver.resolve([fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution);
                     Enumerable.from(resolved && resolved.resolvedFiles).where(function (f) {
@@ -73437,12 +73450,10 @@ var erecruit;
                     _this.EnsureResolved(variable);
                     var varType = variable.isType() && variable;
                     var sigs = variable.type.getConstructSignatures();
-                    var ctor = variable.type.getConstructorMethod();
-                    if (ctor)
-                        sigs = sigs.concat(ctor.type.getConstructSignatures());
 
                     return {
                         Name: d.name,
+                        Comment: variable.docComments() || (varType && varType.docComments()),
                         Document: result,
                         InternalModule: _this.GetInternalModule(d),
                         ExternalModule: _this.GetExternalModule(d),
@@ -73466,6 +73477,8 @@ var erecruit;
                 }).doAction(this.EnsureResolved).select(function (x) {
                     return _this.GetType(x);
                 }).toArray();
+
+                console.log("GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types.");
 
                 return result;
             };
@@ -73509,7 +73522,8 @@ var erecruit;
                     Document: this.GetCachedDocFromSymbol(type),
                     Kind: 1 /* Type */,
                     ExternalModule: this.GetExternalModule(type.getDeclarations()[0]),
-                    InternalModule: this.GetInternalModule(type.getDeclarations()[0])
+                    InternalModule: this.GetInternalModule(type.getDeclarations()[0]),
+                    Comment: type.docComments()
                 };
 
                 this.EnsureResolved(type);
@@ -73555,9 +73569,10 @@ var erecruit;
                         return _this.GetType(t.type);
                     }),
                     Parameters: s.parameters.map(function (p) {
-                        return { Name: p.name, Type: _this.GetType(p.type) };
+                        return { Name: p.name, Type: _this.GetType(p.type), Comment: p.docComments() };
                     }),
-                    ReturnType: this.GetType(s.returnType)
+                    ReturnType: this.GetType(s.returnType),
+                    Comment: s.docComments() || undefined
                 };
             };
 
@@ -73586,7 +73601,7 @@ var erecruit;
                         return m.isProperty() && m.isExternallyVisible();
                     }).map(function (m) {
                         _this.EnsureResolved(m);
-                        return { Name: m.name, Type: _this.GetType(m.type) };
+                        return { Name: m.name, Type: _this.GetType(m.type), Comment: m.docComments() };
                     }),
                     Methods: Enumerable.from(type.getMembers()).where(function (m) {
                         return m.isMethod() && m.isExternallyVisible();
@@ -73686,7 +73701,15 @@ var erecruit;
             };
 
             Extractor.prototype.normalizePath = function (path) {
-                return this._config.Host.MakeRelativePath('.', path).replace(/\\/g, '/');
+                return (path || "").replace(/\\/g, '/');
+            };
+
+            Extractor.prototype.rootRelPath = function (realPath) {
+                return this._config.Host.MakeRelativePath(this._config.Original.RootDir, realPath);
+            };
+
+            Extractor.prototype.realPath = function (pathRelativeToRoot) {
+                return this._config.Host.ResolveRelativePath(pathRelativeToRoot, this._config.Original.RootDir);
             };
             return Extractor;
         })();
@@ -73761,13 +73784,28 @@ var erecruit;
         var Config = TsT.Config;
 
         function Emit(cfg, files, host) {
+            dust.onLoad = function (name, cb) {
+                try  {
+                    if (name.indexOf('.') < 0)
+                        name += ".tpl";
+                    console.log("Emit: fetching " + name);
+                    var content = host.FetchFile(host.ResolveRelativePath(name, cfg.ConfigDir));
+                    cb(content ? undefined : "Cannot read " + name, content || undefined);
+                } catch (err) {
+                    cb(err);
+                }
+            };
+
             var config = TsT.cacheConfig(host, cfg);
             var e = new TsT.Extractor(config);
+            console.log("Emit: config = " + JSON.stringify(cfg));
 
             return Rx.Observable.fromArray(TsT.ensureArray(files)).selectMany(function (f) {
                 return formatTemplate(f, e.GetDocument(f).Types, TsT.getFileConfig(config, f), Config.toDustContext(config), TsT.typeName);
             }, function (f, x) {
                 return ({ outputFile: x.outputFileName, content: x.content, inputFile: f });
+            }).doAction(function (x) {
+                return console.log("Finished generation: " + x.outputFile);
             }).groupBy(function (x) {
                 return x.outputFile;
             }, function (x) {
@@ -73776,13 +73814,13 @@ var erecruit;
                 return x.takeLastBuffer(Number.MAX_VALUE);
             }, function (x, xs) {
                 return {
-                    OutputFile: x.key,
-                    SourceFiles: Enumerable.from(xs).select(function (k) {
-                        return k.inputFile;
-                    }).distinct().toArray(),
+                    OutputFile: config.Host.ResolveRelativePath(x.key, config.Original.RootDir),
                     Content: xs.map(function (k) {
                         return k.content;
-                    }).join('\r\n')
+                    }).join('\r\n'),
+                    SourceFiles: Enumerable.from(xs).select(function (k) {
+                        return config.Host.ResolveRelativePath(k.inputFile, config.Original.RootDir);
+                    }).distinct().toArray()
                 };
             });
 
@@ -73806,15 +73844,19 @@ var erecruit;
 
             function formatFileName(sourceFileName, template) {
                 var dir = host.GetParentDirectory(sourceFileName);
-                var name = sourceFileName.substring(dir.length + ((dir[dir.length - 1] === '/' || dir[dir.length - 1] === '\\') ? 0 : 1));
+                if (dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\')
+                    dir += '/';
+
+                var name = dir && sourceFileName.substr(0, dir.length - 1) === dir.substring(0, dir.length - 1) ? sourceFileName.substring(dir.length) : sourceFileName;
                 var nameParts = name.split('.');
 
                 var model = {
-                    Path: host.MakeRelativePath(config.Original.RootDir || "", dir),
+                    Path: dir || '',
                     Name: nameParts.slice(0, nameParts.length - 1).join('.'),
                     Extension: nameParts[nameParts.length - 1]
                 };
 
+                console.log("formatFileName: model = " + JSON.stringify(model));
                 return callDustJs(template, dust.makeBase(model));
             }
 
@@ -73965,7 +74007,7 @@ var erecruit;
                 describe("should correctly parse data structure", function () {
                     it(" - simple", function () {
                         file = "export interface X { A: string; B: number; }";
-                        expect(e.GetDocument(fileName).Types).toEqual([c({
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([c({
                                 Interface: c({
                                     Name: 'X',
                                     Properties: [
@@ -73978,7 +74020,7 @@ var erecruit;
 
                     it("with a substructure", function () {
                         file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Interface: c({
                                     Name: 'X',
@@ -74003,7 +74045,7 @@ var erecruit;
                 describe("should correctly parse an interface", function () {
                     it("with methods", function () {
                         file = "export interface I { M( x: string ): number; N( x: number ): string; }";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Interface: c({
                                     Name: 'I',
@@ -74030,7 +74072,7 @@ var erecruit;
 
                     it("with multiple method overloads", function () {
                         file = "export interface I { M( x: string ): number; M( x: number ): string; }";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Interface: c({
                                     Name: 'I',
@@ -74058,7 +74100,7 @@ var erecruit;
                 describe("should correctly parse enums", function () {
                     it("with implicit values", function () {
                         file = "export enum X { A, B, C }";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Enum: c({
                                     Name: 'X',
@@ -74070,7 +74112,7 @@ var erecruit;
 
                     it("with explicit values", function () {
                         file = "export enum X { A = 5, B = 8, C = 10 }";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Enum: c({
                                     Name: 'X',
@@ -74085,7 +74127,7 @@ var erecruit;
 					D = A | B, E = B & C, F = ~B \
 					G = A + B, H = B - C, I = C ^ B, \
 					J = -B }";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Enum: c({
                                     Name: 'X',
@@ -74102,7 +74144,7 @@ var erecruit;
 
                 it("should correctly parse array-typed properties", function () {
                     file = "export interface I { X: string[]; Y: number[]; Z: J[]; } export interface J {}";
-                    expect(e.GetDocument(fileName).Types).toEqual([
+                    expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                         c({
                             Interface: c({
                                 Name: 'I',
@@ -74120,7 +74162,7 @@ var erecruit;
                 describe("should correctly parse generic interfaces", function () {
                     it("with one parameter", function () {
                         file = "export interface I<T> { X: T[]; Y: T; }";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Interface: c({
                                     Name: 'I',
@@ -74136,7 +74178,7 @@ var erecruit;
 
                     it("with two parameters", function () {
                         file = "export interface I<T,S> { X: T[]; Y: S; }";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Interface: c({
                                     Name: 'I',
@@ -74207,7 +74249,7 @@ var erecruit;
 
                     it("with parameters constrained by regular types", function () {
                         file = "export interface I<T extends J> { X: T; } export interface J {}";
-                        expect(e.GetDocument(fileName).Types).toEqual([
+                        expect(trimTypes(e.GetDocument(fileName).Types)).toEqual([
                             c({
                                 Interface: c({
                                     Name: 'I',
@@ -74266,22 +74308,76 @@ var erecruit;
                     expect(types.length).toEqual(1);
                     expect(types[0].ExternalModule).toEqual('"module"');
                 });
+
+                describe("should extract comments", function () {
+                    it("on interfaces", function () {
+                        file = "/** A comment*/ export interface I {}";
+                        expect(trimTypes(e.GetDocument(fileName).Types, false)).toEqual([
+                            {
+                                Comment: "A comment",
+                                Interface: c({ Name: "I" })
+                            }
+                        ]);
+                    });
+
+                    it("on classes", function () {
+                        file = "/** A comment*/ export class C {}";
+                        expect(e.GetDocument(fileName).Classes).toEqual([
+                            c({ Comment: "A comment", Name: "C" })
+                        ]);
+                    });
+
+                    it("on variables with constructor signatures", function () {
+                        file = "/** A comment*/ export var C: { new: () => string } = null";
+                        expect(e.GetDocument(fileName).Classes).toEqual([
+                            c({ Comment: "A comment", Name: "C" })
+                        ]);
+                    });
+
+                    it("on properties", function () {
+                        file = "export interface I { /** A comment*/ X: string }";
+                        expect(trimTypes(e.GetDocument(fileName).Types, false)[0].Interface.Properties).toEqual([
+                            c({
+                                Comment: "A comment",
+                                Name: 'X'
+                            })
+                        ]);
+                    });
+
+                    it("on methods", function () {
+                        file = "export interface I { /** Comment 1*/ X(): string; /** Comment 2*/ X( p: number ): number; }";
+                        var m = trimTypes(e.GetDocument(fileName).Types, false)[0].Interface.Methods[0];
+                        expect(m.Name).toEqual('X');
+                        expect(m.Signatures.sort(function (a, b) {
+                            return a.Parameters.length - b.Parameters.length;
+                        })).toEqual([
+                            c({ Comment: "Comment 1", Parameters: [] }),
+                            c({ Comment: "Comment 2", Parameters: [c({ Name: 'p' })] })
+                        ]);
+                    });
+                });
             });
 
-            function trimTypes(types) {
-                return types.map(trimType);
+            function trimTypes(types, trimComments) {
+                if (typeof trimComments === "undefined") { trimComments = true; }
+                return types.map(function (x) {
+                    return trimType(x, trimComments);
+                });
             }
 
-            function trimType(type) {
+            function trimType(type, trimComments) {
+                if (typeof trimComments === "undefined") { trimComments = true; }
                 if (!type || !type.hasOwnProperty('Document'))
                     return type;
                 delete type.Document;
                 delete type.Kind;
                 delete type.InternalModule;
                 delete type.ExternalModule;
+                if (trimComments)
+                    delete type.Comment;
 
                 if (type.Interface)
-                    trimIntf(type.Interface);
+                    trimIntf(type.Interface, trimComments);
                 if (type.GenericParameter) {
                     trimType(type.GenericParameter.Constraint);
                 }
@@ -74295,11 +74391,14 @@ var erecruit;
                 return type;
             }
 
-            function trimIntf(i) {
+            function trimIntf(i, trimComments) {
+                if (typeof trimComments === "undefined") { trimComments = true; }
                 trimTypes(i.GenericParameters);
                 trimTypes(i.Extends);
                 i.Properties.forEach(function (p) {
-                    return trimType(p.Type);
+                    trimType(p.Type);
+                    if (trimComments)
+                        delete p.Comment;
                 });
                 i.Methods.forEach(function (p) {
                     return p.Signatures.forEach(function (s) {
@@ -74308,7 +74407,9 @@ var erecruit;
                             return trimType(t);
                         });
                         s.Parameters.forEach(function (p) {
-                            return trimType(p.Type);
+                            trimType(p.Type);
+                            if (trimComments)
+                                delete p.Comment;
                         });
                     });
                 });

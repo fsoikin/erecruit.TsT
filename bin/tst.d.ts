@@ -20,7 +20,10 @@ declare module erecruit.TsT {
         Class = 0,
         Type = 1,
     }
-    interface ModuleElement {
+    interface Declaration {
+        Comment: string;
+    }
+    interface ModuleElement extends Declaration {
         Document: Document;
         ExternalModule: string;
         InternalModule: string;
@@ -76,11 +79,11 @@ declare module erecruit.TsT {
         Name: string;
         Signatures: CallSignature[];
     }
-    interface Identifier {
+    interface Identifier extends Declaration {
         Name: string;
         Type: Type;
     }
-    interface CallSignature {
+    interface CallSignature extends Declaration {
         GenericParameters?: Type[];
         Parameters: Identifier[];
         ReturnType?: Type;
@@ -174,4 +177,7 @@ declare module erecruit.TsT {
     function Emit(cfg: Config, files: string[], host: ITsTHost): Rx.IObservable<FileContent>;
 }
 declare module erecruit.TsT.CSharp {
+}
+declare module erecruit.TsT {
+    var Version: string;
 }

@@ -20,7 +20,10 @@ declare module "tst" {
         Class = 0,
         Type = 1,
     }
-    interface ModuleElement {
+    interface Declaration {
+        Comment: string;
+    }
+    interface ModuleElement extends Declaration {
         Document: Document;
         ExternalModule: string;
         InternalModule: string;
@@ -76,11 +79,11 @@ declare module "tst" {
         Name: string;
         Signatures: CallSignature[];
     }
-    interface Identifier {
+    interface Identifier extends Declaration {
         Name: string;
         Type: Type;
     }
-    interface CallSignature {
+    interface CallSignature extends Declaration {
         GenericParameters?: Type[];
         Parameters: Identifier[];
         ReturnType?: Type;
@@ -169,4 +172,6 @@ declare module "tst" {
     }
     function Emit(cfg: Config, files: string[], host: ITsTHost): Rx.IObservable<FileContent>;
 
+
+    var Version: string;
 }

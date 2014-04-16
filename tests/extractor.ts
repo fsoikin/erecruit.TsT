@@ -45,7 +45,7 @@ module erecruit.TsT.Tests {
 		describe( "should correctly parse data structure", () => {
 			it( " - simple", () => {
 				file = "export interface X { A: string; B: number; }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [c({
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [c({
 					Interface: c( {
 						Name: 'X',
 						Properties: [
@@ -58,7 +58,7 @@ module erecruit.TsT.Tests {
 
 			it( "with a substructure", () => {
 				file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c({
 						Interface: c( {
 							Name: 'X',
@@ -83,7 +83,7 @@ module erecruit.TsT.Tests {
 		describe( "should correctly parse an interface", () => {
 			it( "with methods", () => {
 				file = "export interface I { M( x: string ): number; N( x: number ): string; }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -110,7 +110,7 @@ module erecruit.TsT.Tests {
 
 			it( "with multiple method overloads", () => {
 				file = "export interface I { M( x: string ): number; M( x: number ): string; }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -138,7 +138,7 @@ module erecruit.TsT.Tests {
 		describe( "should correctly parse enums", () => {
 			it( "with implicit values", () => {
 				file = "export enum X { A, B, C }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c({
 						Enum: c( {
 							Name: 'X',
@@ -150,7 +150,7 @@ module erecruit.TsT.Tests {
 
 			it( "with explicit values", () => {
 				file = "export enum X { A = 5, B = 8, C = 10 }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c({
 						Enum: c( {
 							Name: 'X',
@@ -165,7 +165,7 @@ module erecruit.TsT.Tests {
 					D = A | B, E = B & C, F = ~B \
 					G = A + B, H = B - C, I = C ^ B, \
 					J = -B }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c({
 						Enum: c( {
 							Name: 'X',
@@ -181,7 +181,7 @@ module erecruit.TsT.Tests {
 
 		it( "should correctly parse array-typed properties", () => {
 			file = "export interface I { X: string[]; Y: number[]; Z: J[]; } export interface J {}";
-			expect( e.GetDocument( fileName ).Types ).toEqual( [
+			expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 				c( {
 					Interface: c( {
 						Name: 'I',
@@ -199,7 +199,7 @@ module erecruit.TsT.Tests {
 		describe( "should correctly parse generic interfaces", () => {
 			it( "with one parameter", () => {
 				file = "export interface I<T> { X: T[]; Y: T; }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -215,7 +215,7 @@ module erecruit.TsT.Tests {
 
 			it( "with two parameters", () => {
 				file = "export interface I<T,S> { X: T[]; Y: S; }";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -286,7 +286,7 @@ module erecruit.TsT.Tests {
 
 			it( "with parameters constrained by regular types", () => {
 				file = "export interface I<T extends J> { X: T; } export interface J {}";
-				expect( e.GetDocument( fileName ).Types ).toEqual( [
+				expect( trimTypes( e.GetDocument( fileName ).Types ) ).toEqual( [
 					c( {
 						Interface: c( {
 							Name: 'I',
@@ -348,22 +348,69 @@ module erecruit.TsT.Tests {
 			expect( types.length ).toEqual( 1 );
 			expect( types[0].ExternalModule ).toEqual( '"module"' );
 		});
+
+		describe( "should extract comments", () => {
+			it("on interfaces", () => {
+				file = "/** A comment*/ export interface I {}";
+				expect( trimTypes( e.GetDocument(fileName).Types, false ) ).toEqual( [
+					{
+						Comment: "A comment",
+						Interface: c({ Name: "I" })
+					}
+				]);
+			});
+
+			it("on classes", () => {
+				file = "/** A comment*/ export class C {}";
+				expect( e.GetDocument(fileName).Classes ).toEqual( [
+					c({ Comment: "A comment", Name: "C" })
+				]);
+			});
+
+			it("on variables with constructor signatures", () => {
+				file = "/** A comment*/ export var C: { new: () => string } = null";
+				expect( e.GetDocument(fileName).Classes ).toEqual( [
+					c({ Comment: "A comment", Name: "C" })
+				]);
+			});
+
+			it("on properties", () => {
+				file = "export interface I { /** A comment*/ X: string }";
+				expect( trimTypes( e.GetDocument(fileName).Types, false )[0].Interface.Properties ).toEqual( [
+					c({
+						Comment: "A comment",
+						Name: 'X'
+					})
+				]);
+			});
+
+			it("on methods", () => {
+				file = "export interface I { /** Comment 1*/ X(): string; /** Comment 2*/ X( p: number ): number; }";
+				var m = trimTypes( e.GetDocument(fileName).Types, false )[0].Interface.Methods[0];
+				expect( m.Name ).toEqual( 'X' );
+				expect( m.Signatures.sort( (a,b) => a.Parameters.length - b.Parameters.length ) ).toEqual( [
+					c({ Comment: "Comment 1", Parameters: [] } ),
+					c({ Comment: "Comment 2", Parameters: [ c({ Name: 'p' }) ] } )
+				]);
+			});
+		});
 	});
 
 	/* Removes unnecessary back references for better readability of error messages */
-	function trimTypes( types: Type[] ) {
-		return types.map( trimType );
+	function trimTypes( types: Type[], trimComments: boolean = true ) {
+		return types.map( x => trimType( x, trimComments ) );
 	}
 
 	/* Removes unnecessary back references for better readability of error messages */
-	function trimType( type: Type ): Type {
+	function trimType( type: Type, trimComments: boolean = true ): Type {
 		if ( !type || !(<any>type).hasOwnProperty( 'Document' ) ) return type;
 		delete type.Document;
 		delete type.Kind;
 		delete type.InternalModule;
 		delete type.ExternalModule;
+		if ( trimComments ) delete type.Comment;
 
-		if ( type.Interface ) trimIntf( type.Interface );
+		if ( type.Interface ) trimIntf( type.Interface, trimComments );
 		if ( type.GenericParameter ) {
 			trimType( type.GenericParameter.Constraint );
 		}
@@ -376,14 +423,20 @@ module erecruit.TsT.Tests {
 		return type;
 	}
 
-	function trimIntf( i: Interface ) {
+	function trimIntf( i: Interface, trimComments: boolean = true ) {
 		trimTypes( i.GenericParameters );
 		trimTypes( i.Extends );
-		i.Properties.forEach( p => trimType( p.Type ) );
+		i.Properties.forEach( p => { 
+			trimType( p.Type );
+			if ( trimComments ) delete p.Comment;
+		} );
 		i.Methods.forEach( p => p.Signatures.forEach( s => {
 			trimType( s.ReturnType );
 			s.GenericParameters.forEach( t => trimType( t ) );
-			s.Parameters.forEach( p => trimType( p.Type ) );
+			s.Parameters.forEach( p => { 
+				trimType( p.Type ); 
+				if ( trimComments ) delete p.Comment;
+			} );
 		}) );
 	}
 }
