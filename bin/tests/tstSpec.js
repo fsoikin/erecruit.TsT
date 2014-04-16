@@ -73254,7 +73254,17 @@ var erecruit;
 
             function compileTemplate(tpl, cfg) {
                 console.log("compileTemplate: " + tpl);
-                return !tpl ? null : dust.compileFn(tpl[0] == '@' ? host.FetchFile(host.ResolveRelativePath(tpl.substring(1), host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir))) : tpl);
+
+                if (tpl && tpl[0] === '@') {
+                    var file = host.ResolveRelativePath(tpl.substring(1), host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir));
+                    tpl = host.FetchFile(file);
+                    if (!tpl)
+                        throw "Unable to load template from " + file;
+                }
+
+                return (tpl && dust.compileFn(tpl)) || (function (ctx, cb) {
+                    return cb(null, "");
+                });
             }
         }
         TsT.cacheConfig = cacheConfig;
@@ -73572,7 +73582,7 @@ var erecruit;
                         return { Name: p.name, Type: _this.GetType(p.type), Comment: p.docComments() };
                     }),
                     ReturnType: this.GetType(s.returnType),
-                    Comment: s.docComments() || undefined
+                    Comment: s.docComments()
                 };
             };
 
@@ -73789,7 +73799,7 @@ var erecruit;
                     if (name.indexOf('.') < 0)
                         name += ".tpl";
                     console.log("Emit: fetching " + name);
-                    var content = host.FetchFile(host.ResolveRelativePath(name, cfg.ConfigDir));
+                    var content = host.FetchFile(host.ResolveRelativePath(name, host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir)));
                     cb(content ? undefined : "Cannot read " + name, content || undefined);
                 } catch (err) {
                     cb(err);
@@ -73947,6 +73957,13 @@ var erecruit;
             }
         })(TsT.CSharp || (TsT.CSharp = {}));
         var CSharp = TsT.CSharp;
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        TsT.Version = "0.3.3";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));

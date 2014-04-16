@@ -33,7 +33,7 @@ module erecruit.TsT {
 			try {
 				if ( name.indexOf( '.' ) < 0 ) name += ".tpl";
 				console.log( "Emit: fetching " + name );
-				var content = host.FetchFile( host.ResolveRelativePath( name, cfg.ConfigDir ) );
+				var content = host.FetchFile( host.ResolveRelativePath( name, host.ResolveRelativePath( cfg.ConfigDir, cfg.RootDir ) ) );
 				cb( content ? undefined : "Cannot read " + name, content || undefined );
 			}
 			catch ( err ) { cb( err ); }

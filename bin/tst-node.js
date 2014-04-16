@@ -73799,7 +73799,7 @@ var erecruit;
                     if (name.indexOf('.') < 0)
                         name += ".tpl";
                     console.log("Emit: fetching " + name);
-                    var content = host.FetchFile(host.ResolveRelativePath(name, cfg.ConfigDir));
+                    var content = host.FetchFile(host.ResolveRelativePath(name, host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir)));
                     cb(content ? undefined : "Cannot read " + name, content || undefined);
                 } catch (err) {
                     cb(err);
@@ -73963,7 +73963,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.3.2";
+        TsT.Version = "0.3.3";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
