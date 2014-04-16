@@ -1,4 +1,4 @@
-var outDir = process.env.outDir || "./bin";
+﻿var outDir = process.env.outDir || "./bin";
 var typescriptPath = process.env.typescriptPath || process.env.tsPath || "./node_modules/typescript/bin/tsc.js";
 var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
 var jasminePath = "./node_modules/jasmine-focused/bin/jasmine-focused";
@@ -25,6 +25,7 @@ var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, exe
 
 var lib = wrapLibs();
 
+pullVersion();
 desc("Build");
 task('default', outputs);
 desc("Clean");
@@ -161,4 +162,22 @@ function prepend(prefixFiles, destinationFile) {
 
 function toOutDir(file) {
     return path.relative('.', path.resolve(outDir, file));
+}
+
+function pullVersion() {
+    var enc = { encoding: 'utf8' };
+    var versionFileName = "src/version.ts";
+    var packageFileName = "package.json";
+
+    var versionFile = fs.readFileSync(versionFileName, enc);
+    var packageFile = fs.readFileSync(packageFileName, enc);
+
+    var version = JSON.parse(packageFile).version || "0.0.0";
+    versionFile = versionFile.replace(/(\/\*version_goes_here\=\>\*\/\")([^\"]+)/, function (_, prefix, __) {
+        return prefix + version;
+    });
+
+    fs.writeFileSync(versionFileName, versionFile, enc);
+
+    console.log("Building version " + version);
 }

@@ -2,6 +2,7 @@
 /// <reference path="../src/config.ts" />
 /// <reference path="../src/emitter.ts" />
 /// <reference path="../src/interfaces.ts" />
+/// <reference path="../src/version.ts" />
 
 import fs = require( 'fs' );
 import path = require( 'path' );
@@ -52,7 +53,7 @@ function main() {
 	function showUsage() {
 		consoleLog( "\
 erecruit TsTranslator\r\n\
-Version 0.3\r\n\
+Version " + erecruit.TsT.Version + "\r\n\
 \r\n\
 Usage:    tstc <options> <source-files> \r\n\
 See:      https://github.com/erecruit/TsT\r\n\

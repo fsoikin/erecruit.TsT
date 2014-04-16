@@ -28,6 +28,7 @@ var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, exe
 
 var lib = wrapLibs();
 
+pullVersion();
 desc( "Build" ); task( 'default', outputs );
 desc( "Clean" ); task( 'clean', [], () => outputs.concat( lib ).forEach( f => fs.existsSync( f ) && fs.unlink( f ) ) );
 desc( "Clean, then build" ); task( 'rebuild', ['clean', 'default'] );
@@ -139,4 +140,20 @@ function prepend( prefixFiles: string[], destinationFile: string ) {
 
 function toOutDir( file: string ) {
 	return path.relative( '.', path.resolve( outDir, file ) );
+}
+
+function pullVersion() {
+	var enc = { encoding: 'utf8' };
+	var versionFileName = "src/version.ts";
+	var packageFileName = "package.json";
+
+	var versionFile: string = <any>fs.readFileSync( versionFileName, enc );
+	var packageFile: string = <any>fs.readFileSync( packageFileName, enc );
+
+	var version = JSON.parse( packageFile ).version || "0.0.0";
+	versionFile = versionFile.replace( /(\/\*version_goes_here\=\>\*\/\")([^\"]+)/, (_,prefix,__) => prefix + version );
+
+	fs.writeFileSync( versionFileName, versionFile, enc );
+
+	console.log( "Building version " + version );
 }
