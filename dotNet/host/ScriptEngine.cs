@@ -8,16 +8,39 @@ using Microsoft.ClearScript.V8;
 
 namespace erecruit.TsT
 {
-	class ScriptEngine
+	public class ScriptEngine
 	{
+		public enum OutputKind {
+			Log, Error, Warning
+		}
+
+		public class OutputEventArgs : EventArgs
+		{
+			public OutputKind Kind { get; private set; }
+			public string Message { get; private set; }
+			public OutputEventArgs( OutputKind kind, string msg ) {
+				this.Kind = kind; this.Message = msg;
+			}
+		}
+
+		public event EventHandler<OutputEventArgs> Output;
+
 		public ScriptEngine() {
 			_runtime = new Microsoft.ClearScript.V8.V8Runtime();
 			_engine = _runtime.CreateScriptEngine();
 			_engine.AddHostObject( "setTimeout", new Func<dynamic, int, int>( setTimeout ) );
 			_engine.AddHostObject( "clearTimeout", new Action<int>( clearTimeout ) );
 
-			Action<object> debugWrite = o => Debug.WriteLine( o );
-			_engine.AddHostObject( "console", new { log = debugWrite, debug = debugWrite, error = debugWrite, warn = debugWrite } );
+			Func<OutputKind, Action<object>> debugWrite = k => o => {
+				var e = Output;
+				if ( e != null ) e( this, new OutputEventArgs( k, Convert.ToString( o ) ) );
+				Debug.WriteLine( o ); 
+			};
+			_engine.AddHostObject( "console", new { 
+				log = debugWrite( OutputKind.Log ), 
+				error = debugWrite( OutputKind.Error ), 
+				warn = debugWrite( OutputKind.Warning ) 
+			} );
 
 			IConnectableObservable<Action> runQueue = null;
 			runQueue = _queue

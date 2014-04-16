@@ -82,7 +82,7 @@ module erecruit.TsT {
 				.selectMany( oos => Rx.Observable.merge( oos.where( e => !!e ).toArray() ) );
 		}
 
-		function formatFileName( sourceFileName: string, template: dust.RenderFn ) {
+		function formatFileName( sourceFileName: string, template: dust.SimpleRenderFn ) {
 
 			var dir = host.GetParentDirectory( sourceFileName );
 			if ( dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\' ) dir += '/';
@@ -102,7 +102,7 @@ module erecruit.TsT {
 			return callDustJs( template, dust.makeBase( model ) );
 		}
 
-		function callDustJs( template: dust.RenderFn, ctx: dust.Context ) {
+		function callDustJs( template: dust.SimpleRenderFn, ctx: dust.Context ) {
 			return Rx.Observable.create<string>( or => {
 				template( ctx, ( err, out ) => {
 					err ? or.onError( err ) : or.onNext( out );

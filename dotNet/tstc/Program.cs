@@ -13,9 +13,11 @@ namespace erecruit.TsT
 		static int Main( string[] args ) {
 			string configFile = null;
 			string root = null;
+			bool verbose = false;
 			var opts = new OptionSet() { 
 				{ "c|config=", "Path to the config file (discovered automatically if not specified).", v => configFile = v },
-				{ "r|root=", "Path to the directory, which is to be considered the common root of all input files (discovered automatically if not specified).", v => root = v }
+				{ "r|root=", "Path to the directory, which is to be considered the common root of all input files (discovered automatically if not specified).", v => root = v },
+				{ "v|verbose", "Display diagnostic output.", _ => verbose = true },
 			};
 			var inputFiles = opts.Parse( args );
 
@@ -33,17 +35,27 @@ namespace erecruit.TsT
 				return 1;
 			}
 
-			var commonRoot = string.IsNullOrWhiteSpace( root ) ? CalculateCommonRoot( inputFiles ) : root;
+			var commonRoot = string.IsNullOrWhiteSpace( root ) ? CalculateCommonRoot( inputFiles.Select( Path.GetDirectoryName ) ) : root;
+			if ( string.IsNullOrEmpty( commonRoot ) ) {
+				Console.Error.WriteLine( "Unable to calculate common root directory for all given files." );
+				return 1;
+			}
+			else if ( verbose ) {
+				Console.WriteLine( "Using common root: " + commonRoot );
+			}
+
 			try {
-				var result = Observable.Using( () => new TsT(), tst =>
-					from f in tst.Emit( inputFiles.Select( Path.GetFullPath ), Path.GetFullPath( commonRoot ), configFile == null ? TsT.AutoDiscoverConfigFile() : (_ => configFile) )
-					from s in f.SourceFiles
-					select new { s, f.OutputFile }
-					)
-					.Do( x => Console.WriteLine( "{0} -> {1}", x.s, x.OutputFile ) )
-					.SubscribeOn( ThreadPoolScheduler.Instance )
-					.DefaultIfEmpty()
-					.Wait();
+				var result = Observable.Using( 
+					() => { var tst = new TsT(); tst.Output += Output( verbose ); return tst; },  // WTF, no inline event initializers in C# ?!?!
+					tst =>
+						from f in tst.Emit( inputFiles.Select( Path.GetFullPath ), commonRoot, configFile == null ? TsT.AutoDiscoverConfigFile() : (_ => configFile) )
+						from s in f.SourceFiles
+						select new { s, f.OutputFile }
+						)
+						.Do( x => Console.WriteLine( "{0} -> {1}", x.s, x.OutputFile ) )
+						.SubscribeOn( ThreadPoolScheduler.Instance )
+						.DefaultIfEmpty()
+						.Wait();
 			}
 			catch ( Exception ex ) {
 				Console.Error.WriteLine( ex.Message );
@@ -51,6 +63,13 @@ namespace erecruit.TsT
 			}
 
 			return 0;
+		}
+
+		private static EventHandler<ScriptEngine.OutputEventArgs> Output( bool verbose ) {
+			return ( s, e ) => {
+				if ( e.Kind == ScriptEngine.OutputKind.Error || e.Kind == ScriptEngine.OutputKind.Warning ) Console.Error.WriteLine( e.Message );
+				else if ( e.Kind == ScriptEngine.OutputKind.Log && verbose ) Console.WriteLine( e.Message );
+			};
 		}
 
 		private static string CalculateCommonRoot( IEnumerable<string> inputFiles ) {

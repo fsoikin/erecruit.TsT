@@ -73254,7 +73254,17 @@ var erecruit;
 
             function compileTemplate(tpl, cfg) {
                 console.log("compileTemplate: " + tpl);
-                return !tpl ? null : dust.compileFn(tpl[0] == '@' ? host.FetchFile(host.ResolveRelativePath(tpl.substring(1), host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir))) : tpl);
+
+                if (tpl && tpl[0] === '@') {
+                    var file = host.ResolveRelativePath(tpl.substring(1), host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir));
+                    tpl = host.FetchFile(file);
+                    if (!tpl)
+                        throw "Unable to load template from " + file;
+                }
+
+                return (tpl && dust.compileFn(tpl)) || (function (ctx, cb) {
+                    return cb(null, "");
+                });
             }
         }
         TsT.cacheConfig = cacheConfig;

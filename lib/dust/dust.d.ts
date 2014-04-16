@@ -7,10 +7,15 @@ declare module dust {
 		( err: string, out: string ): void;
 	}
 
-	interface RenderFn {
+	interface StreamRenderFn {
 		( context: Context ): Stream;
+	}
+
+	interface SimpleRenderFn {
 		( context: Context, cb: Callback ): void;
 	}
+
+	interface RenderFn extends SimpleRenderFn, StreamRenderFn { }
 
 	interface Context {
 		current(): any;

@@ -110,8 +110,8 @@ declare module erecruit.TsT {
     }
     interface CachedConfigPart {
         match: (name: string) => boolean;
-        fileName: dust.RenderFn;
-        template: dust.RenderFn;
+        fileName: dust.SimpleRenderFn;
+        template: dust.SimpleRenderFn;
     }
     interface CachedConfig {
         Original: Config;
