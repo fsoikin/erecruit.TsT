@@ -59,5 +59,43 @@ namespace erecruit.vs.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Config Missing.
+        /// </summary>
+        internal static string ConfigMissing_Caption {
+            get {
+                return ResourceManager.GetString("ConfigMissing_Caption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your project does not seem to have a .tstconfig file, without which erecruit.TsT is unable to generate any output from your TypeScript files.\r\n\r\nWould you like to add a default config and template now?.
+        /// </summary>
+        internal static string ConfigMissing_Text {
+            get {
+                return ResourceManager.GetString("ConfigMissing_Text", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] DefaultConfig_Itself {
+            get {
+                object obj = ResourceManager.GetObject("DefaultConfig_Itself", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] DefaultConfig_TypeTemplate {
+            get {
+                object obj = ResourceManager.GetObject("DefaultConfig_TypeTemplate", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

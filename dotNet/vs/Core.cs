@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Windows.Forms;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
@@ -14,7 +16,13 @@ namespace erecruit.vs
 		public const string TypeScriptExtension = ".ts";
 		public const string TranslateFlagName = "TsTranslate";
 
+		public const string DefaultTemplatesFolder = "TsT-templates";
+		public const string DefaultTemplateFileName = "type.cs.tpl";
+		public static readonly string[] FoldersForDefaultTemplate = new[] { "scripts", "content" };
+
 		public static void Translate( IEnumerable<File> inputFiles ) {
+			if ( !EnsureConfig( inputFiles ) ) return;
+
 			var dte = (DTE2)Package.GetGlobalService( typeof( SDTE ) );
 			var files = inputFiles.ToList();
 			var items = files.ToLookup( x => x.Path, x => x.Item, StringComparer.InvariantCultureIgnoreCase );
@@ -23,12 +31,68 @@ namespace erecruit.vs
 			// TODO: should use a shared instance of TsT across multiple calls
 			Observable.Using( () => new TsT.TsT(), tst =>
 			 from g in tst.Emit( files.Select( x => x.Path ), solutionDir, TsT.TsT.AutoDiscoverConfigFile() )
-			 let item = g.SourceFiles.SelectMany( x => items[x] ).FirstOrDefault()
-			 from _ in IncludeInProjectIfNotThere( item, g.OutputFile )
+
+			 let item = g.SourceFiles
+									.Select( x => Path.GetFullPath( Path.Combine( solutionDir, x ) ) )
+									.SelectMany( x => items[x] )
+									.FirstOrDefault()
+
+			 from _ in IncludeInProjectIfNotThere( item, Path.GetFullPath( Path.Combine( solutionDir, g.OutputFile ) ) )
 			 select g
 			).Subscribe( 
 				f => dte.StatusBar.Text = "Generated " + f.OutputFile, 
 				ex => dte.StatusBar.Text = ex.Message );
+		}
+
+		static bool EnsureConfig( IEnumerable<File> inputFiles ) {
+			var anyFilesWithoutConfig = inputFiles.Select( f => f.Path ).Select( TsT.TsT.AutoDiscoverConfigFile() ).Any( string.IsNullOrEmpty );
+			if ( !anyFilesWithoutConfig ) return true;
+
+			var r = MessageBox.Show( Properties.Resources.ConfigMissing_Text, Properties.Resources.ConfigMissing_Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question );
+			if ( r == DialogResult.No ) return false;
+
+			inputFiles
+				.Select( f => f.Item.ContainingProject )
+				.Distinct()
+				.Select( proj => {
+					var targetFolder = (from i in GetFiles( GetItems( proj.ProjectItems ) )
+															let name = Path.GetFileName( i.Path )
+															where !string.IsNullOrEmpty( name )
+															join folder in FoldersForDefaultTemplate on name.ToLower() equals folder
+															select new { path = i.Path, items = i.Item.ProjectItems }
+															)
+															.FirstOrDefault()
+															??
+															new { path = Path.GetDirectoryName( proj.FullName ), items = proj.ProjectItems };
+
+					var templatesFolderPath = Path.Combine( targetFolder.path, DefaultTemplatesFolder );
+					var templatesFolder = GetFiles( GetItems( targetFolder.items ) )
+																.Where( f => string.Equals( f.Path, templatesFolderPath, StringComparison.InvariantCultureIgnoreCase ) )
+																.Select( f => f.Item )
+																.FirstOrDefault()
+																??
+																(Directory.Exists( templatesFolderPath )
+																	? targetFolder.items.AddFromDirectory( templatesFolderPath )
+																	: targetFolder.items.AddFolder( DefaultTemplatesFolder ) );
+
+					var configPath = Path.Combine( targetFolder.path, TsT.TsT.DefaultConfigFileName );
+					var templatePath = Path.Combine( templatesFolderPath, DefaultTemplateFileName );
+					System.IO.File.WriteAllBytes( configPath, Properties.Resources.DefaultConfig_Itself );
+					System.IO.File.WriteAllBytes( templatePath, Properties.Resources.DefaultConfig_TypeTemplate );
+
+					var config = targetFolder.items.AddFromFile( configPath );
+					var template = templatesFolder.ProjectItems.AddFromFile( templatePath );
+
+					return config;
+				} )
+				.Catch( ( Exception ex ) => {
+					MessageBox.Show( ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error );
+					return Enumerable.Empty<ProjectItem>();
+				} )
+				.TakeLast( 1 )
+				.ForEach( config => config.Open().Activate() );
+
+			return true;
 		}
 
 		public static IEnumerable<int> IncludeInProjectIfNotThere( ProjectItem item, string file ) {
@@ -60,6 +124,8 @@ namespace erecruit.vs
 		}
 
 		public static bool GetTranslateFlag( ProjectItem item ) {
+			if ( item.FileCount == 0 ) return false;
+
 			IVsHierarchy hierarchy;
 			uint itemID;
 			string result;
