@@ -74125,496 +74125,587 @@ var erecruit;
 (function (erecruit) {
     (function (TsT) {
         (function (Tests) {
-            var path = require("path");
-            var fs = require("fs");
-            var c = jasmine.objectContaining;
+            (function (Extr) {
+                function basic() {
+                    Tests.group("should correctly parse data structure", function () {
+                        it(" - simple", function () {
+                            Extr.file = "export interface X { A: string; B: number; }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'X',
+                                    Properties: [
+                                        { Name: 'A', Type: Extr.c({ PrimitiveType: 1 /* String */ }) },
+                                        { Name: 'B', Type: Extr.c({ PrimitiveType: 3 /* Number */ }) }
+                                    ]
+                                })
+                            ]);
+                        });
 
-            describe("Extractor", function () {
-                var e;
-                var file;
-                var files;
-                var fileName = "a.ts";
-
-                beforeEach(function () {
-                    file = null;
-                    files = {};
-                    e = new TsT.Extractor({
-                        Original: { RootDir: '.', ConfigDir: '.' },
-                        File: [{ match: null, types: null }],
-                        Host: {
-                            DirectoryExists: function (_) {
-                                return false;
-                            },
-                            FetchFile: function (name) {
-                                return (name === fileName && file) || files[name] || fs.existsSync(name) && fs.readFileSync(name, { encoding: 'utf8' }) || null;
-                            },
-                            GetParentDirectory: function (_) {
-                                return "";
-                            },
-                            MakeRelativePath: function (from, to) {
-                                return to;
-                            },
-                            ResolveRelativePath: function (path, directory) {
-                                return path;
-                            },
-                            GetIncludedTypingFiles: function () {
-                                return [require.resolve('../lib.d.ts')];
-                            }
-                        }
-                    });
-                });
-
-                var oldStringify;
-                beforeEach(function () {
-                    oldStringify = JSON.stringify;
-                    JSON['stringify'] = function (obj, replacer) {
-                        return oldStringify(obj, replacer, '\t');
-                    };
-                });
-                afterEach(function () {
-                    return JSON['stringify'] = oldStringify;
-                });
-
-                describe("should correctly parse data structure", function () {
-                    it(" - simple", function () {
-                        file = "export interface X { A: string; B: number; }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'X',
-                                Properties: [
-                                    { Name: 'A', Type: c({ PrimitiveType: 1 /* String */ }) },
-                                    { Name: 'B', Type: c({ PrimitiveType: 3 /* Number */ }) }
-                                ]
-                            })
-                        ]);
+                        it("with a substructure", function () {
+                            Extr.file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'X',
+                                    Properties: [
+                                        { Name: 'A', Type: Extr.c({ PrimitiveType: 1 /* String */ }) },
+                                        { Name: 'B', Type: Extr.c({ Interface: Extr.c({ Name: 'Y' }) }) }
+                                    ]
+                                }),
+                                Extr.c({
+                                    Name: 'Y',
+                                    Properties: [
+                                        { Name: 'C', Type: Extr.c({ PrimitiveType: 3 /* Number */ }) }
+                                    ]
+                                })
+                            ]);
+                        });
                     });
 
-                    it("with a substructure", function () {
-                        file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'X',
-                                Properties: [
-                                    { Name: 'A', Type: c({ PrimitiveType: 1 /* String */ }) },
-                                    { Name: 'B', Type: c({ Interface: c({ Name: 'Y' }) }) }
-                                ]
-                            }),
-                            c({
-                                Name: 'Y',
-                                Properties: [
-                                    { Name: 'C', Type: c({ PrimitiveType: 3 /* Number */ }) }
-                                ]
-                            })
-                        ]);
-                    });
-                });
+                    Tests.group("should correctly parse an interface", function () {
+                        it("with methods", function () {
+                            Extr.file = "export interface I { M( x: string ): number; N( x: number ): string; }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'I',
+                                    Methods: [
+                                        {
+                                            Name: 'M',
+                                            Signatures: [Extr.c({
+                                                    Parameters: [Extr.c({ Name: 'x', Type: Extr.c({ PrimitiveType: 1 /* String */ }) })],
+                                                    ReturnType: Extr.c({ PrimitiveType: 3 /* Number */ })
+                                                })]
+                                        },
+                                        {
+                                            Name: 'N',
+                                            Signatures: [Extr.c({
+                                                    Parameters: [Extr.c({ Name: 'x', Type: Extr.c({ PrimitiveType: 3 /* Number */ }) })],
+                                                    ReturnType: Extr.c({ PrimitiveType: 1 /* String */ })
+                                                })]
+                                        }
+                                    ]
+                                })
+                            ]);
+                        });
 
-                describe("should correctly parse an interface", function () {
-                    it("with methods", function () {
-                        file = "export interface I { M( x: string ): number; N( x: number ): string; }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'I',
-                                Methods: [
-                                    {
-                                        Name: 'M',
-                                        Signatures: [c({
-                                                Parameters: [c({ Name: 'x', Type: c({ PrimitiveType: 1 /* String */ }) })],
-                                                ReturnType: c({ PrimitiveType: 3 /* Number */ })
-                                            })]
-                                    },
-                                    {
-                                        Name: 'N',
-                                        Signatures: [c({
-                                                Parameters: [c({ Name: 'x', Type: c({ PrimitiveType: 3 /* Number */ }) })],
-                                                ReturnType: c({ PrimitiveType: 1 /* String */ })
-                                            })]
-                                    }
-                                ]
-                            })
-                        ]);
-                    });
-
-                    it("with multiple method overloads", function () {
-                        file = "export interface I { M( x: string ): number; M( x: number ): string; }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'I',
-                                Methods: [
-                                    {
-                                        Name: 'M',
-                                        Signatures: [
-                                            c({
-                                                Parameters: [c({ Name: 'x', Type: c({ PrimitiveType: 1 /* String */ }) })],
-                                                ReturnType: c({ PrimitiveType: 3 /* Number */ })
-                                            }),
-                                            c({
-                                                Parameters: [c({ Name: 'x', Type: c({ PrimitiveType: 3 /* Number */ }) })],
-                                                ReturnType: c({ PrimitiveType: 1 /* String */ })
-                                            })
-                                        ]
-                                    }
-                                ]
-                            })
-                        ]);
-                    });
-                });
-
-                describe("should correctly parse enums", function () {
-                    it("with implicit values", function () {
-                        file = "export enum X { A, B, C }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Enum();
-                        })).toEqual([
-                            c({
-                                Name: 'X',
-                                Values: [{ Name: 'A', Value: 0 }, { Name: 'B', Value: 1 }, { Name: 'C', Value: 2 }]
-                            })
-                        ]);
+                        it("with multiple method overloads", function () {
+                            Extr.file = "export interface I { M( x: string ): number; M( x: number ): string; }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'I',
+                                    Methods: [
+                                        {
+                                            Name: 'M',
+                                            Signatures: [
+                                                Extr.c({
+                                                    Parameters: [Extr.c({ Name: 'x', Type: Extr.c({ PrimitiveType: 1 /* String */ }) })],
+                                                    ReturnType: Extr.c({ PrimitiveType: 3 /* Number */ })
+                                                }),
+                                                Extr.c({
+                                                    Parameters: [Extr.c({ Name: 'x', Type: Extr.c({ PrimitiveType: 3 /* Number */ }) })],
+                                                    ReturnType: Extr.c({ PrimitiveType: 1 /* String */ })
+                                                })
+                                            ]
+                                        }
+                                    ]
+                                })
+                            ]);
+                        });
                     });
 
-                    it("with explicit values", function () {
-                        file = "export enum X { A = 5, B = 8, C = 10 }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Enum();
-                        })).toEqual([
-                            c({
-                                Name: 'X',
-                                Values: [{ Name: 'A', Value: 5 }, { Name: 'B', Value: 8 }, { Name: 'C', Value: 10 }]
-                            })
-                        ]);
-                    });
+                    Tests.group("should correctly parse enums", function () {
+                        it("with implicit values", function () {
+                            Extr.file = "export enum X { A, B, C }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Enum();
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'X',
+                                    Values: [{ Name: 'A', Value: 0 }, { Name: 'B', Value: 1 }, { Name: 'C', Value: 2 }]
+                                })
+                            ]);
+                        });
 
-                    it("with compound values", function () {
-                        file = "export enum X { A = 1, B = 2, C = 6, \
+                        it("with explicit values", function () {
+                            Extr.file = "export enum X { A = 5, B = 8, C = 10 }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Enum();
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'X',
+                                    Values: [{ Name: 'A', Value: 5 }, { Name: 'B', Value: 8 }, { Name: 'C', Value: 10 }]
+                                })
+                            ]);
+                        });
+
+                        it("with compound values", function () {
+                            Extr.file = "export enum X { A = 1, B = 2, C = 6, \
 					D = A | B, E = B & C, F = ~B \
 					G = A + B, H = B - C, I = C ^ B, \
 					J = -B }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Enum();
-                        })).toEqual([
-                            c({
-                                Name: 'X',
-                                Values: [
-                                    { Name: 'A', Value: 1 }, { Name: 'B', Value: 2 }, { Name: 'C', Value: 6 },
-                                    { Name: 'D', Value: 1 | 2 }, { Name: 'E', Value: 2 & 6 }, { Name: 'F', Value: ~2 },
-                                    { Name: 'G', Value: 1 + 2 }, { Name: 'H', Value: 2 - 6 }, { Name: 'I', Value: 6 ^ 2 },
-                                    { Name: 'J', Value: -2 }]
-                            })
-                        ]);
-                    });
-                });
-
-                it("should correctly parse array-typed properties", function () {
-                    file = "export interface I { X: string[]; Y: number[]; Z: J[]; } export interface J {}";
-                    expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                        return t.Interface;
-                    })).toEqual([
-                        c({
-                            Name: 'I',
-                            Properties: [
-                                { Name: 'X', Type: c({ Array: c({ PrimitiveType: 1 /* String */ }) }) },
-                                { Name: 'Y', Type: c({ Array: c({ PrimitiveType: 3 /* Number */ }) }) },
-                                { Name: 'Z', Type: c({ Array: c({ Interface: c({ Name: 'J' }) }) }) }
-                            ]
-                        }),
-                        c({ Name: 'J' })
-                    ]);
-                });
-
-                describe("should correctly parse generic interfaces", function () {
-                    it("with one parameter", function () {
-                        file = "export interface I<T> { X: T[]; Y: T; }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'I',
-                                GenericParameters: [c({ GenericParameter: { Name: 'T', Constraint: null } })],
-                                Properties: [
-                                    { Name: 'X', Type: c({ Array: c({ GenericParameter: { Name: 'T', Constraint: null } }) }) },
-                                    { Name: 'Y', Type: c({ GenericParameter: { Name: 'T', Constraint: null } }) }
-                                ]
-                            })
-                        ]);
-                    });
-
-                    it("with two parameters", function () {
-                        file = "export interface I<T,S> { X: T[]; Y: S; }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'I',
-                                GenericParameters: [
-                                    c({ GenericParameter: { Name: 'T', Constraint: null } }),
-                                    c({ GenericParameter: { Name: 'S', Constraint: null } })
-                                ],
-                                Properties: [
-                                    { Name: 'X', Type: c({ Array: c({ GenericParameter: { Name: 'T', Constraint: null } }) }) },
-                                    { Name: 'Y', Type: c({ GenericParameter: { Name: 'S', Constraint: null } }) }
-                                ]
-                            })
-                        ]);
-                    });
-
-                    it("inheriting from other generic interfaces", function () {
-                        file = "export interface I<T> extends J<T> { X: T[]; } export interface J<S> { Y: S }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'I',
-                                GenericParameters: [{ GenericParameter: { Name: 'T', Constraint: null } }],
-                                Extends: [c({
-                                        GenericInstantiation: {
-                                            Definition: 'J',
-                                            Arguments: [{ GenericParameter: c({ Name: 'T' }) }]
-                                        }
-                                    })],
-                                Properties: [
-                                    { Name: 'X', Type: { Array: { GenericParameter: { Name: 'T', Constraint: null } } } }
-                                ]
-                            }),
-                            c({
-                                Name: 'J',
-                                GenericParameters: [{ GenericParameter: { Name: 'S', Constraint: null } }],
-                                Properties: [{ Name: 'Y', Type: { GenericParameter: c({ Name: 'S' }) } }]
-                            })
-                        ]);
-                    });
-
-                    it("concretely instantiated and used in a base type position", function () {
-                        file = "export interface I extends J<number> { } export interface J<S> { Y: S }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'I',
-                                Extends: [{
-                                        GenericInstantiation: {
-                                            Definition: 'J',
-                                            Arguments: [c({ PrimitiveType: 3 /* Number */ })]
-                                        }
-                                    }]
-                            }),
-                            c({
-                                Name: 'J',
-                                GenericParameters: [{ GenericParameter: { Name: 'S', Constraint: null } }],
-                                Properties: [{ Name: 'Y', Type: { GenericParameter: c({ Name: 'S' }) } }]
-                            })
-                        ]);
-                    });
-
-                    it("with parameters constrained by regular types", function () {
-                        file = "export interface I<T extends J> { X: T; } export interface J {}";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                            return t.Interface;
-                        })).toEqual([
-                            c({
-                                Name: 'I',
-                                GenericParameters: [
-                                    c({ GenericParameter: { Name: 'T', Constraint: c({ Interface: c({ Name: 'J' }) }) } })
-                                ],
-                                Properties: [
-                                    { Name: 'X', Type: c({ GenericParameter: c({ Name: 'T' }) }) }
-                                ]
-                            }),
-                            c({ Name: 'J' })
-                        ]);
-                    });
-                });
-
-                it("should ignore private properties on interfaces", function () {
-                    file = "export class I { X: string; private Y: number; }";
-                    var types = trimAndUnwrapAll(e.GetDocument(fileName).Types).map(function (t) {
-                        return t.Interface;
-                    });
-                    expect(types).toEqual([c({ Name: 'I' })]);
-                    expect(types[0].Properties).toEqual([c({ Name: 'X' })]);
-                });
-
-                it("should interpret declarations from explicitly declared external modules as coming from their own files", function () {
-                    files['x.d.ts'] = "decalre module 'x' { export interface I { X: string; } }";
-                    file = "/// <reference path='x.d.ts' />\r\n import x = require('x'); export interface J { i: x.I; }";
-                    var types = e.GetDocument(fileName).Types.map(function (t) {
-                        return t.Interface();
-                    });
-                    expect(types.length).toEqual(1);
-                    expect(types).toEqual([c({ Name: 'J' })]);
-                    expect(types[0].Properties).toEqual([c({ Name: 'i' })]);
-                    expect(types[0].Properties[0].Type).toEqual(c({
-                        Document: c({ Path: "x.d.ts" }),
-                        ExternalModule: '"x"'
-                    }));
-                    expect(types[0].Properties[0].Type.Interface().Name).toEqual('I');
-                    expect(types[0].Properties[0].Type.InternalModule).toBeFalsy();
-                });
-
-                it("should not return any InternalModule for top-level types", function () {
-                    file = "export interface I { }";
-                    var types = e.GetDocument(fileName).Types;
-                    expect(types.length).toEqual(1);
-                    expect(types[0].InternalModule).toBeFalsy();
-                });
-
-                it("should, for regular .ts files, return ExternalModule as quoted file name", function () {
-                    file = "export interface I { }";
-                    var types = e.GetDocument(fileName).Types;
-                    expect(types.length).toEqual(1);
-                    expect(types[0].ExternalModule).toEqual('"' + fileName + '"');
-                });
-
-                it("should, for .d.ts files, return ExternalModule exactly as declared", function () {
-                    files["x.d.ts"] = "declare module 'module' { export interface I { } }";
-                    var types = e.GetDocument("x.d.ts").Types;
-                    expect(types.length).toEqual(1);
-                    expect(types[0].ExternalModule).toEqual('"module"');
-                });
-
-                describe("should extract comments", function () {
-                    it("on interfaces", function () {
-                        file = "/** A comment*/ export interface I {}";
-                        var types = trimAndUnwrapAll(e.GetDocument(fileName).Types, false);
-                        expect(types.length).toEqual(1);
-                        expect(types[0].Comment).toEqual("A comment");
-                        expect(types[0].Interface.Name).toEqual("I");
-                    });
-
-                    it("on classes", function () {
-                        file = "/** A comment*/ export class C {}";
-                        expect(e.GetDocument(fileName).Classes).toEqual([
-                            c({ Comment: "A comment", Name: "C" })
-                        ]);
-                    });
-
-                    it("on variables with constructor signatures", function () {
-                        file = "/** A comment*/ export var C: { new: () => string } = null";
-                        expect(e.GetDocument(fileName).Classes).toEqual([
-                            c({ Comment: "A comment", Name: "C" })
-                        ]);
-                    });
-
-                    it("on properties", function () {
-                        file = "export interface I { \r\n/** A comment*/ X: string }";
-                        expect(trimAndUnwrapAll(e.GetDocument(fileName).Types, false)[0]).toEqual(c({
-                            Interface: c({
-                                Properties: [
-                                    c({
-                                        Comment: "A comment",
-                                        Name: 'X'
-                                    })
-                                ]
-                            })
-                        }));
-                    });
-
-                    it("on methods", function () {
-                        file = "export interface I { \r\n/** Comment 1*/ X(): string; \r\n/** Comment 2*/ X( p: number ): number; }";
-                        var m = trimAndUnwrapAll(e.GetDocument(fileName).Types, false)[0].Interface.Methods[0];
-                        expect(m.Name).toEqual('X');
-                        expect(m.Signatures.sort(function (a, b) {
-                            return a.Parameters.length - b.Parameters.length;
-                        })).toEqual([
-                            c({ Comment: "Comment 1", Parameters: [] }),
-                            c({ Comment: "Comment 2", Parameters: [c({ Name: 'p' })] })
-                        ]);
-                    });
-                });
-            });
-
-            function trimAndUnwrapAll(types, trimComments) {
-                if (typeof trimComments === "undefined") { trimComments = true; }
-                if (!types)
-                    return types;
-                for (var i = 0; i < types.length; i++) {
-                    types[i] = trimAndUnwrap(types[i], trimComments);
-                }
-                return types;
-            }
-
-            function trimAndUnwrap(type, trimComments) {
-                if (typeof trimComments === "undefined") { trimComments = true; }
-                if (!type || !type.hasOwnProperty('Document'))
-                    return type;
-                delete type.Document;
-                delete type.Kind;
-                delete type.InternalModule;
-                delete type.ExternalModule;
-                if (trimComments)
-                    delete type.Comment;
-
-                if (type.Interface)
-                    type.Interface = trimAndUnwrapIntf(type.Interface(), trimComments);
-                if (type.GenericParameter) {
-                    type.GenericParameter = type.GenericParameter();
-                    trimAndUnwrap(type.GenericParameter.Constraint, trimComments);
-                }
-                if (type.GenericInstantiation) {
-                    type.GenericInstantiation = type.GenericInstantiation();
-                    type.GenericInstantiation.Definition = type.GenericInstantiation.Definition.Interface().Name;
-                    trimAndUnwrapAll(type.GenericInstantiation.Arguments, trimComments);
-                }
-                if (type.Array)
-                    type.Array = trimAndUnwrap(type.Array(), trimComments);
-
-                return type;
-            }
-
-            function trimAndUnwrapIntf(i, trimComments) {
-                if (typeof trimComments === "undefined") { trimComments = true; }
-                trimAndUnwrapAll(i.GenericParameters, trimComments);
-                trimAndUnwrapAll(i.Extends, trimComments);
-                (i.Properties || []).forEach(function (p) {
-                    trimAndUnwrap(p.Type, trimComments);
-                    if (trimComments)
-                        delete p.Comment;
-                });
-                (i.Methods || []).forEach(function (p) {
-                    return p.Signatures.forEach(function (s) {
-                        trimAndUnwrap(s.ReturnType, trimComments);
-                        trimAndUnwrapAll(s.GenericParameters, trimComments);
-                        (s.Parameters || []).forEach(function (p) {
-                            trimAndUnwrap(p.Type, trimComments);
-                            if (trimComments)
-                                delete p.Comment;
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Enum();
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'X',
+                                    Values: [
+                                        { Name: 'A', Value: 1 }, { Name: 'B', Value: 2 }, { Name: 'C', Value: 6 },
+                                        { Name: 'D', Value: 1 | 2 }, { Name: 'E', Value: 2 & 6 }, { Name: 'F', Value: ~2 },
+                                        { Name: 'G', Value: 1 + 2 }, { Name: 'H', Value: 2 - 6 }, { Name: 'I', Value: 6 ^ 2 },
+                                        { Name: 'J', Value: -2 }]
+                                })
+                            ]);
                         });
                     });
-                });
-                return i;
-            }
+
+                    it("should correctly parse array-typed properties", function () {
+                        Extr.file = "export interface I { X: string[]; Y: number[]; Z: J[]; } export interface J {}";
+                        expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                            return t.Interface;
+                        })).toEqual([
+                            Extr.c({
+                                Name: 'I',
+                                Properties: [
+                                    { Name: 'X', Type: Extr.c({ Array: Extr.c({ PrimitiveType: 1 /* String */ }) }) },
+                                    { Name: 'Y', Type: Extr.c({ Array: Extr.c({ PrimitiveType: 3 /* Number */ }) }) },
+                                    { Name: 'Z', Type: Extr.c({ Array: Extr.c({ Interface: Extr.c({ Name: 'J' }) }) }) }
+                                ]
+                            }),
+                            Extr.c({ Name: 'J' })
+                        ]);
+                    });
+
+                    it("should ignore private properties on interfaces", function () {
+                        Extr.file = "export class I { X: string; private Y: number; }";
+                        var types = Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                            return t.Interface;
+                        });
+                        expect(types).toEqual([Extr.c({ Name: 'I' })]);
+                        expect(types[0].Properties).toEqual([Extr.c({ Name: 'X' })]);
+                    });
+                }
+                Extr.basic = basic;
+            })(Tests.Extr || (Tests.Extr = {}));
+            var Extr = Tests.Extr;
         })(TsT.Tests || (TsT.Tests = {}));
         var Tests = TsT.Tests;
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        (function (Tests) {
+            (function (Extr) {
+                function comments() {
+                    Tests.group("should extract comments", function () {
+                        it("on interfaces", function () {
+                            Extr.file = "/** A comment*/ export interface I {}";
+                            var types = Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types, false);
+                            expect(types.length).toEqual(1);
+                            expect(types[0].Comment).toEqual("A comment");
+                            expect(types[0].Interface.Name).toEqual("I");
+                        });
 
-var globalIndent = 0;
+                        xit("on classes", function () {
+                            Extr.file = "/** A comment*/ export class C {}";
+                            expect(Extr.e.GetDocument(Extr.fileName).Classes).toEqual([
+                                Extr.c({ Comment: "A comment", Name: "C" })
+                            ]);
+                        });
 
-jasmine.StringPrettyPrinter.prototype.append = function (value) {
-    var prefixNewLine = false;
-    var suffixNewLine = false;
+                        xit("on variables with constructor signatures", function () {
+                            Extr.file = "/** A comment*/ export var C: { new: () => string } = null";
+                            expect(Extr.e.GetDocument(Extr.fileName).Classes).toEqual([
+                                Extr.c({ Comment: "A comment", Name: "C" })
+                            ]);
+                        });
 
-    if (value === '{ ' || value === '[ ') {
-        globalIndent++;
-        suffixNewLine = true;
-    } else if (value === ' }' || value === ' ]') {
-        globalIndent--;
-        prefixNewLine = true;
-    }
+                        it("on properties", function () {
+                            Extr.file = "export interface I { \r\n/** A comment*/ X: string }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types, false)[0]).toEqual(Extr.c({
+                                Interface: Extr.c({
+                                    Properties: [
+                                        Extr.c({
+                                            Comment: "A comment",
+                                            Name: 'X'
+                                        })
+                                    ]
+                                })
+                            }));
+                        });
 
-    var prefix = prefixNewLine ? '\r\n' + new Array(globalIndent + 1).join('\t') : '';
-    var suffix = suffixNewLine ? '\r\n' + new Array(globalIndent + 1).join('\t') : '';
-    this.string += prefix + value + suffix;
-};
+                        it("on methods", function () {
+                            Extr.file = "export interface I { \r\n/** Comment 1*/ X(): string; \r\n/** Comment 2*/ X( p: number ): number; }";
+                            var m = Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types, false)[0].Interface.Methods[0];
+                            expect(m.Name).toEqual('X');
+                            expect(m.Signatures.sort(function (a, b) {
+                                return a.Parameters.length - b.Parameters.length;
+                            })).toEqual([
+                                Extr.c({ Comment: "Comment 1", Parameters: [] }),
+                                Extr.c({ Comment: "Comment 2", Parameters: [Extr.c({ Name: 'p' })] })
+                            ]);
+                        });
+                    });
+                }
+                Extr.comments = comments;
+            })(Tests.Extr || (Tests.Extr = {}));
+            var Extr = Tests.Extr;
+        })(TsT.Tests || (TsT.Tests = {}));
+        var Tests = TsT.Tests;
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        (function (Tests) {
+            (function (Extr) {
+                function generics() {
+                    Tests.group("should correctly parse generic interfaces", function () {
+                        it("with one parameter", function () {
+                            Extr.file = "export interface I<T> { X: T[]; Y: T; }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'I',
+                                    GenericParameters: [Extr.c({ GenericParameter: { Name: 'T', Constraint: null } })],
+                                    Properties: [
+                                        { Name: 'X', Type: Extr.c({ Array: Extr.c({ GenericParameter: { Name: 'T', Constraint: null } }) }) },
+                                        { Name: 'Y', Type: Extr.c({ GenericParameter: { Name: 'T', Constraint: null } }) }
+                                    ]
+                                })
+                            ]);
+                        });
 
-erecruit.TsT.log = erecruit.TsT.debug = function () {
-};
+                        it("with two parameters", function () {
+                            Extr.file = "export interface I<T,S> { X: T[]; Y: S; }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'I',
+                                    GenericParameters: [
+                                        Extr.c({ GenericParameter: { Name: 'T', Constraint: null } }),
+                                        Extr.c({ GenericParameter: { Name: 'S', Constraint: null } })
+                                    ],
+                                    Properties: [
+                                        { Name: 'X', Type: Extr.c({ Array: Extr.c({ GenericParameter: { Name: 'T', Constraint: null } }) }) },
+                                        { Name: 'Y', Type: Extr.c({ GenericParameter: { Name: 'S', Constraint: null } }) }
+                                    ]
+                                })
+                            ]);
+                        });
+
+                        it("inheriting from other generic interfaces", function () {
+                            Extr.file = "export interface I<T> extends J<T> { X: T[]; } export interface J<S> { Y: S }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'I',
+                                    GenericParameters: [{ GenericParameter: { Name: 'T', Constraint: null } }],
+                                    Extends: [Extr.c({
+                                            GenericInstantiation: {
+                                                Definition: 'J',
+                                                Arguments: [{ GenericParameter: Extr.c({ Name: 'T' }) }]
+                                            }
+                                        })],
+                                    Properties: [
+                                        { Name: 'X', Type: { Array: { GenericParameter: { Name: 'T', Constraint: null } } } }
+                                    ]
+                                }),
+                                Extr.c({
+                                    Name: 'J',
+                                    GenericParameters: [{ GenericParameter: { Name: 'S', Constraint: null } }],
+                                    Properties: [{ Name: 'Y', Type: { GenericParameter: Extr.c({ Name: 'S' }) } }]
+                                })
+                            ]);
+                        });
+
+                        it("concretely instantiated and used in a base type position", function () {
+                            Extr.file = "export interface I extends J<number> { } export interface J<S> { Y: S }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'I',
+                                    Extends: [{
+                                            GenericInstantiation: {
+                                                Definition: 'J',
+                                                Arguments: [Extr.c({ PrimitiveType: 3 /* Number */ })]
+                                            }
+                                        }]
+                                }),
+                                Extr.c({
+                                    Name: 'J',
+                                    GenericParameters: [{ GenericParameter: { Name: 'S', Constraint: null } }],
+                                    Properties: [{ Name: 'Y', Type: { GenericParameter: Extr.c({ Name: 'S' }) } }]
+                                })
+                            ]);
+                        });
+
+                        it("with parameters constrained by regular types", function () {
+                            Extr.file = "export interface I<T extends J> { X: T; } export interface J {}";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types).map(function (t) {
+                                return t.Interface;
+                            })).toEqual([
+                                Extr.c({
+                                    Name: 'I',
+                                    GenericParameters: [
+                                        Extr.c({ GenericParameter: { Name: 'T', Constraint: Extr.c({ Interface: Extr.c({ Name: 'J' }) }) } })
+                                    ],
+                                    Properties: [
+                                        { Name: 'X', Type: Extr.c({ GenericParameter: Extr.c({ Name: 'T' }) }) }
+                                    ]
+                                }),
+                                Extr.c({ Name: 'J' })
+                            ]);
+                        });
+                    });
+                }
+                Extr.generics = generics;
+            })(Tests.Extr || (Tests.Extr = {}));
+            var Extr = Tests.Extr;
+        })(TsT.Tests || (TsT.Tests = {}));
+        var Tests = TsT.Tests;
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        (function (Tests) {
+            (function (Extr) {
+                function modules() {
+                    it("should interpret declarations from explicitly declared external modules as coming from their own files", function () {
+                        Extr.files['x.d.ts'] = "decalre module 'x' { export interface I { X: string; } }";
+                        Extr.file = "/// <reference path='x.d.ts' />\r\n import x = require('x'); export interface J { i: x.I; }";
+                        var types = Extr.e.GetDocument(Extr.fileName).Types.map(function (t) {
+                            return t.Interface();
+                        });
+                        expect(types.length).toEqual(1);
+                        expect(types).toEqual([Extr.c({ Name: 'J' })]);
+                        expect(types[0].Properties).toEqual([Extr.c({ Name: 'i' })]);
+                        expect(types[0].Properties[0].Type).toEqual(Extr.c({
+                            Document: Extr.c({ Path: "x.d.ts" }),
+                            ExternalModule: '"x"'
+                        }));
+                        expect(types[0].Properties[0].Type.Interface().Name).toEqual('I');
+                        expect(types[0].Properties[0].Type.InternalModule).toBeFalsy();
+                    });
+
+                    it("should not return any InternalModule for top-level types", function () {
+                        Extr.file = "export interface I { }";
+                        var types = Extr.e.GetDocument(Extr.fileName).Types;
+                        expect(types.length).toEqual(1);
+                        expect(types[0].InternalModule).toBeFalsy();
+                    });
+
+                    it("should, for regular .ts files, return ExternalModule as quoted file name", function () {
+                        Extr.file = "export interface I { }";
+                        var types = Extr.e.GetDocument(Extr.fileName).Types;
+                        expect(types.length).toEqual(1);
+                        expect(types[0].ExternalModule).toEqual('"' + Extr.fileName + '"');
+                    });
+
+                    it("should, for .d.ts files, return ExternalModule exactly as declared", function () {
+                        Extr.files["x.d.ts"] = "declare module 'module' { export interface I { } }";
+                        var types = Extr.e.GetDocument("x.d.ts").Types;
+                        expect(types.length).toEqual(1);
+                        expect(types[0].ExternalModule).toEqual('"module"');
+                    });
+                }
+                Extr.modules = modules;
+            })(Tests.Extr || (Tests.Extr = {}));
+            var Extr = Tests.Extr;
+        })(TsT.Tests || (TsT.Tests = {}));
+        var Tests = TsT.Tests;
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        (function (Tests) {
+            var groupStack = [];
+            var real = { it: it, fit: fit, xit: xit };
+            var override = function () {
+                return Enumerable.from(real).forEach(function (x) {
+                    return global[x.key] = function (name, define) {
+                        return x.value(groupStack.join(' ') + name, define);
+                    };
+                });
+            };
+            var restore = function () {
+                return Enumerable.from(real).forEach(function (x) {
+                    return global[x.key] = x.value;
+                });
+            };
+
+            function group(name, define) {
+                groupStack.push(name);
+                override();
+                try  {
+                    define();
+                } finally {
+                    restore();
+                    groupStack.pop();
+                }
+            }
+            Tests.group = group;
+
+            var globalIndent = 0;
+
+            jasmine.StringPrettyPrinter.prototype.append = function (value) {
+                var prefixNewLine = false;
+                var suffixNewLine = false;
+
+                if (value === '{ ' || value === '[ ') {
+                    globalIndent++;
+                    suffixNewLine = true;
+                } else if (value === ' }' || value === ' ]') {
+                    globalIndent--;
+                    prefixNewLine = true;
+                }
+
+                var prefix = prefixNewLine ? '\r\n' + new Array(globalIndent + 1).join('\t') : '';
+                var suffix = suffixNewLine ? '\r\n' + new Array(globalIndent + 1).join('\t') : '';
+                this.string += prefix + value + suffix;
+            };
+
+            erecruit.TsT.log = erecruit.TsT.debug = function () {
+            };
+        })(TsT.Tests || (TsT.Tests = {}));
+        var Tests = TsT.Tests;
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        (function (Tests) {
+            (function (Extr) {
+                Extr.path = require("path");
+                Extr.fs = require("fs");
+                Extr.c = jasmine.objectContaining;
+
+                Extr.e;
+                Extr.file;
+                Extr.files;
+                Extr.fileName = "a.ts";
+
+                describe("Extractor", function () {
+                    beforeEach(function () {
+                        Extr.file = null;
+                        Extr.files = {};
+                        Extr.e = new TsT.Extractor({
+                            Original: { RootDir: '.', ConfigDir: '.' },
+                            File: [{ match: null, types: null }],
+                            Host: {
+                                DirectoryExists: function (_) {
+                                    return false;
+                                },
+                                FetchFile: function (name) {
+                                    return (name === Extr.fileName && Extr.file) || Extr.files[name] || Extr.fs.existsSync(name) && Extr.fs.readFileSync(name, { encoding: 'utf8' }) || null;
+                                },
+                                GetParentDirectory: function (_) {
+                                    return "";
+                                },
+                                MakeRelativePath: function (from, to) {
+                                    return to;
+                                },
+                                ResolveRelativePath: function (path, directory) {
+                                    return path;
+                                },
+                                GetIncludedTypingFiles: function () {
+                                    return [require.resolve('../lib.d.ts')];
+                                }
+                            }
+                        });
+                    });
+
+                    Extr.basic();
+                    Extr.modules();
+                    Extr.generics();
+                    Extr.comments();
+                });
+
+                function trimAndUnwrapAll(types, trimComments) {
+                    if (typeof trimComments === "undefined") { trimComments = true; }
+                    if (!types)
+                        return types;
+                    for (var i = 0; i < types.length; i++) {
+                        types[i] = trimAndUnwrap(types[i], trimComments);
+                    }
+                    return types;
+                }
+                Extr.trimAndUnwrapAll = trimAndUnwrapAll;
+
+                function trimAndUnwrap(type, trimComments) {
+                    if (typeof trimComments === "undefined") { trimComments = true; }
+                    if (!type || !type.hasOwnProperty('Document'))
+                        return type;
+                    delete type.Document;
+                    delete type.Kind;
+                    delete type.InternalModule;
+                    delete type.ExternalModule;
+                    if (trimComments)
+                        delete type.Comment;
+
+                    if (type.Interface)
+                        type.Interface = trimAndUnwrapIntf(type.Interface(), trimComments);
+                    if (type.GenericParameter) {
+                        type.GenericParameter = type.GenericParameter();
+                        trimAndUnwrap(type.GenericParameter.Constraint, trimComments);
+                    }
+                    if (type.GenericInstantiation) {
+                        type.GenericInstantiation = type.GenericInstantiation();
+                        type.GenericInstantiation.Definition = type.GenericInstantiation.Definition.Interface().Name;
+                        trimAndUnwrapAll(type.GenericInstantiation.Arguments, trimComments);
+                    }
+                    if (type.Array)
+                        type.Array = trimAndUnwrap(type.Array(), trimComments);
+
+                    return type;
+                }
+                Extr.trimAndUnwrap = trimAndUnwrap;
+
+                function trimAndUnwrapIntf(i, trimComments) {
+                    if (typeof trimComments === "undefined") { trimComments = true; }
+                    trimAndUnwrapAll(i.GenericParameters, trimComments);
+                    trimAndUnwrapAll(i.Extends, trimComments);
+                    (i.Properties || []).forEach(function (p) {
+                        trimAndUnwrap(p.Type, trimComments);
+                        if (trimComments)
+                            delete p.Comment;
+                    });
+                    (i.Methods || []).forEach(function (p) {
+                        return p.Signatures.forEach(function (s) {
+                            trimAndUnwrap(s.ReturnType, trimComments);
+                            trimAndUnwrapAll(s.GenericParameters, trimComments);
+                            (s.Parameters || []).forEach(function (p) {
+                                trimAndUnwrap(p.Type, trimComments);
+                                if (trimComments)
+                                    delete p.Comment;
+                            });
+                        });
+                    });
+                    return i;
+                }
+                Extr.trimAndUnwrapIntf = trimAndUnwrapIntf;
+            })(Tests.Extr || (Tests.Extr = {}));
+            var Extr = Tests.Extr;
+        })(TsT.Tests || (TsT.Tests = {}));
+        var Tests = TsT.Tests;
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));

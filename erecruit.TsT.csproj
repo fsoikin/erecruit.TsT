@@ -89,7 +89,12 @@
     <TypeScriptCompile Include="lib\rx\rx.d.ts" />
     <TypeScriptCompile Include="src\emitter.ts" />
     <TypeScriptCompile Include="src\preprocessors\csharp.ts" />
+    <TypeScriptCompile Include="tests\extractor.comments.ts" />
+    <TypeScriptCompile Include="tests\extractor.modules.ts" />
+    <TypeScriptCompile Include="tests\extractor.generics.ts" />
+    <TypeScriptCompile Include="tests\utils.ts" />
     <TypeScriptCompile Include="tests\extractor.ts" />
+    <TypeScriptCompile Include="tests\extractor.basic.ts" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="examples\csharp\type.cs.tpl" />
