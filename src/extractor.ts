@@ -57,7 +57,7 @@ module erecruit.TsT {
 			var result = this.GetCachedDoc( fileName );
 
 			result.Classes = allModuleDecls
-				.where( d => d.kind == PEKind.Variable )
+				.where( d => d.kind === PEKind.Variable )
 				.select( d => {
 					var variable = this._compiler.getSymbolOfDeclaration( d );
 					this.EnsureResolved( variable );
@@ -82,7 +82,7 @@ module erecruit.TsT {
 				.toArray();
 
 			result.Types = allModuleDecls
-				.where( d => d.kind == PEKind.Interface || d.kind == PEKind.Enum || d.kind == PEKind.Class )
+				.where( d => d.kind === PEKind.Interface || d.kind === PEKind.Enum || d.kind === PEKind.Class )
 				.select( d => this._compiler.getSymbolOfDeclaration( d ) )
 				.doAction( this.EnsureResolved )
 				.select( x => this.GetType( <ts.PullTypeSymbol>x ) )
@@ -109,7 +109,7 @@ module erecruit.TsT {
 
 		private GetInternalModule( d: ts.PullDecl ) {
 			return d && Enumerable.from( d.getParentPath() )
-				.where( p => p.kind == PEKind.Container )
+				.where( p => p.kind === PEKind.Container )
 				.select( p => p.name )
 				.toArray()
 				.join(".");
@@ -117,7 +117,7 @@ module erecruit.TsT {
 
 		private GetExternalModule( d: ts.PullDecl ) {
 			return d && Enumerable.from( d.getParentPath() )
-				.where( p => p.kind == PEKind.DynamicModule )
+				.where( p => p.kind === PEKind.DynamicModule )
 				.select( p => p.name )
 				.firstOrDefault();
 		}
@@ -226,7 +226,7 @@ module erecruit.TsT {
 			var values: { [name: string]: number } = {};
 			Enumerable.from( type.getDeclarations() )
 				.selectMany( d => d.getChildDecls() )
-				.where( d => d.kind == PEKind.EnumMember )
+				.where( d => d.kind === PEKind.EnumMember )
 				.forEach( decl => {
 					var value: any = ( <ts.PullEnumElementDecl>decl ).constantValue;
 					if ( typeof value !== "number" ) {
@@ -243,7 +243,7 @@ module erecruit.TsT {
 			};
 
 			function evalExpr( e: ts.AST ): { errorMessage?: string; result?: number } {
-				if ( e.kind() == ts.SyntaxKind.IdentifierName ) {
+				if ( e.kind() === ts.SyntaxKind.IdentifierName ) {
 					return { result: values[( <ts.Identifier>e ).text()] };
 				}
 
@@ -274,7 +274,7 @@ module erecruit.TsT {
 
 		private GetDocumentForDecl( d: ts.PullDecl ): ts.Document {
 			var script = d && d.getParentPath()[0];
-			var fileName = script && script.kind == PEKind.Script && ( <ts.RootPullDecl>script ).fileName();
+			var fileName = script && script.kind === PEKind.Script && ( <ts.RootPullDecl>script ).fileName();
 			return fileName && this._compiler.getDocument( fileName );
 		}
 

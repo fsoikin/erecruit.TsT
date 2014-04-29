@@ -21,7 +21,7 @@ module erecruit.TsT {
 		}
 
 		var t = <Type>e, c = <Class>e;
-		return c.Kind == ModuleElementKind.Class ? c.Name :
+		return c.Kind === ModuleElementKind.Class ? c.Name :
 			( t.Enum && name( t.Enum() ) )
 			|| ( t.GenericParameter && name( t.GenericParameter() ) )
 			|| ( t.Interface && name( t.Interface() ) )

@@ -41,7 +41,7 @@ module erecruit.TsT {
 					var k = erecruit.TsT.ModuleElementKind[x.kind];
 					return "when" + k + ": Checking if current context is a " + k;
 				});
-				if ( t && t.Kind == x.kind ) return chunk.render( bodies.block, ctx );
+				if ( t && t.Kind === x.kind ) return chunk.render( bodies.block, ctx );
 				return bodies['else'] ? chunk.render( bodies['else'], ctx ) : chunk;
 			});
 
