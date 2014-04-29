@@ -73,9 +73,9 @@ module erecruit.TsT {
 						InternalModule: this.GetInternalModule( d ),
 						ExternalModule: this.GetExternalModule( d ),
 						Kind: ModuleElementKind.Class,
-						Implements: varType && this.GetBaseTypes( varType ),
-						GenericParameters: varType ? memoize( () => varType.getTypeParameters().map( x => this.GetType( x ) ) ) : null,
-						Constructors: memoize( () => sigs.map( x => this.GetCallSignature( x ) ) )
+						Implements: varType ? this.GetBaseTypes( varType ) : null,
+						GenericParameters: varType ? varType.getTypeParameters().map( x => this.GetType( x ) ) : null,
+						Constructors: sigs.map( x => this.GetCallSignature( x ) )
 					};
 				})
 				.where( c => c.Constructors.length > 0 )
@@ -187,12 +187,12 @@ module erecruit.TsT {
 		}
 
 		private GetBaseTypes( type: ts.PullTypeSymbol ) {
-			return memoize( () => Enumerable
+			return Enumerable
 				.from( type.getExtendedTypes() )
 				.concat( type.getImplementedTypes() )
 				.select( x => this.GetType( x ) )
 				.where( t => !!t.Interface || !!t.GenericInstantiation )
-				.toArray() );
+				.toArray();
 		}
 
 		private GetInterface( type: ts.PullTypeSymbol ) {

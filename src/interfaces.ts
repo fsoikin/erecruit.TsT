@@ -29,9 +29,9 @@ module erecruit.TsT {
 
 	export interface Class extends ModuleElement {
 		Name: string;
-		Implements: () => Type[];
-		GenericParameters?: () => Type[];
-		Constructors: () => CallSignature[];
+		Implements: Type[];
+		GenericParameters?: Type[];
+		Constructors: CallSignature[];
 	}
 
 	// This is supposed to be a type union, but alas, we don't have those in TS yet
