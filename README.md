@@ -170,7 +170,7 @@ The format of that structure for Type (can be found in src/interfaces.ts):
     },
 
     GenericInstantiation: {
-        Definition: { /* a data structure representing an Interface (see below) */ },
+        Definition: { /* a data structure representing another Type */ },
         Arguments: [ /* an array of Types */ ]
     },
 
