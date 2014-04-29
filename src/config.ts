@@ -74,7 +74,7 @@ module erecruit.TsT {
 		}
 
 		function compileTemplate( tpl: string, cfg: Config ) {
-			console.log( "compileTemplate: " + tpl );
+			log( () => "compileTemplate: " + tpl );
 
 			if ( tpl && tpl[0] === '@' ) {
 				var file = host.ResolveRelativePath( tpl.substring( 1 ), host.ResolveRelativePath( cfg.ConfigDir, cfg.RootDir ) );

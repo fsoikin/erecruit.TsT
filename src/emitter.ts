@@ -32,7 +32,7 @@ module erecruit.TsT {
 		dust.onLoad = ( name, cb ) => {
 			try {
 				if ( name.indexOf( '.' ) < 0 ) name += ".tpl";
-				console.log( "Emit: fetching " + name );
+				log( () => "Emit: fetching " + name );
 				var content = host.FetchFile( host.ResolveRelativePath( name, host.ResolveRelativePath( cfg.ConfigDir, cfg.RootDir ) ) );
 				cb( content ? undefined : "Cannot read " + name, content || undefined );
 			}
@@ -41,14 +41,14 @@ module erecruit.TsT {
 
 		var config = cacheConfig( host, cfg );
 		var e = new Extractor( config );
-		console.log( "Emit: config = " + JSON.stringify( cfg ) );
+		log( () => "Emit: config = " + JSON.stringify( cfg ) );
 
 		return Rx.Observable
 			.fromArray( ensureArray( files ) )
 			.selectMany(
 				f => formatTemplate( f, e.GetDocument( f ).Types, getFileConfig( config, f ), Config.toDustContext( config ), typeName ),
 				(f, x) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )
-			.doAction( x => console.log( "Finished generation: " + x.outputFile ) )
+			.doAction( x => log( () => "Finished generation: " + x.outputFile ) )
 			.groupBy( x => x.outputFile, x => x )
 			.selectMany(
 				x => x.takeLastBuffer( Number.MAX_VALUE ),
@@ -98,7 +98,7 @@ module erecruit.TsT {
 				Extension: nameParts[nameParts.length - 1]
 			};
 
-			console.log( "formatFileName: model = " + JSON.stringify( model ) );
+			log( () => "formatFileName: model = " + JSON.stringify( model ) );
 			return callDustJs( template, dust.makeBase( model ) );
 		}
 

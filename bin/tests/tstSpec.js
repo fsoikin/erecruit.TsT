@@ -73963,7 +73963,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.3.3";
+        TsT.Version = "0.3.4";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
@@ -74352,7 +74352,7 @@ var erecruit;
                     });
 
                     it("on properties", function () {
-                        file = "export interface I { /** A comment*/ X: string }";
+                        file = "export interface I { \r\n/** A comment*/ X: string }";
                         expect(trimTypes(e.GetDocument(fileName).Types, false)[0].Interface.Properties).toEqual([
                             c({
                                 Comment: "A comment",
@@ -74362,7 +74362,7 @@ var erecruit;
                     });
 
                     it("on methods", function () {
-                        file = "export interface I { /** Comment 1*/ X(): string; /** Comment 2*/ X( p: number ): number; }";
+                        file = "export interface I { \r\n/** Comment 1*/ X(): string; \r\n/** Comment 2*/ X( p: number ): number; }";
                         var m = trimTypes(e.GetDocument(fileName).Types, false)[0].Interface.Methods[0];
                         expect(m.Name).toEqual('X');
                         expect(m.Signatures.sort(function (a, b) {

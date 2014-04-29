@@ -375,7 +375,7 @@ module erecruit.TsT.Tests {
 			});
 
 			it("on properties", () => {
-				file = "export interface I { /** A comment*/ X: string }";
+				file = "export interface I { \r\n/** A comment*/ X: string }";
 				expect( trimTypes( e.GetDocument(fileName).Types, false )[0].Interface.Properties ).toEqual( [
 					c({
 						Comment: "A comment",
@@ -385,7 +385,7 @@ module erecruit.TsT.Tests {
 			});
 
 			it("on methods", () => {
-				file = "export interface I { /** Comment 1*/ X(): string; /** Comment 2*/ X( p: number ): number; }";
+				file = "export interface I { \r\n/** Comment 1*/ X(): string; \r\n/** Comment 2*/ X( p: number ): number; }";
 				var m = trimTypes( e.GetDocument(fileName).Types, false )[0].Interface.Methods[0];
 				expect( m.Name ).toEqual( 'X' );
 				expect( m.Signatures.sort( (a,b) => a.Parameters.length - b.Parameters.length ) ).toEqual( [

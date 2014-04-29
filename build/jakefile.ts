@@ -151,9 +151,11 @@ function pullVersion() {
 	var packageFile: string = <any>fs.readFileSync( packageFileName, enc );
 
 	var version = JSON.parse( packageFile ).version || "0.0.0";
-	versionFile = versionFile.replace( /(\/\*version_goes_here\=\>\*\/\")([^\"]+)/, (_,prefix,__) => prefix + version );
+	var newVersionFile = versionFile.replace( /(\/\*version_goes_here\=\>\*\/\")([^\"]+)/, (_,prefix,__) => prefix + version );
 
-	fs.writeFileSync( versionFileName, versionFile, enc );
+	if ( versionFile !== newVersionFile ) {
+		fs.writeFileSync( versionFileName, newVersionFile, enc );
+	}
 
 	console.log( "Building version " + version );
 }

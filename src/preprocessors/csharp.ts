@@ -36,7 +36,7 @@ module erecruit.TsT.CSharp {
 		.toObject( x => x.t, x => x.n );
 
 	function typeName( config: CachedConfig, type: Type, includeNamespace?: boolean ) {
-		if ( type.Array ) return typeName( config, type.Array, includeNamespace ) + "[]";
+		if ( type.Array ) return typeName( config, type.Array(), includeNamespace ) + "[]";
 		if ( type.PrimitiveType ) return primitiveTypeMap[type.PrimitiveType] || "object";
 
 		var n = TsT.typeName( type );

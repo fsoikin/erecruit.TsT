@@ -10,6 +10,7 @@ using System.Collections;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Diagnostics;
+using o = erecruit.TsT.ScriptEngine.OutputKind;
 
 namespace erecruit.TsT
 {
@@ -35,7 +36,7 @@ namespace erecruit.TsT
 			}
 
 			var originDir = Path.GetFullPath( currentDir );
-			var host = new Host( originDir, s => log( s ) );
+			var host = new Host( originDir, s => log( s, ScriptEngine.OutputKind.Debug ) );
 			return from filesPerConfig in configs.ToObservable()
 
 						 let configPath = Path.GetFullPath( filesPerConfig.Key )
@@ -91,6 +92,7 @@ namespace erecruit.TsT
 							 } ) )
 
 						 from r in result
+								.Timeout( ScriptEngine.JavaScriptCallTimeout )
 								.Catch( ( DynamicException ex ) => _engine
 									.Queue( () => _formatError( ex.Object ) )
 									.SelectMany( str => Observable.Throw<dynamic>( new Exception( str ) ) ) )
@@ -128,18 +130,24 @@ namespace erecruit.TsT
 		IObservable<Unit> EnsureInitialized() {
 			if ( _emit != null ) return Observable.Empty<Unit>();
 			Dispose();
+
+			log( "TsT: Initializing the script engine", o.Debug );
 			_engine = new ScriptEngine();
 			_engine.Output += ( s, e ) => log( "JS: " + e.Message, e.Kind );
 
+			log( "TsT: Initializing the TsT JS core", o.Debug );
 			return _engine
 				.Execute( "tst.js", Properties.Resources.tst_js.Replace( "\xEF\xBB\xBF", "" ) )
-				
+
+				.Do( _ => log( "TsT: Initializing the TsT JS core: obtaining Emit", o.Debug ) )
 				.SelectMany( _ => _engine.Evaluate( "erecruit.TsT.Emit" ) )
 				.Do( e => _emit = e )
-				
+
+				.Do( _ => log( "TsT: Initializing the TsT JS core: obtaining formatError", o.Debug ) )
 				.SelectMany( _ => _engine.Evaluate( "(function(x) { return x + ' ' + JSON.stringify(x); })" ) )
 				.Do( f => _formatError = f )
 
+				.Do( _ => log( "TsT: JS core initialization complete", o.Debug ) )
 				.Select( _ => Unit.Default );
 		}
 
@@ -149,7 +157,7 @@ namespace erecruit.TsT
 			if ( e != null ) e.Dispose();
 		}
 
-		private Unit log( string msg, ScriptEngine.OutputKind kind = ScriptEngine.OutputKind.Log ) {
+		private Unit log( string msg, ScriptEngine.OutputKind kind = o.Log ) {
 			var o = Output; 
 			if ( o != null ) o( this, new ScriptEngine.OutputEventArgs( kind, msg ) );
 			return Unit.Default;

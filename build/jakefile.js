@@ -1,4 +1,4 @@
-﻿var outDir = process.env.outDir || "./bin";
+var outDir = process.env.outDir || "./bin";
 var typescriptPath = process.env.typescriptPath || process.env.tsPath || "./node_modules/typescript/bin/tsc.js";
 var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
 var jasminePath = "./node_modules/jasmine-focused/bin/jasmine-focused";
@@ -173,11 +173,13 @@ function pullVersion() {
     var packageFile = fs.readFileSync(packageFileName, enc);
 
     var version = JSON.parse(packageFile).version || "0.0.0";
-    versionFile = versionFile.replace(/(\/\*version_goes_here\=\>\*\/\")([^\"]+)/, function (_, prefix, __) {
+    var newVersionFile = versionFile.replace(/(\/\*version_goes_here\=\>\*\/\")([^\"]+)/, function (_, prefix, __) {
         return prefix + version;
     });
 
-    fs.writeFileSync(versionFileName, versionFile, enc);
+    if (versionFile !== newVersionFile) {
+        fs.writeFileSync(versionFileName, newVersionFile, enc);
+    }
 
     console.log("Building version " + version);
 }

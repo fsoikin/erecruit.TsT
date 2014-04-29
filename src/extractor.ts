@@ -18,7 +18,7 @@ module erecruit.TsT {
 		}
 
 		private addFile( f: string ) {
-			console.log( "addFile: " + f );
+			log( () => "addFile: " + f );
 			var snapshot = this._tsHost.getScriptSnapshot( f );
 			if ( snapshot ) this._compiler.addFile( f, snapshot, null, 0, false, [] );
 			return !!snapshot;
@@ -26,7 +26,7 @@ module erecruit.TsT {
 
 		GetDocument( fileName: string ): Document {
 			fileName = this.normalizePath( fileName ); // Have to normalize file path to avoid duplicates
-			console.log( "GetDocument: " + fileName );
+			log( () => "GetDocument: " + fileName );
 
 			if ( !this._compiler.getDocument( fileName ) ) {
 				if ( !this.addFile( fileName ) ) {
@@ -74,8 +74,8 @@ module erecruit.TsT {
 						ExternalModule: this.GetExternalModule( d ),
 						Kind: ModuleElementKind.Class,
 						Implements: varType && this.GetBaseTypes( varType ),
-						GenericParameters: varType && varType.getTypeParameters().map( x => this.GetType( x ) ),
-						Constructors: sigs.map( x => this.GetCallSignature( x ) )
+						GenericParameters: varType ? memoize( () => varType.getTypeParameters().map( x => this.GetType( x ) ) ) : null,
+						Constructors: memoize( () => sigs.map( x => this.GetCallSignature( x ) ) )
 					};
 				})
 				.where( c => c.Constructors.length > 0 )
@@ -88,7 +88,9 @@ module erecruit.TsT {
 				.select( x => this.GetType( <ts.PullTypeSymbol>x ) )
 				.toArray();
 
-			console.log( "GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types." );
+			log( () => "GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types." );
+			debug( () => "GetDocument: classes: " + result.Classes.map( c => c.Name ).join() );
+			debug( () => "GetDocument: types: " + result.Types.map( t => typeName( t ) ).join() );
 
 			return result;
 		}
@@ -134,13 +136,24 @@ module erecruit.TsT {
 			};
 
 			this.EnsureResolved( type );
-			if ( type.getElementType() ) cached.Array = this.GetType( type.getElementType() )
+			if ( type.getElementType() ) cached.Array = memoize( () => this.GetType( type.getElementType() ) );
 			else if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
-			else if ( type.isEnum() ) cached.Enum = this.GetEnum( type );
-			else if ( type.isTypeParameter() ) cached.GenericParameter = this.GetGenericParameter( type );
-			else if ( this.IsGenericInstantiation( type ) ) cached.GenericInstantiation = this.GetGenericInstantiation( <ts.PullTypeReferenceSymbol>type );
-			else cached.Interface = this.GetInterface( type );
+			else if ( type.isEnum() ) cached.Enum = memoize( () => this.GetEnum( type ) );
+			else if ( type.isTypeParameter() ) cached.GenericParameter = memoize( () => this.GetGenericParameter( type ) );
+			else if ( this.IsGenericInstantiation( type ) ) {
+				var refType = <ts.PullTypeReferenceSymbol>type;
+				// Sometimes, for some reason, nested arrays don't receive an 'element type',
+				// but instead are parsed as a generic instantiation of Array<T>
+				if ( refType.referencedTypeSymbol.name === "Array" && refType.getTypeParameters().length === 1 ) {
+					cached.Array = memoize( () => this.GetType( refType.getTypeArguments()[0] ) );
+				}
+				else {
+					cached.GenericInstantiation = memoize( () => this.GetGenericInstantiation( refType ) );
+				}
+			}
+			else cached.Interface = memoize( () => this.GetInterface( type ) );
 
+			debug( () => "GetType: pullSymbolID=" + type.pullSymbolID + ", result = " + typeName( cached ) );
 			return cached;
 		}
 
@@ -149,11 +162,8 @@ module erecruit.TsT {
 		}
 
 		private GetGenericInstantiation( type: ts.PullTypeReferenceSymbol ): GenericInstantiation {
-			var def = this.GetType( type.referencedTypeSymbol );
-			if ( !def.Interface ) return null; // TODO: this should be an error condition
-
 			return {
-				Definition: def.Interface,
+				Definition: this.GetType( type.referencedTypeSymbol ),
 				Arguments: type.referencedTypeSymbol.getTypeParameters()
 					.map( p => this.GetType( type.getTypeParameterArgumentMap()[p.pullSymbolID] ) )
 			};
@@ -162,7 +172,7 @@ module erecruit.TsT {
 		private GetCallSignature( s: ts.PullSignatureSymbol ) {
 			this.EnsureResolved( s );
 			return {
-				GenericParameters: s.getTypeParameters().map( t => this.GetType( t.type ) ),
+				GenericParameters: s.getTypeParameters().length ? s.getTypeParameters().map( t => this.GetType( t.type ) ) : null,
 				Parameters: s.parameters.map( p => <Identifier>{ Name: p.name, Type: this.GetType( p.type ), Comment: p.docComments() }),
 				ReturnType: this.GetType( s.returnType ),
 				Comment: s.docComments()
@@ -177,12 +187,12 @@ module erecruit.TsT {
 		}
 
 		private GetBaseTypes( type: ts.PullTypeSymbol ) {
-			return Enumerable
+			return memoize( () => Enumerable
 				.from( type.getExtendedTypes() )
 				.concat( type.getImplementedTypes() )
 				.select( x => this.GetType( x ) )
 				.where( t => !!t.Interface || !!t.GenericInstantiation )
-				.toArray();
+				.toArray() );
 		}
 
 		private GetInterface( type: ts.PullTypeSymbol ) {
@@ -190,18 +200,22 @@ module erecruit.TsT {
 				Name: type.name,
 				Extends: this.GetBaseTypes( type ),
 				GenericParameters: Enumerable.from( type.getTypeParameters() ).select( t => this.GetType( t ) ).toArray(),
-				Properties: type.getMembers().filter( m => m.isProperty() && m.isExternallyVisible() ).map( m => {
-					this.EnsureResolved( m );
-					return <Identifier>{ Name: m.name, Type: this.GetType( m.type ), Comment: m.docComments() };
-				}),
+				Properties: type.getMembers()
+					.filter( m => m.isProperty() && m.isExternallyVisible() )
+					.map( m => {
+						this.EnsureResolved( m );
+						debug( () => "Property: " + type.name + "." + m.name );
+						return <Identifier>{ Name: m.name, Type: this.GetType( m.type ), Comment: m.docComments() };
+					}),
 				Methods: Enumerable.from( type.getMembers() )
 					.where( m => m.isMethod() && m.isExternallyVisible() )
 					.groupBy( m => m.name, m => m, ( name, ms ) => <Method>{
 						Name: name,
-						Signatures: ms.selectMany( m => {
-							this.EnsureResolved( m );
-							return Enumerable.from( m.type.getCallSignatures() ).select( s => this.GetCallSignature( s ) );
-						}).toArray(),
+						Signatures: ms.selectMany( m =>
+							{
+								this.EnsureResolved( m );
+								return Enumerable.from( m.type.getCallSignatures() ).select( s => this.GetCallSignature( s ) );
+							}).toArray(),
 					})
 					.toArray(),
 			};
@@ -289,7 +303,7 @@ module erecruit.TsT {
 				var cached = this._snapshots[fileName];
 				if ( cached !== undefined ) return cached;
 
-				console.log( "getScriptSnapshot: fetching: " + fileName );
+				debug( () => "getScriptSnapshot: fetching: " + fileName );
 				var content = this._config.Host.FetchFile( fileName );
 				return this._snapshots[fileName] =
 					content || content === "" ? ts.ScriptSnapshot.fromString( content ) : null;
@@ -298,7 +312,7 @@ module erecruit.TsT {
 			fileExists: path => !!this._tsHost.getScriptSnapshot( path ),
 			directoryExists: path => this._config.Host.DirectoryExists( this.realPath( path ) ),
 			getParentDirectory: path => {
-				console.log( "getParentDirectory: " + path );
+				debug( () => "getParentDirectory: " + path );
 				var result = this._config.Host.GetParentDirectory( this.realPath( path ) );
 				return result ? this.rootRelPath( result ) : result;
 			}
@@ -331,5 +345,11 @@ module erecruit.TsT {
 			case ts.SyntaxKind.BitwiseNotExpression: return x => ~x;
 			case ts.SyntaxKind.NegateExpression: return x => -x;
 		}
+	}
+
+	function memoize<T>( f: () => T ): () => T {
+		var result: T;
+		var evaluated = false;
+		return () => evaluated ? result : ( evaluated = true, result = f() );
 	}
 }

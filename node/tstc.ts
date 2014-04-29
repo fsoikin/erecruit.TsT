@@ -11,6 +11,7 @@ var args = require( "minimist" )( process.argv.slice( 2 ) );
 // TODO: instead of this hack, I should have a log method in ITsTHost
 var consoleLog = console.log;
 if ( !args.v && !args.verbose ) console.log = () => { };
+if ( args.d || args.debug ) console.debug = consoleLog;
 
 main();
 
@@ -59,8 +60,9 @@ Usage:    tstc <options> <source-files> \r\n\
 See:      https://github.com/erecruit/TsT\r\n\
 \r\n\
 Options: \r\n\
-	-c, --config    Path to config file, .tstconfig\r\n\
-	-v, --verbose   Display diagnostic output\
+	-c, --config    Path to config file, .tstconfig.\r\n\
+	-v, --verbose   Display diagnostic output.\
+	-d, --debug			Display debug output.\
 	" );
 	}
 }

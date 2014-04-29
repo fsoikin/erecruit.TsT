@@ -11,13 +11,29 @@ module erecruit.TsT {
 		return a;
 	}
 
-	export function typeName( e: ModuleElement ) {
+	export function typeName( e: ModuleElement, safe: boolean = true ) {
+		if ( !e ) return undefined;
+
+		function name( x: { Name: string } ) {
+			if ( x ) return x.Name;
+			if ( safe ) return '[type is being constructed]';
+			throw "Cannot calculate name for a type, because the type is still being constructed";
+		}
+
 		var t = <Type>e, c = <Class>e;
 		return c.Kind == ModuleElementKind.Class ? c.Name :
-			( t.Enum && t.Enum.Name )
-			|| ( t.GenericParameter && t.GenericParameter.Name )
-			|| ( t.Interface && t.Interface.Name )
+			( t.Enum && name( t.Enum() ) )
+			|| ( t.GenericParameter && name( t.GenericParameter() ) )
+			|| ( t.Interface && name( t.Interface() ) )
 			|| ( t.PrimitiveType && PrimitiveType[t.PrimitiveType] )
-			|| ( t.GenericInstantiation && t.GenericInstantiation.Definition.Name );
+			|| ( t.GenericInstantiation && typeName( t.GenericInstantiation().Definition, safe ) );
+	}
+
+	export function log( msg: () => string ) {
+		console.log && console.log( msg() );
+	}
+
+	export function debug( msg: () => string ) {
+		console.debug && console.debug( msg() );
 	}
 }

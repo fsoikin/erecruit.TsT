@@ -13,11 +13,17 @@ namespace erecruit.TsT
 		static int Main( string[] args ) {
 			string configFile = null;
 			string root = null;
-			bool verbose = false;
+			bool verbose = false, debug = false;
 			var opts = new OptionSet() { 
 				{ "c|config=", "Path to the config file (discovered automatically if not specified).", v => configFile = v },
 				{ "r|root=", "Path to the directory, which is to be considered the common root of all input files (discovered automatically if not specified).", v => root = v },
 				{ "v|verbose", "Display diagnostic output.", _ => verbose = true },
+				{ "d|debug", "Display debug output.", _ => debug = true },
+				{ "t|timeout=", "Specify timeout for JS calls, in seconds (default is 5 minutes; 0 means no timeout).", st => {
+					uint t;
+					if ( false == uint.TryParse( st, out t ) ) return;
+					ScriptEngine.JavaScriptCallTimeout = t <= 0 ? TimeSpan.FromDays( 1 ) : TimeSpan.FromSeconds( t );
+				}},
 			};
 			var inputFiles = opts.Parse( args );
 
@@ -46,7 +52,7 @@ namespace erecruit.TsT
 
 			try {
 				var result = Observable.Using( 
-					() => { var tst = new TsT(); tst.Output += Output( verbose ); return tst; },  // WTF, no inline event initializers in C# ?!?!
+					() => { var tst = new TsT(); tst.Output += Output( verbose, debug ); return tst; },  // WTF, no inline event initializers in C# ?!?!
 					tst =>
 						from f in tst.Emit( inputFiles.Select( Path.GetFullPath ), commonRoot, configFile == null ? TsT.AutoDiscoverConfigFile() : (_ => configFile) )
 						from s in f.SourceFiles
@@ -65,11 +71,19 @@ namespace erecruit.TsT
 			return 0;
 		}
 
-		private static EventHandler<ScriptEngine.OutputEventArgs> Output( bool verbose ) {
+		private static EventHandler<ScriptEngine.OutputEventArgs> Output( bool verbose, bool debug ) {
 			return ( s, e ) => {
-				if ( e.Kind == ScriptEngine.OutputKind.Error || e.Kind == ScriptEngine.OutputKind.Warning ) Console.Error.WriteLine( e.Message );
+				if ( e.Kind == ScriptEngine.OutputKind.Error || e.Kind == ScriptEngine.OutputKind.Warning ) withColor( ConsoleColor.Yellow, () => Console.Error.WriteLine( e.Message ) );
 				else if ( e.Kind == ScriptEngine.OutputKind.Log && verbose ) Console.WriteLine( e.Message );
+				else if ( e.Kind == ScriptEngine.OutputKind.Debug && debug ) withColor( ConsoleColor.Gray, () => Console.WriteLine( "DEBUG: " + e.Message ) );
 			};
+		}
+
+		private static void withColor( ConsoleColor c, Action whatever ) {
+			var save = Console.ForegroundColor;
+			Console.ForegroundColor = c;
+			whatever();
+			Console.ForegroundColor = save;
 		}
 
 		private static string CalculateCommonRoot( IEnumerable<string> inputFiles ) {

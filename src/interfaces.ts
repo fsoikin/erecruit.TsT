@@ -29,29 +29,24 @@ module erecruit.TsT {
 
 	export interface Class extends ModuleElement {
 		Name: string;
-		Implements: Type[];
-		GenericParameters?: Type[];
-		Constructors: CallSignature[];
+		Implements: () => Type[];
+		GenericParameters?: () => Type[];
+		Constructors: () => CallSignature[];
 	}
 
 	// This is supposed to be a type union, but alas, we don't have those in TS yet
 	export interface Type extends ModuleElement {
 		PrimitiveType?: PrimitiveType;
-		Enum?: Enum;
-		Interface?: Interface;
-		GenericParameter?: GenericParameter;
-		GenericInstantiation?: GenericInstantiation;
-		Array?: Type;
+		Enum?: () => Enum;
+		Interface?: () => Interface;
+		GenericParameter?: () => GenericParameter;
+		GenericInstantiation?: () => GenericInstantiation;
+		Array?: () => Type;
 	}
 
 	export interface GenericInstantiation {
-		Definition: Interface;
+		Definition: Type;
 		Arguments: Type[];
-	}
-
-	export interface GenericParameterMap {
-		Parameter: Type;
-		Argument: Type;
 	}
 
 	export enum PrimitiveType {
@@ -87,7 +82,7 @@ module erecruit.TsT {
 	}
 
 	export interface CallSignature extends Declaration {
-		GenericParameters?: Type[];
+		GenericParameters: Type[];
 		Parameters: Identifier[];
 		ReturnType?: Type;
 	}

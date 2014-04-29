@@ -1,4 +1,4 @@
-(function(erecruit){(function(__root__,module,exports,global,define,require) {/*! Dust - Asynchronous Templating - v2.3.3
+(function(erecruit){(function(__root__,module,exports,global,define,require) {/*! Dust - Asynchronous Templating - v2.3.4
 * http://linkedin.github.io/dustjs/
 * Copyright (c) 2014 Aleksander Williams; Released under the MIT License */
 (function(root) {
@@ -10,17 +10,35 @@
       DEBUG = 'DEBUG',
       loggingLevels = [DEBUG, INFO, WARN, ERROR, NONE],
       EMPTY_FUNC = function() {},
-      logger = EMPTY_FUNC,
-      loggerContext = this;
+      logger = {},
+      originalLog,
+      loggerContext;
 
   dust.debugLevel = NONE;
   dust.silenceErrors = false;
 
-  // Try to find the console logger in global scope
+  // Try to find the console in global scope
   if (root && root.console && root.console.log) {
-    logger = root.console.log;
     loggerContext = root.console;
+    originalLog = root.console.log;
   }
+
+  // robust logger for node.js, modern browsers, and IE <= 9.
+  logger.log = loggerContext ? function() {
+      // Do this for normal browsers
+      if (typeof originalLog === 'function') {
+        logger.log = function() {
+          originalLog.apply(loggerContext, arguments);
+        };
+      } else {
+        // Do this for IE <= 9
+        logger.log = function() {
+          var message = Array.prototype.slice.apply(arguments).join(' ');
+          originalLog(message);
+        };
+      }
+      logger.log.apply(this, arguments);
+  } : function() { /* no op */ };
 
   /**
    * If dust.isDebug is true, Log dust debug statements, info statements, warning statements, and errors.
@@ -31,17 +49,17 @@
    */
   dust.log = function(message, type) {
     if(dust.isDebug && dust.debugLevel === NONE) {
-      logger.call(loggerContext, '[!!!DEPRECATION WARNING!!!]: dust.isDebug is deprecated.  Set dust.debugLevel instead to the level of logging you want ["debug","info","warn","error","none"]');
+      logger.log('[!!!DEPRECATION WARNING!!!]: dust.isDebug is deprecated.  Set dust.debugLevel instead to the level of logging you want ["debug","info","warn","error","none"]');
       dust.debugLevel = INFO;
     }
 
     type = type || INFO;
-    if (loggingLevels.indexOf(type) >= loggingLevels.indexOf(dust.debugLevel)) {
+    if (dust.indexInArray(loggingLevels, type) >= dust.indexInArray(loggingLevels, dust.debugLevel)) {
       if(!dust.logQueue) {
         dust.logQueue = [];
       }
       dust.logQueue.push({message: message, type: type});
-      logger.call(loggerContext, '[DUST ' + type + ']: ' + message);
+      logger.log('[DUST ' + type + ']: ' + message);
     }
 
     if (!dust.silenceErrors && type === ERROR) {
@@ -61,7 +79,7 @@
    * @public
    */
   dust.onError = function(error, chunk) {
-    logger.call(loggerContext, '[!!!DEPRECATION WARNING!!!]: dust.onError will no longer return a chunk object.');
+    logger.log('[!!!DEPRECATION WARNING!!!]: dust.onError will no longer return a chunk object.');
     dust.log(error.message || error, ERROR);
     if(!dust.silenceErrors) {
       throw error;
@@ -158,6 +176,40 @@
       return Object.prototype.toString.call(arr) === '[object Array]';
     };
   }
+
+  // indexOf shim for arrays for IE <= 8
+  // source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf
+  dust.indexInArray = function(arr, item, fromIndex) {
+    fromIndex = +fromIndex || 0;
+    if (Array.prototype.indexOf) {
+      return arr.indexOf(item, fromIndex);
+    } else {
+    if ( arr === undefined || arr === null ) {
+      throw new TypeError( 'cannot call method "indexOf" of null' );
+    }
+
+    var length = arr.length; // Hack to convert object.length to a UInt32
+
+    if (Math.abs(fromIndex) === Infinity) {
+      fromIndex = 0;
+    }
+
+    if (fromIndex < 0) {
+      fromIndex += length;
+      if (fromIndex < 0) {
+        fromIndex = 0;
+      }
+    }
+
+    for (;fromIndex < length; fromIndex++) {
+      if (arr[fromIndex] === item) {
+        return fromIndex;
+      }
+    }
+
+    return -1;
+    }
+  };
 
   dust.nextTick = (function() {
     return function(callback) {
@@ -302,9 +354,14 @@
         } else {
           ctx = this.global ? this.global[first] : undefined;
         }
-      } else {
+      } else if (ctx) {
         // if scope is limited by a leading dot, don't search up the tree
-        ctx = ctx.head[first];
+        if(ctx.head) {
+          ctx = ctx.head[first];
+        } else {
+          //context's head is empty, value we are searching for is not defined
+          ctx = undefined;
+        }
       }
 
       while (ctx && i < len) {
@@ -651,7 +708,16 @@
     return this;
   };
 
-  Chunk.prototype.exists = function(elem, context, bodies) {
+  Chunk.prototype.exists = function(elem, context, bodies, params) {
+    if (typeof elem === 'function') {
+      elem = elem.apply(context.current(), [this, context, bodies, params]);
+      // functions that return chunks are assumed to have handled the body and/or have modified the chunk
+      // use that return value as the current chunk and go to the next method in the chain
+      if (elem instanceof Chunk) {
+        return elem;
+      }
+    }
+
     var body = bodies.block,
         skip = bodies['else'];
 
@@ -666,7 +732,16 @@
     return this;
   };
 
-  Chunk.prototype.notexists = function(elem, context, bodies) {
+  Chunk.prototype.notexists = function(elem, context, bodies, params) {
+    if (typeof elem === 'function') {
+      elem = elem.apply(context.current(), [this, context, bodies, params]);
+      // functions that return chunks are assumed to have handled the body and/or have modified the chunk
+      // use that return value as the current chunk and go to the next method in the chain
+      if (elem instanceof Chunk) {
+        return elem;
+      }
+    }
+
     var body = bodies.block,
         skip = bodies['else'];
 
@@ -834,8 +909,7 @@
     root.dust = dust;
   }
 
-})(this);
-
+})((function(){return this;})());
 
 (function(root, factory) {
   if (typeof exports === 'object') {
@@ -4013,7 +4087,7 @@
     },
 
     key: function(context, node) {
-      return 'ctx._get(false, ["' + node[1] + '"])';
+      return 'ctx.get(["' + node[1] + '"], false)';
     },
 
     path: function(context, node) {
@@ -4028,7 +4102,7 @@
           list.push('"' + keys[i] + '"');
         }
       }
-      return 'ctx._get(' + current + ',[' + list.join(',') + '])';
+      return 'ctx.getPath(' + current + ', [' + list.join(',') + '])';
     },
 
     literal: function(context, node) {
@@ -73253,7 +73327,9 @@ var erecruit;
             }
 
             function compileTemplate(tpl, cfg) {
-                console.log("compileTemplate: " + tpl);
+                TsT.log(function () {
+                    return "compileTemplate: " + tpl;
+                });
 
                 if (tpl && tpl[0] === '@') {
                     var file = host.ResolveRelativePath(tpl.substring(1), host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir));
@@ -73271,70 +73347,83 @@ var erecruit;
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
-dust.helpers['replace'] = function (chunk, ctx, bodies, params) {
-    var str = dust.helpers.tap(params.str, chunk, ctx);
-    var regex = dust.helpers.tap(params.regex, chunk, ctx);
-    var replacement = dust.helpers.tap(params.replacement, chunk, ctx);
-    if (!str || !regex)
-        return chunk;
-    return chunk.write(str.replace(new RegExp(regex), replacement || ""));
-};
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        dust.helpers['replace'] = function (chunk, ctx, bodies, params) {
+            var str = dust.helpers.tap(params.str, chunk, ctx);
+            var regex = dust.helpers.tap(params.regex, chunk, ctx);
+            var replacement = dust.helpers.tap(params.replacement, chunk, ctx);
+            if (!str || !regex)
+                return chunk;
+            return chunk.write(str.replace(new RegExp(regex), replacement || ""));
+        };
 
-dust.helpers['test'] = function (chunk, ctx, bodies, params) {
-    var str = dust.helpers.tap(params.str, chunk, ctx);
-    var regex = dust.helpers.tap(params.regex, chunk, ctx);
-    if (!str || !regex || !new RegExp(regex).test(str))
-        return bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
-    return chunk.render(bodies.block, ctx);
-};
-
-dust.helpers['typeName'] = function (chunk, ctx, bodies, params) {
-    var type = ctx.current();
-    if (type)
-        return chunk.write(erecruit.TsT.typeName(type));
-    else
-        return chunk;
-};
-
-dust.helpers['indent'] = function (chunk, ctx, bodies, params) {
-    return chunk.write(Enumerable.repeat("\t", (params && dust.helpers.tap(params.count, chunk, ctx)) || 1).toArray().join(''));
-};
-
-[
-    { name: 'whenType', kind: 1 /* Type */ },
-    { name: 'whenClass', kind: 0 /* Class */ }
-].forEach(function (x) {
-    return dust.helpers[x.name] = function (chunk, ctx, bodies, params) {
-        var t = ctx.current();
-        if (t && t.Kind == x.kind)
+        dust.helpers['test'] = function (chunk, ctx, bodies, params) {
+            var str = dust.helpers.tap(params.str, chunk, ctx);
+            var regex = dust.helpers.tap(params.regex, chunk, ctx);
+            if (!str || !regex || !new RegExp(regex).test(str))
+                return bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
             return chunk.render(bodies.block, ctx);
-        return bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
-    };
-});
+        };
 
-dust.helpers['fs_fileNameWithoutExtension'] = function (chunk, ctx, bodies, params) {
-    var path = dust.helpers.tap(params.path, chunk, ctx);
-    var config = erecruit.TsT.Config.fromDustContext(ctx);
-    if (!path || !config)
-        return chunk;
+        dust.helpers['typeName'] = function (chunk, ctx, bodies, params) {
+            var type = ctx.current();
+            if (type)
+                return chunk.write(erecruit.TsT.typeName(type));
+            else
+                return chunk;
+        };
 
-    var dir = config.Host.GetParentDirectory(path);
-    var name = path.substring(dir.length + 1);
-    var nameParts = name.split('.');
-    return chunk.write(nameParts.slice(0, nameParts.length - 1).join('.'));
-};
+        dust.helpers['indent'] = function (chunk, ctx, bodies, params) {
+            return chunk.write(Enumerable.repeat("\t", (params && dust.helpers.tap(params.count, chunk, ctx)) || 1).toArray().join(''));
+        };
 
-dust.helpers['fs_relativePath'] = function (chunk, ctx, bodies, params) {
-    var from = dust.helpers.tap(params.from, chunk, ctx);
-    var to = dust.helpers.tap(params.to, chunk, ctx);
-    var config = erecruit.TsT.Config.fromDustContext(ctx);
-    if (!to || !config)
-        return chunk;
-    if (!from)
-        return chunk.write(to);
+        [
+            { name: 'whenType', kind: 1 /* Type */ },
+            { name: 'whenClass', kind: 0 /* Class */ }
+        ].forEach(function (x) {
+            return dust.helpers[x.name] = function (chunk, ctx, bodies, params) {
+                var t = ctx.current();
+                if (typeof t === "function")
+                    t = t();
 
-    return chunk.write(config.Host.MakeRelativePath(from, to));
-};
+                TsT.debug(function () {
+                    var k = erecruit.TsT.ModuleElementKind[x.kind];
+                    return "when" + k + ": Checking if current context is a " + k;
+                });
+                if (t && t.Kind == x.kind)
+                    return chunk.render(bodies.block, ctx);
+                return bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
+            };
+        });
+
+        dust.helpers['fs_fileNameWithoutExtension'] = function (chunk, ctx, bodies, params) {
+            var path = dust.helpers.tap(params.path, chunk, ctx);
+            var config = erecruit.TsT.Config.fromDustContext(ctx);
+            if (!path || !config)
+                return chunk;
+
+            var dir = config.Host.GetParentDirectory(path);
+            var name = path.substring(dir.length + 1);
+            var nameParts = name.split('.');
+            return chunk.write(nameParts.slice(0, nameParts.length - 1).join('.'));
+        };
+
+        dust.helpers['fs_relativePath'] = function (chunk, ctx, bodies, params) {
+            var from = dust.helpers.tap(params.from, chunk, ctx);
+            var to = dust.helpers.tap(params.to, chunk, ctx);
+            var config = erecruit.TsT.Config.fromDustContext(ctx);
+            if (!to || !config)
+                return chunk;
+            if (!from)
+                return chunk.write(to);
+
+            return chunk.write(config.Host.MakeRelativePath(from, to));
+        };
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
@@ -73350,11 +73439,33 @@ var erecruit;
         }
         TsT.ensureArray = ensureArray;
 
-        function typeName(e) {
+        function typeName(e, safe) {
+            if (typeof safe === "undefined") { safe = true; }
+            if (!e)
+                return undefined;
+
+            function name(x) {
+                if (x)
+                    return x.Name;
+                if (safe)
+                    return '[type is being constructed]';
+                throw "Cannot calculate name for a type, because the type is still being constructed";
+            }
+
             var t = e, c = e;
-            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && t.Enum.Name) || (t.GenericParameter && t.GenericParameter.Name) || (t.Interface && t.Interface.Name) || (t.PrimitiveType && TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && t.GenericInstantiation.Definition.Name);
+            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && name(t.Enum())) || (t.GenericParameter && name(t.GenericParameter())) || (t.Interface && name(t.Interface())) || (t.PrimitiveType && TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && typeName(t.GenericInstantiation().Definition, safe));
         }
         TsT.typeName = typeName;
+
+        function log(msg) {
+            console.log && console.log(msg());
+        }
+        TsT.log = log;
+
+        function debug(msg) {
+            console.debug && console.debug(msg());
+        }
+        TsT.debug = debug;
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
@@ -73381,7 +73492,9 @@ var erecruit;
                         if (cached !== undefined)
                             return cached;
 
-                        console.log("getScriptSnapshot: fetching: " + fileName);
+                        TsT.debug(function () {
+                            return "getScriptSnapshot: fetching: " + fileName;
+                        });
                         var content = _this._config.Host.FetchFile(fileName);
                         return _this._snapshots[fileName] = content || content === "" ? ts.ScriptSnapshot.fromString(content) : null;
                     },
@@ -73395,7 +73508,9 @@ var erecruit;
                         return _this._config.Host.DirectoryExists(_this.realPath(path));
                     },
                     getParentDirectory: function (path) {
-                        console.log("getParentDirectory: " + path);
+                        TsT.debug(function () {
+                            return "getParentDirectory: " + path;
+                        });
                         var result = _this._config.Host.GetParentDirectory(_this.realPath(path));
                         return result ? _this.rootRelPath(result) : result;
                     }
@@ -73405,7 +73520,9 @@ var erecruit;
                 });
             }
             Extractor.prototype.addFile = function (f) {
-                console.log("addFile: " + f);
+                TsT.log(function () {
+                    return "addFile: " + f;
+                });
                 var snapshot = this._tsHost.getScriptSnapshot(f);
                 if (snapshot)
                     this._compiler.addFile(f, snapshot, null, 0, false, []);
@@ -73415,7 +73532,9 @@ var erecruit;
             Extractor.prototype.GetDocument = function (fileName) {
                 var _this = this;
                 fileName = this.normalizePath(fileName);
-                console.log("GetDocument: " + fileName);
+                TsT.log(function () {
+                    return "GetDocument: " + fileName;
+                });
 
                 if (!this._compiler.getDocument(fileName)) {
                     if (!this.addFile(fileName)) {
@@ -73469,11 +73588,15 @@ var erecruit;
                         ExternalModule: _this.GetExternalModule(d),
                         Kind: 0 /* Class */,
                         Implements: varType && _this.GetBaseTypes(varType),
-                        GenericParameters: varType && varType.getTypeParameters().map(function (x) {
-                            return _this.GetType(x);
-                        }),
-                        Constructors: sigs.map(function (x) {
-                            return _this.GetCallSignature(x);
+                        GenericParameters: varType ? memoize(function () {
+                            return varType.getTypeParameters().map(function (x) {
+                                return _this.GetType(x);
+                            });
+                        }) : null,
+                        Constructors: memoize(function () {
+                            return sigs.map(function (x) {
+                                return _this.GetCallSignature(x);
+                            });
                         })
                     };
                 }).where(function (c) {
@@ -73488,7 +73611,19 @@ var erecruit;
                     return _this.GetType(x);
                 }).toArray();
 
-                console.log("GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types.");
+                TsT.log(function () {
+                    return "GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types.";
+                });
+                TsT.debug(function () {
+                    return "GetDocument: classes: " + result.Classes.map(function (c) {
+                        return c.Name;
+                    }).join();
+                });
+                TsT.debug(function () {
+                    return "GetDocument: types: " + result.Types.map(function (t) {
+                        return TsT.typeName(t);
+                    }).join();
+                });
 
                 return result;
             };
@@ -73522,6 +73657,7 @@ var erecruit;
             };
 
             Extractor.prototype.GetType = function (type) {
+                var _this = this;
                 if (!type)
                     return null;
                 var cached = this._typeCache[type.pullSymbolID];
@@ -73538,18 +73674,39 @@ var erecruit;
 
                 this.EnsureResolved(type);
                 if (type.getElementType())
-                    cached.Array = this.GetType(type.getElementType());
+                    cached.Array = memoize(function () {
+                        return _this.GetType(type.getElementType());
+                    });
                 else if (type.isPrimitive())
                     cached.PrimitiveType = this.GetPrimitiveType(type);
                 else if (type.isEnum())
-                    cached.Enum = this.GetEnum(type);
+                    cached.Enum = memoize(function () {
+                        return _this.GetEnum(type);
+                    });
                 else if (type.isTypeParameter())
-                    cached.GenericParameter = this.GetGenericParameter(type);
-                else if (this.IsGenericInstantiation(type))
-                    cached.GenericInstantiation = this.GetGenericInstantiation(type);
-                else
-                    cached.Interface = this.GetInterface(type);
+                    cached.GenericParameter = memoize(function () {
+                        return _this.GetGenericParameter(type);
+                    });
+                else if (this.IsGenericInstantiation(type)) {
+                    var refType = type;
 
+                    if (refType.referencedTypeSymbol.name === "Array" && refType.getTypeParameters().length === 1) {
+                        cached.Array = memoize(function () {
+                            return _this.GetType(refType.getTypeArguments()[0]);
+                        });
+                    } else {
+                        cached.GenericInstantiation = memoize(function () {
+                            return _this.GetGenericInstantiation(refType);
+                        });
+                    }
+                } else
+                    cached.Interface = memoize(function () {
+                        return _this.GetInterface(type);
+                    });
+
+                TsT.debug(function () {
+                    return "GetType: pullSymbolID=" + type.pullSymbolID + ", result = " + TsT.typeName(cached);
+                });
                 return cached;
             };
 
@@ -73559,12 +73716,8 @@ var erecruit;
 
             Extractor.prototype.GetGenericInstantiation = function (type) {
                 var _this = this;
-                var def = this.GetType(type.referencedTypeSymbol);
-                if (!def.Interface)
-                    return null;
-
                 return {
-                    Definition: def.Interface,
+                    Definition: this.GetType(type.referencedTypeSymbol),
                     Arguments: type.referencedTypeSymbol.getTypeParameters().map(function (p) {
                         return _this.GetType(type.getTypeParameterArgumentMap()[p.pullSymbolID]);
                     })
@@ -73575,9 +73728,9 @@ var erecruit;
                 var _this = this;
                 this.EnsureResolved(s);
                 return {
-                    GenericParameters: s.getTypeParameters().map(function (t) {
+                    GenericParameters: s.getTypeParameters().length ? s.getTypeParameters().map(function (t) {
                         return _this.GetType(t.type);
-                    }),
+                    }) : null,
                     Parameters: s.parameters.map(function (p) {
                         return { Name: p.name, Type: _this.GetType(p.type), Comment: p.docComments() };
                     }),
@@ -73592,11 +73745,13 @@ var erecruit;
 
             Extractor.prototype.GetBaseTypes = function (type) {
                 var _this = this;
-                return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).select(function (x) {
-                    return _this.GetType(x);
-                }).where(function (t) {
-                    return !!t.Interface || !!t.GenericInstantiation;
-                }).toArray();
+                return memoize(function () {
+                    return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).select(function (x) {
+                        return _this.GetType(x);
+                    }).where(function (t) {
+                        return !!t.Interface || !!t.GenericInstantiation;
+                    }).toArray();
+                });
             };
 
             Extractor.prototype.GetInterface = function (type) {
@@ -73611,6 +73766,9 @@ var erecruit;
                         return m.isProperty() && m.isExternallyVisible();
                     }).map(function (m) {
                         _this.EnsureResolved(m);
+                        TsT.debug(function () {
+                            return "Property: " + type.name + "." + m.name;
+                        });
                         return { Name: m.name, Type: _this.GetType(m.type), Comment: m.docComments() };
                     }),
                     Methods: Enumerable.from(type.getMembers()).where(function (m) {
@@ -73771,6 +73929,14 @@ var erecruit;
                     };
             }
         }
+
+        function memoize(f) {
+            var result;
+            var evaluated = false;
+            return function () {
+                return evaluated ? result : (evaluated = true, result = f());
+            };
+        }
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
@@ -73798,7 +73964,9 @@ var erecruit;
                 try  {
                     if (name.indexOf('.') < 0)
                         name += ".tpl";
-                    console.log("Emit: fetching " + name);
+                    TsT.log(function () {
+                        return "Emit: fetching " + name;
+                    });
                     var content = host.FetchFile(host.ResolveRelativePath(name, host.ResolveRelativePath(cfg.ConfigDir, cfg.RootDir)));
                     cb(content ? undefined : "Cannot read " + name, content || undefined);
                 } catch (err) {
@@ -73808,14 +73976,18 @@ var erecruit;
 
             var config = TsT.cacheConfig(host, cfg);
             var e = new TsT.Extractor(config);
-            console.log("Emit: config = " + JSON.stringify(cfg));
+            TsT.log(function () {
+                return "Emit: config = " + JSON.stringify(cfg);
+            });
 
             return Rx.Observable.fromArray(TsT.ensureArray(files)).selectMany(function (f) {
                 return formatTemplate(f, e.GetDocument(f).Types, TsT.getFileConfig(config, f), Config.toDustContext(config), TsT.typeName);
             }, function (f, x) {
                 return ({ outputFile: x.outputFileName, content: x.content, inputFile: f });
             }).doAction(function (x) {
-                return console.log("Finished generation: " + x.outputFile);
+                return TsT.log(function () {
+                    return "Finished generation: " + x.outputFile;
+                });
             }).groupBy(function (x) {
                 return x.outputFile;
             }, function (x) {
@@ -73866,7 +74038,9 @@ var erecruit;
                     Extension: nameParts[nameParts.length - 1]
                 };
 
-                console.log("formatFileName: model = " + JSON.stringify(model));
+                TsT.log(function () {
+                    return "formatFileName: model = " + JSON.stringify(model);
+                });
                 return callDustJs(template, dust.makeBase(model));
             }
 
@@ -73928,7 +74102,7 @@ var erecruit;
 
             function typeName(config, type, includeNamespace) {
                 if (type.Array)
-                    return typeName(config, type.Array, includeNamespace) + "[]";
+                    return typeName(config, type.Array(), includeNamespace) + "[]";
                 if (type.PrimitiveType)
                     return primitiveTypeMap[type.PrimitiveType] || "object";
 
@@ -73963,7 +74137,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.3.4";
+        TsT.Version = "0.3.5";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));

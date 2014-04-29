@@ -10,8 +10,10 @@ namespace erecruit.TsT
 {
 	public class ScriptEngine
 	{
+		public static TimeSpan JavaScriptCallTimeout = TimeSpan.FromMinutes( 5 );
+
 		public enum OutputKind {
-			Log, Error, Warning
+			Log, Error, Warning, Debug
 		}
 
 		public class OutputEventArgs : EventArgs
@@ -31,21 +33,22 @@ namespace erecruit.TsT
 			_engine.AddHostObject( "setTimeout", new Func<dynamic, int, int>( setTimeout ) );
 			_engine.AddHostObject( "clearTimeout", new Action<int>( clearTimeout ) );
 
-			Func<OutputKind, Action<object>> debugWrite = k => o => {
-				var e = Output;
-				if ( e != null ) e( this, new OutputEventArgs( k, Convert.ToString( o ) ) );
-				Debug.WriteLine( o ); 
-			};
+			Func<OutputKind, Action<object>> debugWrite = k => o => log( Convert.ToString( o ), k );
 			_engine.AddHostObject( "console", new { 
 				log = debugWrite( OutputKind.Log ), 
 				error = debugWrite( OutputKind.Error ), 
-				warn = debugWrite( OutputKind.Warning ) 
+				warn = debugWrite( OutputKind.Warning ),
+				debug = debugWrite( OutputKind.Debug ) // TODO: make this configurable - i.e. make this member null if the consumer didn't request debug info
 			} );
 
 			IConnectableObservable<Action> runQueue = null;
 			runQueue = _queue
 				 .ObserveOn( System.Reactive.Concurrency.ThreadPoolScheduler.Instance )
-				 .Do( a => a() )
+				 .Do( a => {
+//					 log( "ScriptEngine: Executing queued action: " + a.GetHashCode().ToString( "X" ), OutputKind.Debug );
+					 a();
+//					 log( "ScriptEngine: Done executing queued action: " + a.GetHashCode().ToString( "X" ), OutputKind.Debug );
+				 } )
 				 .Publish();
 			_runningQueue = runQueue.Connect();
 			_doneActions = runQueue;
@@ -57,9 +60,17 @@ namespace erecruit.TsT
 		}
 
 		public IObservable<Unit> QueueAction( Action a ) {
-			var result = _doneActions.Where( x => x == a ).Take( 1 ).Select( _ => Unit.Default ).Replay( 1 ).RefCount();
+			var hash = a.GetHashCode().ToString( "X" );
+//			log( "ScriptEngine: QueueAction: " + hash, OutputKind.Debug );
+			var result = _doneActions.Where( x => x == a )
+//				.Do( _ => log( "ScriptEngine: Received done action signal: " + hash, OutputKind.Debug ) )
+				.Take( 1 ).Select( _ => Unit.Default )
+//				.Do( _ => log( "ScriptEngine: Done action signal, after Take(1): " + hash, OutputKind.Debug ) )
+				.Replay( 1 ).RefCount()
+//				.Do( _ => log( "ScriptEngine: Done, after RefCount: " + hash, OutputKind.Debug ) )
+				;
 			_queue.OnNext( a );
-			return result;
+			return result.Timeout( JavaScriptCallTimeout );
 		}
 
 		public IObservable<dynamic> Evaluate( string code ) {
@@ -93,12 +104,27 @@ namespace erecruit.TsT
 		int setTimeout( dynamic func, int ms ) {
 			var id = _timeoutStamp++;
 			_timeouts[id] = func;
-			QueueAction( () => { if ( _timeouts[id] == func ) func(); _timeouts.Remove( id ); } );
+			log( "setTimeout: " + id, OutputKind.Debug );
+			QueueAction( () => {
+				if ( _timeouts[id] == func ) {
+					log( "Invoking timeout: " + id, OutputKind.Debug );
+					func();
+					log( "Done invoking timeout: " + id, OutputKind.Debug );
+				}
+				_timeouts.Remove( id ); 
+			} );
 			return id;
 		}
 
 		void clearTimeout( int id ) {
+			log( "clearTimeout: " + id, OutputKind.Debug ); 
 			_timeouts.Remove( id );
+		}
+
+		void log( string msg, OutputKind kind ) {
+			var e = Output;
+			if ( e != null ) e( this, new OutputEventArgs( kind, Convert.ToString( msg ) ) );
+			Debug.WriteLine( msg );
 		}
 	}
 }

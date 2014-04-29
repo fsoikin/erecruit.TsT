@@ -31,25 +31,21 @@ declare module "tst" {
     }
     interface Class extends ModuleElement {
         Name: string;
-        Implements: Type[];
-        GenericParameters?: Type[];
-        Constructors: CallSignature[];
+        Implements: () => Type[];
+        GenericParameters?: () => Type[];
+        Constructors: () => CallSignature[];
     }
     interface Type extends ModuleElement {
         PrimitiveType?: PrimitiveType;
-        Enum?: Enum;
-        Interface?: Interface;
-        GenericParameter?: GenericParameter;
-        GenericInstantiation?: GenericInstantiation;
-        Array?: Type;
+        Enum?: () => Enum;
+        Interface?: () => Interface;
+        GenericParameter?: () => GenericParameter;
+        GenericInstantiation?: () => GenericInstantiation;
+        Array?: () => Type;
     }
     interface GenericInstantiation {
-        Definition: Interface;
+        Definition: Type;
         Arguments: Type[];
-    }
-    interface GenericParameterMap {
-        Parameter: Type;
-        Argument: Type;
     }
     enum PrimitiveType {
         Any = 0,
@@ -84,7 +80,7 @@ declare module "tst" {
         Type: Type;
     }
     interface CallSignature extends Declaration {
-        GenericParameters?: Type[];
+        GenericParameters: Type[];
         Parameters: Identifier[];
         ReturnType?: Type;
     }
@@ -123,8 +119,11 @@ declare module "tst" {
     function getFileConfig(config: CachedConfig, fileName: string): CachedConfigPart[];
     function cacheConfig(host: ITsTHost, config: Config): CachedConfig;
 
+
     function ensureArray<T>(a: T[]): T[];
-    function typeName(e: ModuleElement): string;
+    function typeName(e: ModuleElement, safe?: boolean): any;
+    function log(msg: () => string): void;
+    function debug(msg: () => string): void;
 
     interface ExtractorOptions {
         UseCaseSensitiveFileResolution?: boolean;
