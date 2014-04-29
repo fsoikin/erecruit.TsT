@@ -31,9 +31,9 @@ declare module erecruit.TsT {
     }
     interface Class extends ModuleElement {
         Name: string;
-        Implements: () => Type[];
-        GenericParameters?: () => Type[];
-        Constructors: () => CallSignature[];
+        Implements: Type[];
+        GenericParameters?: Type[];
+        Constructors: CallSignature[];
     }
     interface Type extends ModuleElement {
         PrimitiveType?: PrimitiveType;

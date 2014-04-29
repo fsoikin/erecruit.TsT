@@ -621,16 +621,20 @@
     return body(this, context);
   };
 
-  Chunk.prototype.reference = function(elem, context, auto, filters) {
+  Chunk.prototype.unwrapFunction = function(elem, context, bodies, params) {
     if (typeof elem === 'function') {
       elem.isFunction = true;
       // Changed the function calling to use apply with the current context to make sure
       // that "this" is wat we expect it to be inside the function
-      elem = elem.apply(context.current(), [this, context, null, {auto: auto, filters: filters}]);
-      if (elem instanceof Chunk) {
-        return elem;
-      }
+      return elem.apply(context.current(), [this, context, bodies, params]);
     }
+    return elem;
+  };
+
+  Chunk.prototype.reference = function(elem, context, auto, filters) {
+    elem = this.unwrapFunction( elem, context, null, {auto: auto, filters: filters} );
+    if (elem instanceof Chunk) { return elem; } // functions that return chunks are assumed to have handled the body and/or have modified the chunk
+
     if (!dust.isEmpty(elem)) {
       return this.write(dust.filter(elem, auto, filters));
     } else {
@@ -639,15 +643,9 @@
   };
 
   Chunk.prototype.section = function(elem, context, bodies, params) {
-    // anonymous functions
-    if (typeof elem === 'function') {
-      elem = elem.apply(context.current(), [this, context, bodies, params]);
-      // functions that return chunks are assumed to have handled the body and/or have modified the chunk
-      // use that return value as the current chunk and go to the next method in the chain
-      if (elem instanceof Chunk) {
-        return elem;
-      }
-    }
+    elem = this.unwrapFunction( elem, context, bodies, params );
+    if (elem instanceof Chunk) { return elem; } // functions that return chunks are assumed to have handled the body and/or have modified the chunk
+
     var body = bodies.block,
         skip = bodies['else'];
 
@@ -709,14 +707,8 @@
   };
 
   Chunk.prototype.exists = function(elem, context, bodies, params) {
-    if (typeof elem === 'function') {
-      elem = elem.apply(context.current(), [this, context, bodies, params]);
-      // functions that return chunks are assumed to have handled the body and/or have modified the chunk
-      // use that return value as the current chunk and go to the next method in the chain
-      if (elem instanceof Chunk) {
-        return elem;
-      }
-    }
+    elem = this.unwrapFunction( elem, context, bodies, params );
+    if (elem instanceof Chunk) { return elem; } // functions that return chunks are assumed to have handled the body and/or have modified the chunk
 
     var body = bodies.block,
         skip = bodies['else'];
@@ -733,14 +725,8 @@
   };
 
   Chunk.prototype.notexists = function(elem, context, bodies, params) {
-    if (typeof elem === 'function') {
-      elem = elem.apply(context.current(), [this, context, bodies, params]);
-      // functions that return chunks are assumed to have handled the body and/or have modified the chunk
-      // use that return value as the current chunk and go to the next method in the chain
-      if (elem instanceof Chunk) {
-        return elem;
-      }
-    }
+    elem = this.unwrapFunction( elem, context, bodies, params );
+    if (elem instanceof Chunk) { return elem; } // functions that return chunks are assumed to have handled the body and/or have modified the chunk
 
     var body = bodies.block,
         skip = bodies['else'];
@@ -73587,16 +73573,12 @@ var erecruit;
                         InternalModule: _this.GetInternalModule(d),
                         ExternalModule: _this.GetExternalModule(d),
                         Kind: 0 /* Class */,
-                        Implements: varType && _this.GetBaseTypes(varType),
-                        GenericParameters: varType ? memoize(function () {
-                            return varType.getTypeParameters().map(function (x) {
-                                return _this.GetType(x);
-                            });
+                        Implements: varType ? _this.GetBaseTypes(varType) : null,
+                        GenericParameters: varType ? varType.getTypeParameters().map(function (x) {
+                            return _this.GetType(x);
                         }) : null,
-                        Constructors: memoize(function () {
-                            return sigs.map(function (x) {
-                                return _this.GetCallSignature(x);
-                            });
+                        Constructors: sigs.map(function (x) {
+                            return _this.GetCallSignature(x);
                         })
                     };
                 }).where(function (c) {
@@ -73745,13 +73727,11 @@ var erecruit;
 
             Extractor.prototype.GetBaseTypes = function (type) {
                 var _this = this;
-                return memoize(function () {
-                    return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).select(function (x) {
-                        return _this.GetType(x);
-                    }).where(function (t) {
-                        return !!t.Interface || !!t.GenericInstantiation;
-                    }).toArray();
-                });
+                return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).select(function (x) {
+                    return _this.GetType(x);
+                }).where(function (t) {
+                    return !!t.Interface || !!t.GenericInstantiation;
+                }).toArray();
             };
 
             Extractor.prototype.GetInterface = function (type) {
