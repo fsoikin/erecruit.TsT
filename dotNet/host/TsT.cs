@@ -20,6 +20,10 @@ namespace erecruit.TsT
 
 		public event EventHandler<ScriptEngine.OutputEventArgs> Output;
 
+		public TsT( bool debugOutput = false ) {
+			_debugOutput = debugOutput;
+		}
+
 		/// <summary>
 		/// Discovers config(s) for the given files, calls <see cref="Emit"/> to parse them, and writes results to corresponding output files.
 		/// </summary>
@@ -82,7 +86,7 @@ namespace erecruit.TsT
 						 let _3 = log( "TsT: Read config from " + configDir + ", ConfigDir=" + config.ConfigDir + ", RootDir=" + config.RootDir )
 						 let filesRelativeToRoot = files.Select( f => host.MakeRelativePath( rootDir, f ) )
 
-						 let result = new System.Reactive.Subjects.Subject<dynamic>()
+						 let result = new Subject<dynamic>()
 						 from __ in _engine.QueueAction( () =>
 							 _emit( config, filesRelativeToRoot.ToArray(), host )
 							 .subscribe( new {
@@ -92,6 +96,8 @@ namespace erecruit.TsT
 							 } ) )
 
 						 from r in result
+								.Merge( _engine.WaitForDeferredExecutions().Select( _1 => (dynamic)null ) ) // I need to merge this in here in order to catch errors from deferred executions
+								.Where( x => x != null )
 								.Timeout( ScriptEngine.JavaScriptCallTimeout )
 								.Catch( ( DynamicException ex ) => _engine
 									.Queue( () => _formatError( ex.Object ) )
@@ -132,7 +138,7 @@ namespace erecruit.TsT
 			Dispose();
 
 			log( "TsT: Initializing the script engine", o.Debug );
-			_engine = new ScriptEngine();
+			_engine = new ScriptEngine( _debugOutput );
 			_engine.Output += ( s, e ) => log( "JS: " + e.Message, e.Kind );
 
 			log( "TsT: Initializing the TsT JS core", o.Debug );
@@ -158,14 +164,16 @@ namespace erecruit.TsT
 		}
 
 		private Unit log( string msg, ScriptEngine.OutputKind kind = o.Log ) {
-			var o = Output; 
-			if ( o != null ) o( this, new ScriptEngine.OutputEventArgs( kind, msg ) );
+			if ( kind == o.Debug && !_debugOutput ) return Unit.Default;
+			var p = Output; 
+			if ( p != null ) p( this, new ScriptEngine.OutputEventArgs( kind, msg ) );
 			return Unit.Default;
 		}
 
 		ScriptEngine _engine = new ScriptEngine();
 		dynamic _emit;
 		dynamic _formatError;
+		readonly bool _debugOutput;
 	}
 
 	public class DynamicException : Exception

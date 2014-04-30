@@ -2,8 +2,10 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Reactive;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading;
 using Microsoft.ClearScript.V8;
 
 namespace erecruit.TsT
@@ -27,7 +29,8 @@ namespace erecruit.TsT
 
 		public event EventHandler<OutputEventArgs> Output;
 
-		public ScriptEngine() {
+		public ScriptEngine( bool debugOutput = false ) {
+			_debugOutput = debugOutput;
 			_runtime = new Microsoft.ClearScript.V8.V8Runtime();
 			_engine = _runtime.CreateScriptEngine();
 			_engine.AddHostObject( "setTimeout", new Func<dynamic, int, int>( setTimeout ) );
@@ -38,21 +41,27 @@ namespace erecruit.TsT
 				log = debugWrite( OutputKind.Log ), 
 				error = debugWrite( OutputKind.Error ), 
 				warn = debugWrite( OutputKind.Warning ),
-				debug = debugWrite( OutputKind.Debug ) // TODO: make this configurable - i.e. make this member null if the consumer didn't request debug info
+				debug = _debugOutput ? debugWrite( OutputKind.Debug ) : null
 			} );
 
-			IConnectableObservable<Action> runQueue = null;
-			runQueue = _queue
-				 .ObserveOn( System.Reactive.Concurrency.ThreadPoolScheduler.Instance )
-				 .Do( a => {
-//					 log( "ScriptEngine: Executing queued action: " + a.GetHashCode().ToString( "X" ), OutputKind.Debug );
-					 a();
-//					 log( "ScriptEngine: Done executing queued action: " + a.GetHashCode().ToString( "X" ), OutputKind.Debug );
-				 } )
-				 .Publish();
-			_runningQueue = runQueue.Connect();
+			var queueTransition = new Subject<bool>();
+			var runQueue = _queue
+				.Do( _ => queueTransition.OnNext( true ) )
+				.ObserveOn( System.Reactive.Concurrency.ThreadPoolScheduler.Instance )
+				.Do( a => a() )
+				.Do( _ => queueTransition.OnNext( false ), queueTransition.OnError, queueTransition.OnCompleted )
+				.Publish();
+			var queueSize = queueTransition
+				.Scan( 0, ( size, queued ) => size + (queued ? 1 : -1) )
+				.Do( s => log( "ScriptEngine: Queue size = " + s, OutputKind.Debug ) )
+				.Replay( 1 );
+
+			_runningQueue = new CompositeDisposable( runQueue.Connect(), queueSize.Connect() );
+			_queueSize = queueSize;
 			_doneActions = runQueue;
 		}
+
+		public IObservable<Unit> WaitForDeferredExecutions() { return _queueSize.Where( s => s == 0 ).Select( _ => Unit.Default ).Take( 1 ); }
 
 		public IObservable<T> Queue<T>( Func<T> f ) {
 			T value = default( T );
@@ -60,15 +69,10 @@ namespace erecruit.TsT
 		}
 
 		public IObservable<Unit> QueueAction( Action a ) {
-			var hash = a.GetHashCode().ToString( "X" );
-//			log( "ScriptEngine: QueueAction: " + hash, OutputKind.Debug );
-			var result = _doneActions.Where( x => x == a )
-//				.Do( _ => log( "ScriptEngine: Received done action signal: " + hash, OutputKind.Debug ) )
+			var result = _doneActions
+				.Where( x => x == a )
 				.Take( 1 ).Select( _ => Unit.Default )
-//				.Do( _ => log( "ScriptEngine: Done action signal, after Take(1): " + hash, OutputKind.Debug ) )
-				.Replay( 1 ).RefCount()
-//				.Do( _ => log( "ScriptEngine: Done, after RefCount: " + hash, OutputKind.Debug ) )
-				;
+				.Replay( 1 ).RefCount();
 			_queue.OnNext( a );
 			return result.Timeout( JavaScriptCallTimeout );
 		}
@@ -93,10 +97,12 @@ namespace erecruit.TsT
 		}
 
 		Subject<Action> _queue = new Subject<Action>();
+		IObservable<int> _queueSize;
 		IObservable<Action> _doneActions;
 		IDisposable _runningQueue;
 		V8Runtime _runtime = new Microsoft.ClearScript.V8.V8Runtime();
 		V8ScriptEngine _engine;
+		readonly bool _debugOutput;
 
 		int _timeoutStamp = 0;
 		Hashtable _timeouts = new Hashtable();
@@ -122,6 +128,7 @@ namespace erecruit.TsT
 		}
 
 		void log( string msg, OutputKind kind ) {
+			if ( kind == OutputKind.Debug && !_debugOutput ) return;
 			var e = Output;
 			if ( e != null ) e( this, new OutputEventArgs( kind, Convert.ToString( msg ) ) );
 			Debug.WriteLine( msg );

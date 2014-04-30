@@ -18,6 +18,7 @@ module erecruit.TsT {
 
 	export interface Declaration {
 		Comment: string;
+		Directives: { [name: string]: string };
 	}
 
 	export interface ModuleElement extends Declaration {

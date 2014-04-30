@@ -65,10 +65,12 @@ module erecruit.TsT {
 					var sigs = variable.type.getConstructSignatures();
 					//var ctor = variable.type.getConstructorMethod();
 					//if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
+					var comments = variable.docComments() || ( varType && varType.docComments() );
 
 					return <Class> {
 						Name: d.name,
-						Comment: variable.docComments() || (varType && varType.docComments()),
+						Comment: comments,
+						Directives: parseDirectives( comments ),
 						Document: result,
 						InternalModule: this.GetInternalModule( d ),
 						ExternalModule: this.GetExternalModule( d ),
@@ -124,16 +126,23 @@ module erecruit.TsT {
 
 		private GetType( type: ts.PullTypeSymbol ) {
 			if ( !type ) return null;
-			var cached = this._typeCache[type.pullSymbolID];
-			if ( cached ) return cached;
+			var cache = this._typeCache[TypeScript.PullTypeResolver.globalTypeCheckPhase] || ( this._typeCache[TypeScript.PullTypeResolver.globalTypeCheckPhase] = {});
 
-			this._typeCache[type.pullSymbolID] = cached = {
+			var ccached = cache[type.pullSymbolID];
+			if ( ccached ) {
+				if ( ccached.symbol.name !== type.name ) throw "Duplicate pullSymbolID: " + type.name + " !== " + ccached.symbol.name;
+				return ccached.type;
+			}
+
+			var cached: Type = {
 				Document: this.GetCachedDocFromSymbol( type ),
 				Kind: ModuleElementKind.Type,
 				ExternalModule: this.GetExternalModule( type.getDeclarations()[0] ),
 				InternalModule: this.GetInternalModule( type.getDeclarations()[0] ),
-				Comment: type.docComments()
+				Comment: type.docComments(),
+				Directives: parseDirectives( type.docComments() ),
 			};
+			cache[type.pullSymbolID] = { type: cached, symbol: type };
 
 			this.EnsureResolved( type );
 			if ( type.getElementType() ) cached.Array = memoize( () => this.GetType( type.getElementType() ) );
@@ -153,7 +162,10 @@ module erecruit.TsT {
 			}
 			else cached.Interface = memoize( () => this.GetInterface( type ) );
 
-			debug( () => "GetType: pullSymbolID=" + type.pullSymbolID + ", result = " + typeName( cached ) );
+			if ( type.name === "CSSStyleDeclaration" ) {
+				debug( () => (<any>new Error()).stack );
+			}
+			debug( () => "GetType: name = " + type.name + ", pullSymbolID=" + type.pullSymbolID + ", result = " + typeName( cached ) );
 			return cached;
 		}
 
@@ -173,9 +185,14 @@ module erecruit.TsT {
 			this.EnsureResolved( s );
 			return {
 				GenericParameters: s.getTypeParameters().length ? s.getTypeParameters().map( t => this.GetType( t.type ) ) : null,
-				Parameters: s.parameters.map( p => <Identifier>{ Name: p.name, Type: this.GetType( p.type ), Comment: p.docComments() }),
+				Parameters: s.parameters.map( p => <Identifier>{
+					Name: p.name, Type: this.GetType( p.type ),
+					Comment: p.docComments(),
+					Directives: parseDirectives( p.docComments() )
+				}),
 				ReturnType: this.GetType( s.returnType ),
-				Comment: s.docComments()
+				Comment: s.docComments(),
+				Directives: parseDirectives( s.docComments() )
 			};
 		}
 
@@ -205,7 +222,7 @@ module erecruit.TsT {
 					.map( m => {
 						this.EnsureResolved( m );
 						debug( () => "Property: " + type.name + "." + m.name );
-						return <Identifier>{ Name: m.name, Type: this.GetType( m.type ), Comment: m.docComments() };
+						return <Identifier>{ Name: m.name, Type: this.GetType( m.type ), Comment: m.docComments(), Directives: parseDirectives( m.docComments() ) };
 					}),
 				Methods: Enumerable.from( type.getMembers() )
 					.where( m => m.isMethod() && m.isExternallyVisible() )
@@ -289,7 +306,7 @@ module erecruit.TsT {
 		}
 
 		private _compiler = new ts.TypeScriptCompiler();
-		private _typeCache: { [pullSymbolId: number]: Type } = {};
+		private _typeCache: { [globalTypeCheckPhase: number]: { [pullSymbolId: number]: { type: Type; symbol: ts.PullTypeSymbol } } } = {};
 		private _docCache: { [path: string]: Document } = {};
 		private _snapshots: { [fileName: string]: ts.IScriptSnapshot } = {};
 
@@ -351,5 +368,22 @@ module erecruit.TsT {
 		var result: T;
 		var evaluated = false;
 		return () => evaluated ? result : ( evaluated = true, result = f() );
+	}
+
+	var directiveRegex = /[\r\n]{0,1}\s*@([^\s]+)\s+([^\s]{0,1}[^\r\n]*)/g;
+
+	function parseDirectives( comments: string ): { [name: string]: string } {
+		if ( !comments ) return {};
+
+		var result: { [name: string]: string } = {};
+		directiveRegex.lastIndex = 0;
+		do {
+			var m = directiveRegex.exec( comments );
+			if ( m && m[1] ) {
+				result[m[1]] = (m[2]||"").trim();
+			}
+		} while ( m );
+
+		return result;
 	}
 }

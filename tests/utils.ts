@@ -3,11 +3,19 @@
 
 module erecruit.TsT.Tests {
 
+	interface It { ( name: string, define: () => void ): void; }
+	declare var GLOBAL: any;
+
 	var groupStack: string[] = [];
-	var real: { [name: string]: ( name: string, define: () => void ) => void } = { it: it, fit: fit, xit: xit };
-	var override = () => Enumerable.from( real ).forEach( x =>
-		global[x.key] = ( name: string, define: () => void ) => x.value( groupStack.join( ' ' ) + name, define ) );
-	var restore = () => Enumerable.from( real ).forEach( x => global[x.key] = x.value );
+	var fns = ["it", "fit", "xit"];
+	var real: any = Enumerable.from( fns ).toObject( x => x, x => GLOBAL[x] );
+	var override = () => fns.forEach( fn =>
+		GLOBAL[fn] = ( name: string, define: () => void ) => {
+			restore();
+			real[fn]( groupStack.join( ' ' ) + ' ' + name, define );
+			override();
+		} );
+	var restore = () => fns.forEach( fn => GLOBAL[fn] = real[fn] );
 
 	export function group( name: string, define: () => void ) {
 		groupStack.push( name );

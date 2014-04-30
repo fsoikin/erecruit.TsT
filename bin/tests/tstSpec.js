@@ -73378,7 +73378,7 @@ var erecruit;
                     var k = erecruit.TsT.ModuleElementKind[x.kind];
                     return "when" + k + ": Checking if current context is a " + k;
                 });
-                if (t && t.Kind == x.kind)
+                if (t && t.Kind === x.kind)
                     return chunk.render(bodies.block, ctx);
                 return bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
             };
@@ -73439,7 +73439,7 @@ var erecruit;
             }
 
             var t = e, c = e;
-            return c.Kind == 0 /* Class */ ? c.Name : (t.Enum && name(t.Enum())) || (t.GenericParameter && name(t.GenericParameter())) || (t.Interface && name(t.Interface())) || (t.PrimitiveType && TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && typeName(t.GenericInstantiation().Definition, safe));
+            return c.Kind === 0 /* Class */ ? c.Name : (t.Enum && name(t.Enum())) || (t.GenericParameter && name(t.GenericParameter())) || (t.Interface && name(t.Interface())) || (t.PrimitiveType && TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && typeName(t.GenericInstantiation().Definition, safe));
         }
         TsT.typeName = typeName;
 
@@ -73559,16 +73559,19 @@ var erecruit;
                 var result = this.GetCachedDoc(fileName);
 
                 result.Classes = allModuleDecls.where(function (d) {
-                    return d.kind == 512 /* Variable */;
+                    return d.kind === 512 /* Variable */;
                 }).select(function (d) {
                     var variable = _this._compiler.getSymbolOfDeclaration(d);
                     _this.EnsureResolved(variable);
                     var varType = variable.isType() && variable;
                     var sigs = variable.type.getConstructSignatures();
 
+                    var comments = variable.docComments() || (varType && varType.docComments());
+
                     return {
                         Name: d.name,
-                        Comment: variable.docComments() || (varType && varType.docComments()),
+                        Comment: comments,
+                        Directives: parseDirectives(comments),
                         Document: result,
                         InternalModule: _this.GetInternalModule(d),
                         ExternalModule: _this.GetExternalModule(d),
@@ -73586,7 +73589,7 @@ var erecruit;
                 }).toArray();
 
                 result.Types = allModuleDecls.where(function (d) {
-                    return d.kind == 16 /* Interface */ || d.kind == 64 /* Enum */ || d.kind == 8 /* Class */;
+                    return d.kind === 16 /* Interface */ || d.kind === 64 /* Enum */ || d.kind === 8 /* Class */;
                 }).select(function (d) {
                     return _this._compiler.getSymbolOfDeclaration(d);
                 }).doAction(this.EnsureResolved).select(function (x) {
@@ -73624,7 +73627,7 @@ var erecruit;
 
             Extractor.prototype.GetInternalModule = function (d) {
                 return d && Enumerable.from(d.getParentPath()).where(function (p) {
-                    return p.kind == 4 /* Container */;
+                    return p.kind === 4 /* Container */;
                 }).select(function (p) {
                     return p.name;
                 }).toArray().join(".");
@@ -73632,7 +73635,7 @@ var erecruit;
 
             Extractor.prototype.GetExternalModule = function (d) {
                 return d && Enumerable.from(d.getParentPath()).where(function (p) {
-                    return p.kind == 32 /* DynamicModule */;
+                    return p.kind === 32 /* DynamicModule */;
                 }).select(function (p) {
                     return p.name;
                 }).firstOrDefault();
@@ -73642,17 +73645,24 @@ var erecruit;
                 var _this = this;
                 if (!type)
                     return null;
-                var cached = this._typeCache[type.pullSymbolID];
-                if (cached)
-                    return cached;
+                var cache = this._typeCache[TypeScript.PullTypeResolver.globalTypeCheckPhase] || (this._typeCache[TypeScript.PullTypeResolver.globalTypeCheckPhase] = {});
 
-                this._typeCache[type.pullSymbolID] = cached = {
+                var ccached = cache[type.pullSymbolID];
+                if (ccached) {
+                    if (ccached.symbol.name !== type.name)
+                        throw "Duplicate pullSymbolID: " + type.name + " !== " + ccached.symbol.name;
+                    return ccached.type;
+                }
+
+                var cached = {
                     Document: this.GetCachedDocFromSymbol(type),
                     Kind: 1 /* Type */,
                     ExternalModule: this.GetExternalModule(type.getDeclarations()[0]),
                     InternalModule: this.GetInternalModule(type.getDeclarations()[0]),
-                    Comment: type.docComments()
+                    Comment: type.docComments(),
+                    Directives: parseDirectives(type.docComments())
                 };
+                cache[type.pullSymbolID] = { type: cached, symbol: type };
 
                 this.EnsureResolved(type);
                 if (type.getElementType())
@@ -73686,8 +73696,13 @@ var erecruit;
                         return _this.GetInterface(type);
                     });
 
+                if (type.name === "CSSStyleDeclaration") {
+                    TsT.debug(function () {
+                        return new Error().stack;
+                    });
+                }
                 TsT.debug(function () {
-                    return "GetType: pullSymbolID=" + type.pullSymbolID + ", result = " + TsT.typeName(cached);
+                    return "GetType: name = " + type.name + ", pullSymbolID=" + type.pullSymbolID + ", result = " + TsT.typeName(cached);
                 });
                 return cached;
             };
@@ -73714,10 +73729,15 @@ var erecruit;
                         return _this.GetType(t.type);
                     }) : null,
                     Parameters: s.parameters.map(function (p) {
-                        return { Name: p.name, Type: _this.GetType(p.type), Comment: p.docComments() };
+                        return {
+                            Name: p.name, Type: _this.GetType(p.type),
+                            Comment: p.docComments(),
+                            Directives: parseDirectives(p.docComments())
+                        };
                     }),
                     ReturnType: this.GetType(s.returnType),
-                    Comment: s.docComments()
+                    Comment: s.docComments(),
+                    Directives: parseDirectives(s.docComments())
                 };
             };
 
@@ -73749,7 +73769,7 @@ var erecruit;
                         TsT.debug(function () {
                             return "Property: " + type.name + "." + m.name;
                         });
-                        return { Name: m.name, Type: _this.GetType(m.type), Comment: m.docComments() };
+                        return { Name: m.name, Type: _this.GetType(m.type), Comment: m.docComments(), Directives: parseDirectives(m.docComments()) };
                     }),
                     Methods: Enumerable.from(type.getMembers()).where(function (m) {
                         return m.isMethod() && m.isExternallyVisible();
@@ -73777,7 +73797,7 @@ var erecruit;
                 Enumerable.from(type.getDeclarations()).selectMany(function (d) {
                     return d.getChildDecls();
                 }).where(function (d) {
-                    return d.kind == 67108864 /* EnumMember */;
+                    return d.kind === 67108864 /* EnumMember */;
                 }).forEach(function (decl) {
                     var value = decl.constantValue;
                     if (typeof value !== "number") {
@@ -73797,7 +73817,7 @@ var erecruit;
                 };
 
                 function evalExpr(e) {
-                    if (e.kind() == 11 /* IdentifierName */) {
+                    if (e.kind() === 11 /* IdentifierName */) {
                         return { result: values[e.text()] };
                     }
 
@@ -73833,7 +73853,7 @@ var erecruit;
 
             Extractor.prototype.GetDocumentForDecl = function (d) {
                 var script = d && d.getParentPath()[0];
-                var fileName = script && script.kind == 1 /* Script */ && script.fileName();
+                var fileName = script && script.kind === 1 /* Script */ && script.fileName();
                 return fileName && this._compiler.getDocument(fileName);
             };
 
@@ -73916,6 +73936,24 @@ var erecruit;
             return function () {
                 return evaluated ? result : (evaluated = true, result = f());
             };
+        }
+
+        var directiveRegex = /[\r\n]{0,1}\s*@([^\s]+)\s+([^\s]{0,1}[^\r\n]*)/g;
+
+        function parseDirectives(comments) {
+            if (!comments)
+                return {};
+
+            var result = {};
+            directiveRegex.lastIndex = 0;
+            do {
+                var m = directiveRegex.exec(comments);
+                if (m && m[1]) {
+                    result[m[1]] = (m[2] || "").trim();
+                }
+            } while(m);
+
+            return result;
         }
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
@@ -74117,7 +74155,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.3.5";
+        TsT.Version = "0.4.0";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
@@ -74368,6 +74406,91 @@ var erecruit;
     (function (TsT) {
         (function (Tests) {
             (function (Extr) {
+                function directives() {
+                    Tests.group("should extract directives", function () {
+                        it("on interfaces", function () {
+                            Extr.file = "/** @dir value*/ export interface I {}";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types, false)[0].Directives).toEqual({ dir: 'value' });
+                        });
+
+                        xit("on classes", function () {
+                            Extr.file = "/** @dir value*/ export class C {}";
+                            expect(Extr.e.GetDocument(Extr.fileName).Classes[0].Directives).toEqual({ dir: 'value' });
+                        });
+
+                        xit("on variables with constructor signatures", function () {
+                            Extr.file = "/** @dir value*/ export var C: { new: () => string } = null";
+                            expect(Extr.e.GetDocument(Extr.fileName).Classes[0].Directives).toEqual({ dir: 'value' });
+                        });
+
+                        it("on properties", function () {
+                            Extr.file = "export interface I { \r\n/** @dir value*/ X: string }";
+                            expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types, false)[0]).toEqual(Extr.c({
+                                Interface: Extr.c({
+                                    Properties: [
+                                        Extr.c({
+                                            Directives: { dir: "value" },
+                                            Name: 'X'
+                                        })
+                                    ]
+                                })
+                            }));
+                        });
+
+                        it("on methods", function () {
+                            Extr.file = "export interface I { \r\n/** @dir value1*/ X(): string; \r\n/** @dir value2*/ X( p: number ): number; }";
+                            var m = Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types, false)[0].Interface.Methods[0];
+                            expect(m.Name).toEqual('X');
+                            expect(m.Signatures.sort(function (a, b) {
+                                return a.Parameters.length - b.Parameters.length;
+                            })).toEqual([
+                                Extr.c({ Directives: { dir: "value1" }, Parameters: [] }),
+                                Extr.c({ Directives: { dir: "value2" }, Parameters: [Extr.c({ Name: 'p' })] })
+                            ]);
+                        });
+
+                        it("on several lines", function () {
+                            t("Some comment \r\n\
+									Whatever \r\n\
+									\r\n\
+									@dir value\r\n\
+									@dir2 value2", {
+                                dir: 'value',
+                                dir2: 'value2'
+                            });
+                        });
+
+                        it("and trim whitespace from values", function () {
+                            t("@dir    value2  ", { dir: 'value2' });
+                        });
+
+                        it("with later namesakes overriding earlier ones", function () {
+                            t("@dir    value1\r\n@dir value2", { dir: 'value2' });
+                        });
+
+                        it("and tolerate empty values", function () {
+                            t("@dir   ", { dir: '' });
+                        });
+                    });
+                }
+                Extr.directives = directives;
+
+                function t(comment, directives) {
+                    Extr.file = "/** " + comment + "*/\r\nexport interface I { }";
+                    expect(Extr.trimAndUnwrapAll(Extr.e.GetDocument(Extr.fileName).Types, false)[0].Directives).toEqual(directives);
+                }
+            })(Tests.Extr || (Tests.Extr = {}));
+            var Extr = Tests.Extr;
+        })(TsT.Tests || (TsT.Tests = {}));
+        var Tests = TsT.Tests;
+    })(erecruit.TsT || (erecruit.TsT = {}));
+    var TsT = erecruit.TsT;
+})(erecruit || (erecruit = {}));
+var erecruit;
+(function (erecruit) {
+    (function (TsT) {
+        (function (Tests) {
+            (function (Extr) {
                 function generics() {
                     Tests.group("should correctly parse generic interfaces", function () {
                         it("with one parameter", function () {
@@ -74537,17 +74660,24 @@ var erecruit;
     (function (TsT) {
         (function (Tests) {
             var groupStack = [];
-            var real = { it: it, fit: fit, xit: xit };
+            var fns = ["it", "fit", "xit"];
+            var real = Enumerable.from(fns).toObject(function (x) {
+                return x;
+            }, function (x) {
+                return GLOBAL[x];
+            });
             var override = function () {
-                return Enumerable.from(real).forEach(function (x) {
-                    return global[x.key] = function (name, define) {
-                        return x.value(groupStack.join(' ') + name, define);
+                return fns.forEach(function (fn) {
+                    return GLOBAL[fn] = function (name, define) {
+                        restore();
+                        real[fn](groupStack.join(' ') + ' ' + name, define);
+                        override();
                     };
                 });
             };
             var restore = function () {
-                return Enumerable.from(real).forEach(function (x) {
-                    return global[x.key] = x.value;
+                return fns.forEach(function (fn) {
+                    return GLOBAL[fn] = real[fn];
                 });
             };
 
@@ -74637,6 +74767,7 @@ var erecruit;
                     Extr.modules();
                     Extr.generics();
                     Extr.comments();
+                    Extr.directives();
                 });
 
                 function trimAndUnwrapAll(types, trimComments) {
@@ -74659,7 +74790,7 @@ var erecruit;
                     delete type.InternalModule;
                     delete type.ExternalModule;
                     if (trimComments)
-                        delete type.Comment;
+                        deleteComment(type);
 
                     if (type.Interface)
                         type.Interface = trimAndUnwrapIntf(type.Interface(), trimComments);
@@ -74686,7 +74817,7 @@ var erecruit;
                     (i.Properties || []).forEach(function (p) {
                         trimAndUnwrap(p.Type, trimComments);
                         if (trimComments)
-                            delete p.Comment;
+                            deleteComment(p);
                     });
                     (i.Methods || []).forEach(function (p) {
                         return p.Signatures.forEach(function (s) {
@@ -74695,13 +74826,18 @@ var erecruit;
                             (s.Parameters || []).forEach(function (p) {
                                 trimAndUnwrap(p.Type, trimComments);
                                 if (trimComments)
-                                    delete p.Comment;
+                                    deleteComment(p);
                             });
                         });
                     });
                     return i;
                 }
                 Extr.trimAndUnwrapIntf = trimAndUnwrapIntf;
+
+                function deleteComment(x) {
+                    delete x.Comment;
+                    delete x.Directives;
+                }
             })(Tests.Extr || (Tests.Extr = {}));
             var Extr = Tests.Extr;
         })(TsT.Tests || (TsT.Tests = {}));

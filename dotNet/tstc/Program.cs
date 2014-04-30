@@ -52,7 +52,7 @@ namespace erecruit.TsT
 
 			try {
 				var result = Observable.Using( 
-					() => { var tst = new TsT(); tst.Output += Output( verbose, debug ); return tst; },  // WTF, no inline event initializers in C# ?!?!
+					() => { var tst = new TsT( debug ); tst.Output += Output( verbose, debug ); return tst; },  // WTF, no inline event initializers in C# ?!?!
 					tst =>
 						from f in tst.Emit( inputFiles.Select( Path.GetFullPath ), commonRoot, configFile == null ? TsT.AutoDiscoverConfigFile() : (_ => configFile) )
 						from s in f.SourceFiles

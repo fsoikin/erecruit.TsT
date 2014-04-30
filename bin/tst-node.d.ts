@@ -22,6 +22,9 @@ declare module "tst" {
     }
     interface Declaration {
         Comment: string;
+        Directives: {
+            [name: string]: string;
+        };
     }
     interface ModuleElement extends Declaration {
         Document: Document;

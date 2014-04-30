@@ -44,6 +44,7 @@ module erecruit.TsT.Tests.Extr {
 		Extr.modules();
 		Extr.generics();
 		Extr.comments();
+		Extr.directives();
 	});
 
 	/* Removes unnecessary back references and unwraps lazy evaluators for better readability of error messages */
@@ -62,7 +63,7 @@ module erecruit.TsT.Tests.Extr {
 		delete type.Kind;
 		delete type.InternalModule;
 		delete type.ExternalModule;
-		if ( trimComments ) delete type.Comment;
+		if ( trimComments ) deleteComment( type );
 
 		if ( type.Interface ) type.Interface = <any>trimAndUnwrapIntf( type.Interface(), trimComments );
 		if ( type.GenericParameter ) {
@@ -84,16 +85,21 @@ module erecruit.TsT.Tests.Extr {
 		trimAndUnwrapAll( i.Extends, trimComments );
 		(i.Properties||[]).forEach( p => { 
 			trimAndUnwrap( p.Type, trimComments );
-			if ( trimComments ) delete p.Comment;
+			if ( trimComments ) deleteComment( p );
 		} );
 		(i.Methods||[]).forEach( p => p.Signatures.forEach( s => {
 			trimAndUnwrap( s.ReturnType, trimComments );
 			trimAndUnwrapAll( s.GenericParameters, trimComments );
 			(s.Parameters||[]).forEach( p => { 
 				trimAndUnwrap( p.Type, trimComments ); 
-				if ( trimComments ) delete p.Comment;
+				if ( trimComments ) deleteComment( p );
 			} );
 		}) );
 		return i;
+	}
+
+	function deleteComment( x: any ) {
+		delete x.Comment;
+		delete x.Directives;
 	}
 }
