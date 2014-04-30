@@ -3,12 +3,13 @@
 /// <reference path="interfaces.ts" />
 
 module erecruit.TsT {
-	dust.helpers['replace'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { str: string; regex: string; replacement: string }) => {
+	dust.helpers['replace'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { str: string; regex: string; flags: string; replacement: string }) => {
 		var str = dust.helpers.tap( params.str, chunk, ctx );
 		var regex = dust.helpers.tap( params.regex, chunk, ctx );
+		var flags = dust.helpers.tap( params.flags, chunk, ctx );
 		var replacement = dust.helpers.tap( params.replacement, chunk, ctx );
 		if ( !str || !regex ) return chunk;
-		return chunk.write( str.replace( new RegExp( regex ), replacement || "" ) );
+		return chunk.write( str.replace( new RegExp( regex, flags ), replacement || "" ) );
 	};
 
 	dust.helpers['test'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { str: string; regex: string }) => {

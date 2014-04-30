@@ -73339,10 +73339,11 @@ var erecruit;
         dust.helpers['replace'] = function (chunk, ctx, bodies, params) {
             var str = dust.helpers.tap(params.str, chunk, ctx);
             var regex = dust.helpers.tap(params.regex, chunk, ctx);
+            var flags = dust.helpers.tap(params.flags, chunk, ctx);
             var replacement = dust.helpers.tap(params.replacement, chunk, ctx);
             if (!str || !regex)
                 return chunk;
-            return chunk.write(str.replace(new RegExp(regex), replacement || ""));
+            return chunk.write(str.replace(new RegExp(regex, flags), replacement || ""));
         };
 
         dust.helpers['test'] = function (chunk, ctx, bodies, params) {
@@ -74165,7 +74166,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.4.1";
+        TsT.Version = "0.4.2";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
