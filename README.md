@@ -214,10 +214,13 @@ Replaces a substring with another using regular expression.
 |----|----|
 | **str** | input string|
 | **regex** | regular expression to test against|
+| **flags** | regular expression flags|
 | **replacement** | replacement string. Can include regular JavaScript named and numbered references like $1, $2, $myGroup, etc.|
 
+For specification of regular expression language and flags, [see MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp).
+
 ```
-   {@replace str="{Name}" regex="-" replacement="_" /}
+   {@replace str="{Name}" regex="-" flags="g" replacement="_" /}
 ```
 
 ###test
