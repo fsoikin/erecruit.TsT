@@ -139,6 +139,7 @@ declare module erecruit.TsT {
         private _config;
         private _options;
         constructor(_config: CachedConfig, _options?: ExtractorOptions);
+        public LoadDocuments(docs: string[]): void;
         private addFile(f);
         public GetDocument(fileName: string): Document;
         private GetCachedDoc(path);

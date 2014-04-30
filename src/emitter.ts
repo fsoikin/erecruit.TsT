@@ -43,8 +43,11 @@ module erecruit.TsT {
 		var e = new Extractor( config );
 		log( () => "Emit: config = " + JSON.stringify( cfg ) );
 
+		files = ensureArray( files );
+		e.LoadDocuments( files );
+
 		return Rx.Observable
-			.fromArray( ensureArray( files ) )
+			.fromArray( files )
 			.selectMany(
 				f => formatTemplate( f, e.GetDocument( f ).Types, getFileConfig( config, f ), Config.toDustContext( config ), typeName ),
 				(f, x) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )

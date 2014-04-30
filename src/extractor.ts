@@ -17,6 +17,24 @@ module erecruit.TsT {
 			ensureArray( _config.Host.GetIncludedTypingFiles() ).forEach( f => this.addFile( f ) );
 		}
 
+		LoadDocuments( docs: string[] ) {
+			( docs || [] ).forEach( fileName => {
+				fileName = this.normalizePath( fileName ); // Have to normalize file path to avoid duplicates
+				log( () => "LoadDocuments: " + fileName );
+
+				if ( !this._compiler.getDocument( fileName ) ) {
+					if ( !this.addFile( fileName ) ) {
+						throw "Cannot read file " + fileName;
+					}
+
+					var resolved = ts.ReferenceResolver.resolve( [fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution );
+					Enumerable.from( resolved && resolved.resolvedFiles )
+						.where( f => !this._compiler.getDocument( f.path ) )
+						.forEach( f => this.addFile( f.path ) );
+				}
+			});
+		}
+
 		private addFile( f: string ) {
 			log( () => "addFile: " + f );
 			var snapshot = this._tsHost.getScriptSnapshot( f );
@@ -25,19 +43,7 @@ module erecruit.TsT {
 		}
 
 		GetDocument( fileName: string ): Document {
-			fileName = this.normalizePath( fileName ); // Have to normalize file path to avoid duplicates
-			log( () => "GetDocument: " + fileName );
-
-			if ( !this._compiler.getDocument( fileName ) ) {
-				if ( !this.addFile( fileName ) ) {
-					throw "Cannot read file " + fileName;
-				}
-
-				var resolved = ts.ReferenceResolver.resolve( [fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution );
-				Enumerable.from( resolved && resolved.resolvedFiles )
-					.where( f => !this._compiler.getDocument( f.path ) )
-					.forEach( f => this.addFile( f.path ) );
-			}
+			this.LoadDocuments( [fileName] );
 
 			var mod = this._compiler.topLevelDeclaration( fileName );
 			if ( !mod ) return { Path: fileName, Classes: [], Types: [] };

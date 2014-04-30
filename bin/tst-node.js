@@ -73505,6 +73505,29 @@ var erecruit;
                     return _this.addFile(f);
                 });
             }
+            Extractor.prototype.LoadDocuments = function (docs) {
+                var _this = this;
+                (docs || []).forEach(function (fileName) {
+                    fileName = _this.normalizePath(fileName);
+                    TsT.log(function () {
+                        return "LoadDocuments: " + fileName;
+                    });
+
+                    if (!_this._compiler.getDocument(fileName)) {
+                        if (!_this.addFile(fileName)) {
+                            throw "Cannot read file " + fileName;
+                        }
+
+                        var resolved = ts.ReferenceResolver.resolve([fileName], _this._tsHost, _this._options.UseCaseSensitiveFileResolution);
+                        Enumerable.from(resolved && resolved.resolvedFiles).where(function (f) {
+                            return !_this._compiler.getDocument(f.path);
+                        }).forEach(function (f) {
+                            return _this.addFile(f.path);
+                        });
+                    }
+                });
+            };
+
             Extractor.prototype.addFile = function (f) {
                 TsT.log(function () {
                     return "addFile: " + f;
@@ -73517,23 +73540,7 @@ var erecruit;
 
             Extractor.prototype.GetDocument = function (fileName) {
                 var _this = this;
-                fileName = this.normalizePath(fileName);
-                TsT.log(function () {
-                    return "GetDocument: " + fileName;
-                });
-
-                if (!this._compiler.getDocument(fileName)) {
-                    if (!this.addFile(fileName)) {
-                        throw "Cannot read file " + fileName;
-                    }
-
-                    var resolved = ts.ReferenceResolver.resolve([fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution);
-                    Enumerable.from(resolved && resolved.resolvedFiles).where(function (f) {
-                        return !_this._compiler.getDocument(f.path);
-                    }).forEach(function (f) {
-                        return _this.addFile(f.path);
-                    });
-                }
+                this.LoadDocuments([fileName]);
 
                 var mod = this._compiler.topLevelDeclaration(fileName);
                 if (!mod)
@@ -73998,7 +74005,10 @@ var erecruit;
                 return "Emit: config = " + JSON.stringify(cfg);
             });
 
-            return Rx.Observable.fromArray(TsT.ensureArray(files)).selectMany(function (f) {
+            files = TsT.ensureArray(files);
+            e.LoadDocuments(files);
+
+            return Rx.Observable.fromArray(files).selectMany(function (f) {
                 return formatTemplate(f, e.GetDocument(f).Types, TsT.getFileConfig(config, f), Config.toDustContext(config), TsT.typeName);
             }, function (f, x) {
                 return ({ outputFile: x.outputFileName, content: x.content, inputFile: f });
@@ -74155,7 +74165,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.4.0";
+        TsT.Version = "0.4.1";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));

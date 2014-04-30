@@ -8,5 +8,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright( "Copyright © erecruit 2014" )]
 [assembly: ComVisible( false )]
 
-[assembly: AssemblyVersion( "0.4.0.0" )]
-[assembly: AssemblyFileVersion( "0.4.0.0" )]
+[assembly: AssemblyVersion( Version.Value )]
+[assembly: AssemblyFileVersion( Version.Value )]
+
+static class Version
+{
+	public const string Value = "0.4.1.0";
+}
