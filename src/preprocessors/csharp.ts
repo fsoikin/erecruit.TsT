@@ -51,10 +51,14 @@ module erecruit.TsT.CSharp {
 
 	function typeNamespace( config: CachedConfig, e: ModuleElement ) {
 		if ( !e.Document || !e.Document.Path ) return "";
-		var relPath = config.Host.MakeRelativePath( config.Original.RootDir, config.Host.GetParentDirectory( e.Document.Path ) );
-		if ( !relPath || relPath === '.' ) return "";
-		if ( relPath[0] === '.' && relPath[1] === '.' ) return "";
-		return relPath
+
+		var realPath = config.Host.ResolveRelativePath( e.Document.Path, config.Original.RootDir );
+		var directory = config.Host.GetParentDirectory( realPath );
+		var directoryRelativeToRoot = config.Host.MakeRelativePath( config.Original.RootDir, directory );
+
+		if ( !directoryRelativeToRoot || directoryRelativeToRoot === '.' ) return "";
+		if ( directoryRelativeToRoot[0] === '.' && directoryRelativeToRoot[1] === '.' ) return "";
+		return directoryRelativeToRoot
 			.replace( /[\.\-\+]/g, '_' )
 			.replace( /[\/\\]/g, '.' );
 	}
