@@ -1,0 +1,21 @@
+// This is the erecruit TsT configuration file.
+// For more info see https://github.com/erecruit/TsT#configuration-file
+
+{
+	Types: {
+		'^(?!VmBase)(?!AboutType)(?!AboutObjectId)(?!Range)(?!DateTime)[^I].+(?!Vm)..$': {
+			FileName: "{Path}{Name}.cs",
+			Template: "@./Templates/type.cs.tpl"
+		},
+
+		'.': {
+			FileName: "{Path}{Name}.cs",
+			Template: "@./Templates/userSettingsMarshal.tpl"
+		},
+
+		"(?!IHaveName|IHaveId)^I.+(?!Vm)..$": {
+			FileName: "{Path}{Name}.cs",
+			Template: "@./Templates/interface.cs.tpl"
+		}
+	}
+}

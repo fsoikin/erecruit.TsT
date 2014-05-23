@@ -12,8 +12,12 @@ declare function xdescribe(description: string, specDefinitions: () => void): vo
 declare function it(expectation: string, assertion: () => void): void;
 declare function fit( expectation: string, assertion: () => void ): void;
 declare function ffit( expectation: string, assertion: () => void ): void;
+declare function xit( expectation: string, assertion: () => void ): void;
+
+declare function fit( expectation: string, assertion: ( done?: ( err?: any ) => void ) => void ): void;
+declare function ffit( expectation: string, assertion: ( done?: ( err?: any ) => void ) => void ): void;
 declare function it(expectation: string, assertion: (done: (err?: any) => void) => void): void;
-declare function xit(expectation: string, assertion: () => void): void;
+declare function xit( expectation: string, assertion: ( done: ( err?: any ) => void ) => void ): void;
 
 declare function beforeEach(action: () => void): void;
 declare function afterEach(action: () => void): void;

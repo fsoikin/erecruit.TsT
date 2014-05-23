@@ -43,6 +43,10 @@ function main() {
 	};
 
 	erecruit.TsT.Emit( config, files.map( f => path.relative( rootDir, f ) ), host )
+		.catchException( ex => {
+			console.error( ex );
+			return Rx.Observable.empty<any>();
+		} )
 		.subscribe( c => {
 			var outPath = path.resolve( config.RootDir, c.OutputFile );
 			consoleLog( c.SourceFiles.map( f => path.relative( '.', path.resolve( config.RootDir, f ) ) ).join( ', ' ) + " --> " + path.relative( '.', path.relative( '.', outPath ) ) );

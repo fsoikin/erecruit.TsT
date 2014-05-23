@@ -1,0 +1,1 @@
+declare function setImmediate( f: Function ): number;
