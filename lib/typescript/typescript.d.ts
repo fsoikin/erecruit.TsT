@@ -496,7 +496,7 @@ declare module TypeScript {
         VeryAggressive = 3,
     }
     class Debug {
-        
+        private static currentAssertionLevel;
         static shouldAssert(level: AssertionLevel): boolean;
         static assert(expression: any, message?: string, verboseDebugInfo?: () => string): void;
         static fail(message?: string): void;
@@ -505,10 +505,10 @@ declare module TypeScript {
 declare module TypeScript {
     var LocalizedDiagnosticMessages: IIndexable<any>;
     class Location {
-        
-        
-        
-        
+        private _fileName;
+        private _lineMap;
+        private _start;
+        private _length;
         constructor(fileName: string, lineMap: LineMap, start: number, length: number);
         public fileName(): string;
         public lineMap(): LineMap;
@@ -519,9 +519,9 @@ declare module TypeScript {
         static equals(location1: Location, location2: Location): boolean;
     }
     class Diagnostic extends Location {
-        
-        
-        
+        private _diagnosticKey;
+        private _arguments;
+        private _additionalLocations;
         constructor(fileName: string, lineMap: LineMap, start: number, length: number, diagnosticKey: string, _arguments?: any[], additionalLocations?: Location[]);
         public toJSON(key: any): any;
         public diagnosticKey(): string;
@@ -555,13 +555,13 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class Hash {
-        
-        
+        private static FNV_BASE;
+        private static FNV_PRIME;
         private static computeFnv1aCharArrayHashCode(text, start, len);
         static computeSimple31BitCharArrayHashCode(key: number[], start: number, len: number): number;
         static computeSimple31BitStringHashCode(key: string): number;
         static computeMurmur2StringHashCode(key: string, seed: number): number;
-        
+        private static primes;
         static getPrime(min: number): number;
         static expandPrime(oldSize: number): number;
         static combine(value: number, currentHash: number): number;
@@ -570,9 +570,9 @@ declare module TypeScript {
 declare module TypeScript.Collections {
     var DefaultHashTableCapacity: number;
     class HashTable<TKey, TValue> {
-        
-        
-        
+        private hash;
+        private entries;
+        private count;
         constructor(capacity: number, hash: (k: TKey) => number);
         public set(key: TKey, value: TValue): void;
         public add(key: TKey, value: TValue): void;
@@ -653,10 +653,10 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class LineMap {
-        
-        
+        private _computeLineStarts;
+        private length;
         static empty: LineMap;
-        
+        private _lineStarts;
         constructor(_computeLineStarts: () => number[], length: number);
         public toJSON(key: any): {
             lineStarts: number[];
@@ -674,8 +674,8 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class LineAndCharacter {
-        
-        
+        private _line;
+        private _character;
         constructor(line: number, character: number);
         public line(): number;
         public character(): number;
@@ -690,8 +690,8 @@ declare module TypeScript {
 declare module TypeScript.Collections {
     var DefaultStringTableCapacity: number;
     class StringTable {
-        
-        
+        private entries;
+        private count;
         constructor(capacity: number);
         public addCharArray(key: number[], start: number, len: number): string;
         private findCharArrayEntry(key, start, len, hashCode);
@@ -895,8 +895,8 @@ declare module TypeScript.TextUtilities {
 }
 declare module TypeScript {
     class TextSpan {
-        
-        
+        private _start;
+        private _length;
         constructor(start: number, length: number);
         public start(): number;
         public length(): number;
@@ -916,8 +916,8 @@ declare module TypeScript {
 declare module TypeScript {
     class TextChangeRange {
         static unchanged: TextChangeRange;
-        
-        
+        private _span;
+        private _newLength;
         constructor(span: TextSpan, newLength: number);
         public span(): TextSpan;
         public newLength(): number;
@@ -974,8 +974,8 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class ParseOptions {
-        
-        
+        private _languageVersion;
+        private _allowAutomaticSemicolonInsertion;
         constructor(languageVersion: LanguageVersion, allowAutomaticSemicolonInsertion: boolean);
         public toJSON(key: any): {
             allowAutomaticSemicolonInsertion: boolean;
@@ -986,9 +986,9 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class PositionedElement {
-        
-        
-        
+        private _parent;
+        private _element;
+        private _fullStart;
         constructor(parent: PositionedElement, element: ISyntaxElement, fullStart: number);
         static create(parent: PositionedElement, element: ISyntaxElement, fullStart: number): PositionedElement;
         public parent(): PositionedElement;
@@ -1034,7 +1034,7 @@ declare module TypeScript {
         public list(): ISeparatedSyntaxList;
     }
     class PositionedSkippedToken extends PositionedToken {
-        
+        private _parentToken;
         constructor(parentToken: PositionedToken, token: ISyntaxToken, fullStart: number);
         public parentToken(): PositionedToken;
         public previousToken(includeSkippedTokens?: boolean): PositionedToken;
@@ -1331,10 +1331,10 @@ declare module TypeScript.SyntaxFacts {
 }
 declare module TypeScript {
     class Scanner implements ISlidingWindowSource {
-        
-        
-        
-        
+        private slidingWindow;
+        private fileName;
+        private text;
+        private _languageVersion;
         constructor(fileName: string, text: ISimpleText, languageVersion: LanguageVersion, window?: number[]);
         public languageVersion(): LanguageVersion;
         public fetchMoreItems(argument: any, sourceIndex: number, window: number[], destinationIndex: number, spaceAvailable: number): number;
@@ -1343,7 +1343,7 @@ declare module TypeScript {
         public setAbsoluteIndex(index: number): void;
         public scan(diagnostics: Diagnostic[], allowRegularExpression: boolean): ISyntaxToken;
         private createToken(fullStart, leadingTriviaInfo, start, kind, end, fullEnd, trailingTriviaInfo, isVariableWidthKeyword);
-        
+        private static triviaWindow;
         static scanTrivia(text: ISimpleText, start: number, length: number, isTrailing: boolean): ISyntaxTriviaList;
         private scanTrivia(underlyingText, underlyingTextStart, isTrailing);
         private scanTriviaInfo(diagnostics, isTrailing);
@@ -1422,15 +1422,15 @@ declare module TypeScript {
         fetchMoreItems(argument: any, sourceIndex: number, window: any[], destinationIndex: number, spaceAvailable: number): number;
     }
     class SlidingWindow {
-        
+        private source;
         public window: any[];
-        
-        
+        private defaultValue;
+        private sourceLength;
         public windowCount: number;
         public windowAbsoluteStartIndex: number;
         public currentRelativeItemIndex: number;
-        
-        
+        private _pinCount;
+        private firstPinnedAbsoluteIndex;
         constructor(source: ISlidingWindowSource, window: any[], defaultValue: any, sourceLength?: number);
         private windowAbsoluteEndIndex();
         private addMoreItemsToWindow(argument);
@@ -1873,7 +1873,7 @@ declare module TypeScript.Syntax {
 }
 declare module TypeScript {
     class SyntaxNode implements ISyntaxNodeOrToken {
-        
+        private _data;
         constructor(parsedInStrictMode: boolean);
         public isNode(): boolean;
         public isToken(): boolean;
@@ -2092,7 +2092,7 @@ declare module TypeScript {
     class HeritageClauseSyntax extends SyntaxNode {
         public extendsOrImplementsKeyword: ISyntaxToken;
         public typeNames: ISeparatedSyntaxList;
-        
+        private _kind;
         constructor(kind: SyntaxKind, extendsOrImplementsKeyword: ISyntaxToken, typeNames: ISeparatedSyntaxList, parsedInStrictMode: boolean);
         public accept(visitor: ISyntaxVisitor): any;
         public childCount(): number;
@@ -2242,7 +2242,7 @@ declare module TypeScript {
     class PrefixUnaryExpressionSyntax extends SyntaxNode implements IUnaryExpressionSyntax {
         public operatorToken: ISyntaxToken;
         public operand: IUnaryExpressionSyntax;
-        
+        private _kind;
         constructor(kind: SyntaxKind, operatorToken: ISyntaxToken, operand: IUnaryExpressionSyntax, parsedInStrictMode: boolean);
         public accept(visitor: ISyntaxVisitor): any;
         public childCount(): number;
@@ -2615,7 +2615,7 @@ declare module TypeScript {
     class PostfixUnaryExpressionSyntax extends SyntaxNode implements IPostfixExpressionSyntax {
         public operand: IMemberExpressionSyntax;
         public operatorToken: ISyntaxToken;
-        
+        private _kind;
         constructor(kind: SyntaxKind, operand: IMemberExpressionSyntax, operatorToken: ISyntaxToken, parsedInStrictMode: boolean);
         public accept(visitor: ISyntaxVisitor): any;
         public childCount(): number;
@@ -2702,7 +2702,7 @@ declare module TypeScript {
         public left: IExpressionSyntax;
         public operatorToken: ISyntaxToken;
         public right: IExpressionSyntax;
-        
+        private _kind;
         constructor(kind: SyntaxKind, left: IExpressionSyntax, operatorToken: ISyntaxToken, right: IExpressionSyntax, parsedInStrictMode: boolean);
         public accept(visitor: ISyntaxVisitor): any;
         public childCount(): number;
@@ -3875,10 +3875,10 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class SyntaxDedenter extends SyntaxRewriter {
-        
-        
-        
-        
+        private dedentationAmount;
+        private minimumIndent;
+        private options;
+        private lastTriviaWasNewLine;
         constructor(dedentFirstToken: boolean, dedentationAmount: number, minimumIndent: number, options: FormattingOptions);
         private abort();
         private isAborted();
@@ -3892,10 +3892,10 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class SyntaxIndenter extends SyntaxRewriter {
-        
-        
-        
-        
+        private indentationAmount;
+        private options;
+        private lastTriviaWasNewLine;
+        private indentationTrivia;
         constructor(indentFirstToken: boolean, indentationAmount: number, options: FormattingOptions);
         public visitToken(token: ISyntaxToken): ISyntaxToken;
         public indentTriviaList(triviaList: ISyntaxTriviaList): ISyntaxTriviaList;
@@ -3909,7 +3909,7 @@ declare module TypeScript {
 }
 declare module TypeScript.Syntax {
     class VariableWidthTokenWithNoTrivia implements ISyntaxToken {
-        
+        private _fullText;
         public tokenKind: SyntaxKind;
         constructor(fullText: string, kind: SyntaxKind);
         public clone(): ISyntaxToken;
@@ -3957,9 +3957,9 @@ declare module TypeScript.Syntax {
         public isUnaryExpression(): boolean;
     }
     class VariableWidthTokenWithLeadingTrivia implements ISyntaxToken {
-        
+        private _fullText;
         public tokenKind: SyntaxKind;
-        
+        private _leadingTriviaInfo;
         constructor(fullText: string, kind: SyntaxKind, leadingTriviaInfo: number);
         public clone(): ISyntaxToken;
         public isNode(): boolean;
@@ -4006,9 +4006,9 @@ declare module TypeScript.Syntax {
         public isUnaryExpression(): boolean;
     }
     class VariableWidthTokenWithTrailingTrivia implements ISyntaxToken {
-        
+        private _fullText;
         public tokenKind: SyntaxKind;
-        
+        private _trailingTriviaInfo;
         constructor(fullText: string, kind: SyntaxKind, trailingTriviaInfo: number);
         public clone(): ISyntaxToken;
         public isNode(): boolean;
@@ -4055,10 +4055,10 @@ declare module TypeScript.Syntax {
         public isUnaryExpression(): boolean;
     }
     class VariableWidthTokenWithLeadingAndTrailingTrivia implements ISyntaxToken {
-        
+        private _fullText;
         public tokenKind: SyntaxKind;
-        
-        
+        private _leadingTriviaInfo;
+        private _trailingTriviaInfo;
         constructor(fullText: string, kind: SyntaxKind, leadingTriviaInfo: number, trailingTriviaInfo: number);
         public clone(): ISyntaxToken;
         public isNode(): boolean;
@@ -4152,9 +4152,9 @@ declare module TypeScript.Syntax {
         public isUnaryExpression(): boolean;
     }
     class FixedWidthTokenWithLeadingTrivia implements ISyntaxToken {
-        
+        private _fullText;
         public tokenKind: SyntaxKind;
-        
+        private _leadingTriviaInfo;
         constructor(fullText: string, kind: SyntaxKind, leadingTriviaInfo: number);
         public clone(): ISyntaxToken;
         public isNode(): boolean;
@@ -4201,9 +4201,9 @@ declare module TypeScript.Syntax {
         public isUnaryExpression(): boolean;
     }
     class FixedWidthTokenWithTrailingTrivia implements ISyntaxToken {
-        
+        private _fullText;
         public tokenKind: SyntaxKind;
-        
+        private _trailingTriviaInfo;
         constructor(fullText: string, kind: SyntaxKind, trailingTriviaInfo: number);
         public clone(): ISyntaxToken;
         public isNode(): boolean;
@@ -4250,10 +4250,10 @@ declare module TypeScript.Syntax {
         public isUnaryExpression(): boolean;
     }
     class FixedWidthTokenWithLeadingAndTrailingTrivia implements ISyntaxToken {
-        
+        private _fullText;
         public tokenKind: SyntaxKind;
-        
-        
+        private _leadingTriviaInfo;
+        private _trailingTriviaInfo;
         constructor(fullText: string, kind: SyntaxKind, leadingTriviaInfo: number, trailingTriviaInfo: number);
         public clone(): ISyntaxToken;
         public isNode(): boolean;
@@ -4341,8 +4341,8 @@ declare module TypeScript.Syntax {
 }
 declare module TypeScript {
     class SyntaxTokenReplacer extends SyntaxRewriter {
-        
-        
+        private token1;
+        private token2;
         constructor(token1: ISyntaxToken, token2: ISyntaxToken);
         public visitToken(token: ISyntaxToken): ISyntaxToken;
         public visitNode(node: SyntaxNode): SyntaxNode;
@@ -4684,7 +4684,7 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class PositionTrackingWalker extends SyntaxWalker {
-        
+        private _position;
         public visitToken(token: ISyntaxToken): void;
         public position(): number;
         public skip(element: ISyntaxElement): void;
@@ -4696,15 +4696,15 @@ declare module TypeScript {
         nextToken: ISyntaxToken;
     }
     class SyntaxInformationMap extends SyntaxWalker {
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        private trackParents;
+        private trackPreviousToken;
+        private tokenToInformation;
+        private elementToPosition;
+        private _previousToken;
+        private _previousTokenInformation;
+        private _currentPosition;
+        private _elementToParent;
+        private _parentStack;
         constructor(trackParents: boolean, trackPreviousToken: boolean);
         static create(node: SyntaxNode, trackParents: boolean, trackPreviousToken: boolean): SyntaxInformationMap;
         public visitNode(node: SyntaxNode): void;
@@ -4722,15 +4722,15 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class SyntaxNodeInvariantsChecker extends SyntaxWalker {
-        
+        private tokenTable;
         static checkInvariants(node: SyntaxNode): void;
         public visitToken(token: ISyntaxToken): void;
     }
 }
 declare module TypeScript {
     class DepthLimitedWalker extends PositionTrackingWalker {
-        
-        
+        private _depth;
+        private _maximumDepth;
         constructor(maximumDepth: number);
         public visitNode(node: SyntaxNode): void;
     }
@@ -4741,13 +4741,13 @@ declare module TypeScript.Parser {
 }
 declare module TypeScript {
     class SyntaxTree {
-        
-        
-        
-        
-        
-        
-        
+        private _sourceUnit;
+        private _isDeclaration;
+        private _parserDiagnostics;
+        private _allDiagnostics;
+        private _fileName;
+        private _lineMap;
+        private _parseOptions;
         constructor(sourceUnit: SourceUnitSyntax, isDeclaration: boolean, diagnostics: Diagnostic[], fileName: string, lineMap: LineMap, parseOtions: ParseOptions);
         public toJSON(key: any): any;
         public sourceUnit(): SourceUnitSyntax;
@@ -4803,24 +4803,24 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class Document {
-        
-        
+        private _compiler;
+        private _semanticInfoChain;
         public fileName: string;
         public referencedFiles: string[];
-        
+        private _scriptSnapshot;
         public byteOrderMark: ByteOrderMark;
         public version: number;
         public isOpen: boolean;
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        private _syntaxTree;
+        private _topLevelDecl;
+        private _diagnostics;
+        private _bloomFilter;
+        private _sourceUnit;
+        private _lineMap;
+        private _declASTMap;
+        private _astDeclMap;
+        private _amdDependencies;
+        private _externalModuleIndicatorSpan;
         constructor(_compiler: TypeScriptCompiler, _semanticInfoChain: SemanticInfoChain, fileName: string, referencedFiles: string[], _scriptSnapshot: IScriptSnapshot, byteOrderMark: ByteOrderMark, version: number, isOpen: boolean, _syntaxTree: SyntaxTree, _topLevelDecl: PullDecl);
         public invalidate(): void;
         public isDeclareFile(): boolean;
@@ -4879,8 +4879,8 @@ declare module TypeScript {
         lookup(key: string): T;
     }
     class StringHashTable<T> implements IHashTable<T> {
-        
-        
+        private itemCount;
+        private table;
         public getAllKeys(): string[];
         public add(key: string, data: T): boolean;
         public addOrUpdate(key: string, data: T): boolean;
@@ -4930,6 +4930,7 @@ declare module TypeScript.ASTHelpers {
     function isNameOfMemberFunction(ast: AST): boolean;
     function isNameOfMemberAccessExpression(ast: AST): boolean;
     function isRightSideOfQualifiedName(ast: AST): boolean;
+    function parentIsModuleDeclaration(ast: AST): boolean;
     function parametersFromIdentifier(id: Identifier): IParameters;
     function parametersFromParameter(parameter: Parameter): IParameters;
     function parametersFromParameterList(list: ParameterList): IParameters;
@@ -4940,9 +4941,10 @@ declare module TypeScript.ASTHelpers {
     function getVariableDeclaratorModifiers(variableDeclarator: VariableDeclarator): PullElementFlags[];
     function isIntegerLiteralAST(expression: AST): boolean;
     function getEnclosingModuleDeclaration(ast: AST): ModuleDeclaration;
+    function getModuleDeclarationFromNameAST(ast: AST): ModuleDeclaration;
     function isLastNameOfModule(ast: ModuleDeclaration, astName: AST): boolean;
-    function isAnyNameOfModule(ast: ModuleDeclaration, astName: AST): boolean;
     function getNameOfIdenfierOrQualifiedName(name: AST): string;
+    function getModuleNames(name: AST, result?: Identifier[]): Identifier[];
 }
 declare module TypeScript {
     class AstWalkOptions {
@@ -4992,20 +4994,20 @@ declare module TypeScript {
         constructor(emittedFile: string, emittedLine: number, emittedColumn: number, sourceFile: string, sourceLine: number, sourceColumn: number, sourceName: string);
     }
     class SourceMapper {
-        
-        
+        private jsFile;
+        private sourceMapOut;
         static MapFileExtension: string;
-        
-        
-        
-        
+        private jsFileName;
+        private sourceMapPath;
+        private sourceMapDirectory;
+        private sourceRoot;
         public names: string[];
-        
-        
-        
+        private mappingLevel;
+        private tsFilePaths;
+        private allSourceMappings;
         public currentMappings: SourceMapping[][];
         public currentNameIndex: number[];
-        
+        private sourceMapEntries;
         constructor(jsFile: TextWriter, sourceMapOut: TextWriter, document: Document, jsFilePath: string, emitOptions: EmitOptions, resolvePath: (path: string) => string);
         public getOutputFile(): OutputFile;
         public increaseMappingLevel(ast: IASTSpan): void;
@@ -5035,13 +5037,13 @@ declare module TypeScript {
     }
     class EmitOptions {
         public resolvePath: (path: string) => string;
-        
-        
-        
-        
-        
-        
-        
+        private _diagnostic;
+        private _settings;
+        private _commonDirectoryPath;
+        private _sharedOutputFile;
+        private _sourceRootDirectory;
+        private _sourceMapRootDirectory;
+        private _outputDirectory;
         public diagnostic(): Diagnostic;
         public commonDirectoryPath(): string;
         public sharedOutputFile(): string;
@@ -5066,7 +5068,7 @@ declare module TypeScript {
         public emittingFileName: string;
         public outfile: TextWriter;
         public emitOptions: EmitOptions;
-        
+        private semanticInfoChain;
         public globalThisCapturePrologueEmitted: boolean;
         public extendsPrologueEmitted: boolean;
         public thisClassNode: ClassDeclaration;
@@ -5076,12 +5078,12 @@ declare module TypeScript {
         public indenter: Indenter;
         public sourceMapper: SourceMapper;
         public captureThisStmtString: string;
-        
-        
-        
-        
+        private currentVariableDeclaration;
+        private declStack;
+        private exportAssignment;
+        private inWithBlock;
         public document: Document;
-        
+        private detachedCommentsElement;
         constructor(emittingFileName: string, outfile: TextWriter, emitOptions: EmitOptions, semanticInfoChain: SemanticInfoChain);
         private pushDecl(decl);
         private popDecl(decl);
@@ -5332,10 +5334,10 @@ declare module TypeScript {
         public seenNoDefaultLibTag: boolean;
     }
     class ReferenceResolver {
-        
-        
-        
-        
+        private useCaseSensitiveFileResolution;
+        private inputFileNames;
+        private host;
+        private visited;
         constructor(inputFileNames: string[], host: IReferenceResolverHost, useCaseSensitiveFileResolution: boolean);
         static resolve(inputFileNames: string[], host: IReferenceResolverHost, useCaseSensitiveFileResolution: boolean): ReferenceResolutionResult;
         public resolveInputFiles(): ReferenceResolutionResult;
@@ -5351,10 +5353,10 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class TextWriter {
-        
-        
-        
-        
+        private name;
+        private writeByteOrderMark;
+        private outputFileType;
+        private contents;
         public onNewLine: boolean;
         constructor(name: string, writeByteOrderMark: boolean, outputFileType: OutputFileType);
         public Write(s: string): void;
@@ -5363,14 +5365,14 @@ declare module TypeScript {
         public getOutputFile(): OutputFile;
     }
     class DeclarationEmitter {
-        
+        private emittingFileName;
         public document: Document;
-        
-        
-        
-        
-        
-        
+        private compiler;
+        private emitOptions;
+        private semanticInfoChain;
+        private declFile;
+        private indenter;
+        private emittedReferencePaths;
         constructor(emittingFileName: string, document: Document, compiler: TypeScriptCompiler, emitOptions: EmitOptions, semanticInfoChain: SemanticInfoChain);
         public getOutputFile(): OutputFile;
         public emitDeclarations(sourceUnit: SourceUnit): void;
@@ -5415,7 +5417,7 @@ declare module TypeScript {
         private emitDeclarationsForClassDeclaration(classDecl);
         private emitHeritageClauses(clauses);
         private emitHeritageClause(clause);
-        private getEnclosingContainer(ast);
+        static getEnclosingContainer(ast: AST): AST;
         private emitTypeParameters(typeParams, funcSignature?);
         private emitDeclarationsForInterfaceDeclaration(interfaceDecl);
         private emitDeclarationsForImportDeclaration(importDeclAST);
@@ -5429,8 +5431,8 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class BloomFilter {
-        
-        
+        private bitArray;
+        private hashFunctionCount;
         static falsePositiveProbability: number;
         constructor(expectedCount: number);
         static computeM(expectedCount: number): number;
@@ -5473,26 +5475,26 @@ declare module TypeScript {
         public createFileLog: boolean;
     }
     class ImmutableCompilationSettings {
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        private static _defaultSettings;
+        private _propagateEnumConstants;
+        private _removeComments;
+        private _watch;
+        private _noResolve;
+        private _allowAutomaticSemicolonInsertion;
+        private _noImplicitAny;
+        private _noLib;
+        private _codeGenTarget;
+        private _moduleGenTarget;
+        private _outFileOption;
+        private _outDirOption;
+        private _mapSourceFiles;
+        private _mapRoot;
+        private _sourceRoot;
+        private _generateDeclarationFiles;
+        private _useCaseSensitiveFileResolution;
+        private _gatherDiagnostics;
+        private _codepage;
+        private _createFileLog;
         public propagateEnumConstants(): boolean;
         public removeComments(): boolean;
         public watch(): boolean;
@@ -5591,15 +5593,15 @@ declare module TypeScript {
     class PullDecl {
         public kind: PullElementKind;
         public name: string;
-        
+        private declDisplayName;
         public semanticInfoChain: SemanticInfoChain;
         public declID: number;
         public flags: PullElementFlags;
-        
-        
-        
-        
-        
+        private declGroups;
+        private childDecls;
+        private typeParameters;
+        private synthesizedValDecl;
+        private containerDecl;
         public childDeclTypeCache: IIndexable<PullDecl[]>;
         public childDeclValueCache: IIndexable<PullDecl[]>;
         public childDeclNamespaceCache: IIndexable<PullDecl[]>;
@@ -5637,8 +5639,8 @@ declare module TypeScript {
         public isRootDecl(): void;
     }
     class RootPullDecl extends PullDecl {
-        
-        
+        private _isExternalModule;
+        private _fileName;
         constructor(name: string, fileName: string, kind: PullElementKind, declFlags: PullElementFlags, semanticInfoChain: SemanticInfoChain, isExternalModule: boolean);
         public fileName(): string;
         public getParentPath(): PullDecl[];
@@ -5648,9 +5650,9 @@ declare module TypeScript {
         public isRootDecl(): boolean;
     }
     class NormalPullDecl extends PullDecl {
-        
+        private parentDecl;
         public _rootDecl: RootPullDecl;
-        
+        private parentPath;
         constructor(declName: string, displayName: string, kind: PullElementKind, declFlags: PullElementFlags, parentDecl: PullDecl, addToParent?: boolean);
         public fileName(): string;
         public getParentDecl(): PullDecl;
@@ -5664,7 +5666,7 @@ declare module TypeScript {
         constructor(declName: string, displayName: string, parentDecl: PullDecl);
     }
     class PullFunctionExpressionDecl extends NormalPullDecl {
-        
+        private functionExpressionName;
         constructor(expressionName: string, declFlags: PullElementFlags, parentDecl: PullDecl, displayName?: string);
         public getFunctionExpressionName(): string;
     }
@@ -5675,7 +5677,7 @@ declare module TypeScript {
     }
     class PullDeclGroup {
         public name: string;
-        
+        private _decls;
         constructor(name: string);
         public addDecl(decl: PullDecl): void;
         public getDecls(): PullDecl[];
@@ -5688,17 +5690,17 @@ declare module TypeScript {
         public pullSymbolID: number;
         public name: string;
         public kind: PullElementKind;
-        
+        private _container;
         public type: PullTypeSymbol;
-        
+        private _declarations;
         public isResolved: boolean;
         public isOptional: boolean;
         public inResolution: boolean;
-        
+        private isSynthesized;
         public isVarArg: boolean;
-        
-        
-        
+        private rootSymbol;
+        private _enclosingSignature;
+        private _docComments;
         public isPrinting: boolean;
         public isAny(): boolean;
         public isType(): boolean;
@@ -5714,9 +5716,9 @@ declare module TypeScript {
         public isAlias(): boolean;
         public isContainer(): boolean;
         constructor(name: string, declKind: PullElementKind);
-        private findAliasedType(scopeSymbol, skipScopeSymbolAliasesLookIn?, lookIntoOnlyExportedAlias?, aliasSymbols?, visitedScopeDeclarations?);
+        private findAliasedTypeSymbols(scopeSymbol, skipScopeSymbolAliasesLookIn?, lookIntoOnlyExportedAlias?, aliasSymbols?, visitedScopeDeclarations?);
         public getExternalAliasedSymbols(scopeSymbol: PullSymbol): PullTypeAliasSymbol[];
-        private isExternalModuleReferenceAlias(aliasSymbol);
+        static _isExternalModuleReferenceAlias(aliasSymbol: PullTypeAliasSymbol): boolean;
         private getExportedInternalAliasSymbol(scopeSymbol);
         public getAliasSymbolName(scopeSymbol: PullSymbol, aliasNameGetter: (symbol: PullTypeAliasSymbol) => string, aliasPartsNameGetter: (symbol: PullTypeAliasSymbol) => string, skipInternalAlias?: boolean): string;
         public _getResolver(): PullTypeResolver;
@@ -5775,9 +5777,9 @@ declare module TypeScript {
         getTypeParameterArgumentMap(): TypeArgumentMap;
     }
     class PullSignatureSymbol extends PullSymbol implements InstantiableSymbol {
-        
-        
-        
+        private _isDefinition;
+        private _memberTypeParameterNameCache;
+        private _stringConstantOverload;
         public parameters: PullSymbol[];
         public _typeParameters: PullTypeParameterSymbol[];
         public returnType: PullTypeSymbol;
@@ -5785,12 +5787,12 @@ declare module TypeScript {
         public hasOptionalParam: boolean;
         public nonOptionalParamCount: number;
         public hasVarArgs: boolean;
-        
-        
+        private _allowedToReferenceTypeParameters;
+        private _instantiationCache;
         public hasBeenChecked: boolean;
         public inWrapCheck: boolean;
         public inWrapInfiniteExpandingReferenceCheck: boolean;
-        
+        private _wrapsTypeParameterCache;
         constructor(kind: PullElementKind, _isDefinition?: boolean);
         public isDefinition(): boolean;
         public isGeneric(): boolean;
@@ -5818,49 +5820,50 @@ declare module TypeScript {
         public _wrapsSomeTypeParameterIntoInfinitelyExpandingTypeReferenceWorker(enclosingType: PullTypeSymbol, knownWrapMap: IBitMatrix): boolean;
     }
     class PullTypeSymbol extends PullSymbol implements InstantiableSymbol {
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        private _members;
+        private _enclosedMemberTypes;
+        private _enclosedMemberContainers;
+        private _typeParameters;
+        private _allowedToReferenceTypeParameters;
+        private _specializedVersionsOfThisType;
+        private _arrayVersionOfThisType;
+        private _implementedTypes;
+        private _extendedTypes;
+        private _typesThatExplicitlyImplementThisType;
+        private _typesThatExtendThisType;
+        private _callSignatures;
+        private _allCallSignatures;
+        private _constructSignatures;
+        private _allConstructSignatures;
+        private _indexSignatures;
+        private _allIndexSignatures;
+        private _allIndexSignaturesOfAugmentedType;
+        private _memberNameCache;
+        private _enclosedTypeNameCache;
+        private _enclosedContainerCache;
+        private _typeParameterNameCache;
+        private _containedNonMemberNameCache;
+        private _containedNonMemberTypeNameCache;
+        private _containedNonMemberContainerCache;
+        private _simpleInstantiationCache;
+        private _complexInstantiationCache;
+        private _hasGenericSignature;
+        private _hasGenericMember;
+        private _hasBaseTypeConflict;
+        private _knownBaseTypeCount;
+        private _associatedContainerTypeSymbol;
+        private _constructorMethod;
+        private _hasDefaultConstructor;
+        private _functionSymbol;
+        private _inMemberTypeNameEx;
         public inSymbolPrivacyCheck: boolean;
         public inWrapCheck: boolean;
         public inWrapInfiniteExpandingReferenceCheck: boolean;
         public typeReference: PullTypeReferenceSymbol;
-        
-        
+        private _widenedType;
+        private _wrapsTypeParameterCache;
         constructor(name: string, kind: PullElementKind);
-        
+        private _isArrayNamedTypeReference;
         public isArrayNamedTypeReference(): boolean;
         private computeIsArrayNamedTypeReference();
         public isType(): boolean;
@@ -5916,6 +5919,7 @@ declare module TypeScript {
         public getKnownSpecializations(): PullTypeSymbol[];
         public getTypeArguments(): PullTypeSymbol[];
         public getTypeArgumentsOrTypeParameters(): PullTypeSymbol[];
+        private addCallOrConstructSignaturePrerequisiteBase(signature);
         private addCallSignaturePrerequisite(callSignature);
         public appendCallSignature(callSignature: PullSignatureSymbol): void;
         public insertCallSignatureAtIndex(callSignature: PullSignatureSymbol, index: number): void;
@@ -5927,12 +5931,14 @@ declare module TypeScript {
         public getOwnCallSignatures(): PullSignatureSymbol[];
         public getCallSignatures(): PullSignatureSymbol[];
         public hasOwnConstructSignatures(): boolean;
-        public getOwnConstructSignatures(): PullSignatureSymbol[];
+        public getOwnDeclaredConstructSignatures(): PullSignatureSymbol[];
         public getConstructSignatures(): PullSignatureSymbol[];
         public hasOwnIndexSignatures(): boolean;
         public getOwnIndexSignatures(): PullSignatureSymbol[];
         public getIndexSignatures(): PullSignatureSymbol[];
         public getIndexSignaturesOfAugmentedType(resolver: PullTypeResolver, globalFunctionInterface: PullTypeSymbol, globalObjectInterface: PullTypeSymbol): PullSignatureSymbol[];
+        private getBaseClassConstructSignatures(baseType);
+        private getDefaultClassConstructSignature();
         public addImplementedType(implementedType: PullTypeSymbol): void;
         public getImplementedTypes(): PullTypeSymbol[];
         public addExtendedType(extendedType: PullTypeSymbol): void;
@@ -5993,9 +5999,9 @@ declare module TypeScript {
     }
     class PullContainerSymbol extends PullTypeSymbol {
         public instanceSymbol: PullSymbol;
-        
-        
-        
+        private assignedValue;
+        private assignedType;
+        private assignedContainer;
         constructor(name: string, kind: PullElementKind);
         public isContainer(): boolean;
         public setInstanceSymbol(symbol: PullSymbol): void;
@@ -6011,14 +6017,14 @@ declare module TypeScript {
         public getInstanceType(): PullTypeSymbol;
     }
     class PullTypeAliasSymbol extends PullTypeSymbol {
-        
-        
-        
-        
-        
-        
-        
-        
+        private _assignedValue;
+        private _assignedType;
+        private _assignedContainer;
+        private _isUsedAsValue;
+        private _typeUsedExternally;
+        private _isUsedInExportAlias;
+        private retrievingExportAssignment;
+        private linkedAliasSymbols;
         constructor(name: string);
         public isUsedInExportedAlias(): boolean;
         public typeUsedExternally(): boolean;
@@ -6048,7 +6054,7 @@ declare module TypeScript {
         public getAllMembers(searchDeclKind: PullElementKind, memberVisibility: GetAllMembersVisiblity): PullSymbol[];
     }
     class PullTypeParameterSymbol extends PullTypeSymbol {
-        
+        private _constraint;
         constructor(name: string);
         public isTypeParameter(): boolean;
         public setConstraint(constraintType: PullTypeSymbol): void;
@@ -6066,8 +6072,8 @@ declare module TypeScript {
         public isExternallyVisible(inIsExternallyVisibleSymbols?: PullSymbol[]): boolean;
     }
     class PullAccessorSymbol extends PullSymbol {
-        
-        
+        private _getterSymbol;
+        private _setterSymbol;
         constructor(name: string);
         public isAccessor(): boolean;
         public setSetter(setter: PullSymbol): void;
@@ -6084,20 +6090,34 @@ declare module TypeScript {
     }
 }
 declare module TypeScript {
+    class EnclosingTypeWalkerState {
+        public _hasSetEnclosingType: boolean;
+        public _currentSymbols: PullSymbol[];
+        static getDefaultEnclosingTypeWalkerState(): EnclosingTypeWalkerState;
+        static getNonGenericEnclosingTypeWalkerState(): EnclosingTypeWalkerState;
+        static getGenericEnclosingTypeWalkerState(genericEnclosingType: PullTypeSymbol): EnclosingTypeWalkerState;
+    }
     class PullTypeEnclosingTypeWalker {
-        
+        private static _defaultEnclosingTypeWalkerState;
+        private static _nonGenericEnclosingTypeWalkerState;
+        private enclosingTypeWalkerState;
+        constructor();
+        private setDefaultTypeWalkerState();
+        private setNonGenericEnclosingTypeWalkerState();
+        private canSymbolOrDeclBeUsedAsEnclosingTypeHelper(name, kind);
+        private canDeclBeUsedAsEnclosingType(decl);
+        private canSymbolBeUsedAsEnclosingType(symbol);
         public getEnclosingType(): PullTypeSymbol;
         public _canWalkStructure(): boolean;
         public _getCurrentSymbol(): PullSymbol;
         public getGenerativeClassification(): GenerativeTypeClassification;
         private _pushSymbol(symbol);
         private _popSymbol();
+        private setSymbolAsEnclosingType(type);
         private _setEnclosingTypeOfParentDecl(decl, setSignature);
-        private _setEnclosingTypeWorker(symbol, setSignature);
-        public setCurrentSymbol(symbol: PullSymbol): void;
-        public startWalkingType(symbol: PullTypeSymbol): PullSymbol[];
-        public endWalkingType(currentSymbolsWhenStartedWalkingTypes: PullSymbol[]): void;
-        public setEnclosingType(symbol: PullSymbol): void;
+        public setEnclosingTypeForSymbol(symbol: PullSymbol): EnclosingTypeWalkerState;
+        public startWalkingType(symbol: PullTypeSymbol): EnclosingTypeWalkerState;
+        public endWalkingType(stateWhenStartedWalkingTypes: EnclosingTypeWalkerState): void;
         public walkMemberType(memberName: string, resolver: PullTypeResolver): void;
         public postWalkMemberType(): void;
         public walkSignature(kind: PullElementKind, index: number): void;
@@ -6113,6 +6133,8 @@ declare module TypeScript {
         public getBothKindOfIndexSignatures(resolver: PullTypeResolver, context: PullTypeResolutionContext, includeAugmentedType: boolean): IndexSignatureInfo;
         public walkIndexSignatureReturnType(indexSigInfo: IndexSignatureInfo, useStringIndexSignature: boolean, onlySignature?: boolean): void;
         public postWalkIndexSignatureReturnType(onlySignature?: boolean): void;
+        public resetEnclosingTypeWalkerState(): EnclosingTypeWalkerState;
+        public setEnclosingTypeWalkerState(enclosingTypeWalkerState: EnclosingTypeWalkerState): void;
     }
 }
 declare module TypeScript {
@@ -6148,8 +6170,8 @@ declare module TypeScript {
         public inferTypeArguments(): PullTypeSymbol[];
     }
     class ContextualSignatureInstantiationTypeArgumentInferenceContext extends TypeArgumentInferenceContext {
-        
-        
+        private contextualSignature;
+        private shouldFixContextualSignatureParameterTypes;
         constructor(resolver: PullTypeResolver, context: PullTypeResolutionContext, signatureBeingInferred: PullSignatureSymbol, contextualSignature: PullSignatureSymbol, shouldFixContextualSignatureParameterTypes: boolean);
         public isInvocationInferenceContext(): boolean;
         public inferTypeArguments(): PullTypeSymbol[];
@@ -6161,7 +6183,7 @@ declare module TypeScript {
         public typeArgumentInferenceContext: TypeArgumentInferenceContext;
         public provisionallyTypedSymbols: PullSymbol[];
         public hasProvisionalErrors: boolean;
-        
+        private astSymbolMap;
         constructor(contextualType: PullTypeSymbol, provisional: boolean, isInferentiallyTyping: boolean, typeArgumentInferenceContext: TypeArgumentInferenceContext);
         public recordProvisionallyTypedSymbol(symbol: PullSymbol): void;
         public invalidateProvisionallyTypedSymbols(): void;
@@ -6169,13 +6191,13 @@ declare module TypeScript {
         public getSymbolForAST(ast: AST): PullSymbol;
     }
     class PullTypeResolutionContext {
-        
+        private resolver;
         public inTypeCheck: boolean;
         public fileName: string;
-        
-        
-        public enclosingTypeWalker1: PullTypeEnclosingTypeWalker;
-        public enclosingTypeWalker2: PullTypeEnclosingTypeWalker;
+        private contextStack;
+        private typeCheckedNodes;
+        private enclosingTypeWalker1;
+        private enclosingTypeWalker2;
         constructor(resolver: PullTypeResolver, inTypeCheck?: boolean, fileName?: string);
         public setTypeChecked(ast: AST): void;
         public canTypeCheckAST(ast: AST): boolean;
@@ -6191,7 +6213,7 @@ declare module TypeScript {
         private getCurrentTypeArgumentInferenceContext();
         public isInferentiallyTyping(): boolean;
         public inProvisionalResolution(): boolean;
-        
+        private inBaseTypeResolution;
         public isInBaseTypeResolution(): boolean;
         public startBaseTypeResolution(): boolean;
         public doneBaseTypeResolution(wasInBaseTypeResolution: boolean): void;
@@ -6201,14 +6223,17 @@ declare module TypeScript {
         public setSymbolForAST(ast: AST, symbol: PullSymbol): void;
         public getSymbolForAST(ast: AST): PullSymbol;
         public startWalkingTypes(symbol1: PullTypeSymbol, symbol2: PullTypeSymbol): {
-            symbolsWhenStartedWalkingTypes1: PullSymbol[];
-            symbolsWhenStartedWalkingTypes2: PullSymbol[];
+            stateWhenStartedWalkingTypes1: EnclosingTypeWalkerState;
+            stateWhenStartedWalkingTypes2: EnclosingTypeWalkerState;
         };
-        public endWalkingTypes(symbolsWhenStartedWalkingTypes: {
-            symbolsWhenStartedWalkingTypes1: PullSymbol[];
-            symbolsWhenStartedWalkingTypes2: PullSymbol[];
+        public endWalkingTypes(statesWhenStartedWalkingTypes: {
+            stateWhenStartedWalkingTypes1: EnclosingTypeWalkerState;
+            stateWhenStartedWalkingTypes2: EnclosingTypeWalkerState;
         }): void;
-        public setEnclosingTypes(symbol1: PullSymbol, symbol2: PullSymbol): void;
+        public setEnclosingTypeForSymbols(symbol1: PullSymbol, symbol2: PullSymbol): {
+            enclosingTypeWalkerState1: EnclosingTypeWalkerState;
+            enclosingTypeWalkerState2: EnclosingTypeWalkerState;
+        };
         public walkMemberTypes(memberName: string): void;
         public postWalkMemberTypes(): void;
         public walkSignatures(kind: PullElementKind, index: number, index2?: number): void;
@@ -6232,13 +6257,13 @@ declare module TypeScript {
         public postWalkIndexSignatureReturnTypes(onlySignature?: boolean): void;
         public swapEnclosingTypeWalkers(): void;
         public oneOfClassificationsIsInfinitelyExpanding(): boolean;
-        public resetEnclosingTypeWalkers(): {
-            enclosingTypeWalker1: PullTypeEnclosingTypeWalker;
-            enclosingTypeWalker2: PullTypeEnclosingTypeWalker;
+        public resetEnclosingTypeWalkerStates(): {
+            enclosingTypeWalkerState1: EnclosingTypeWalkerState;
+            enclosingTypeWalkerState2: EnclosingTypeWalkerState;
         };
-        public setEnclosingTypeWalkers(enclosingTypeWalkers: {
-            enclosingTypeWalker1: PullTypeEnclosingTypeWalker;
-            enclosingTypeWalker2: PullTypeEnclosingTypeWalker;
+        public setEnclosingTypeWalkerStates(enclosingTypeWalkerStates: {
+            enclosingTypeWalkerState1: EnclosingTypeWalkerState;
+            enclosingTypeWalkerState2: EnclosingTypeWalkerState;
         }): void;
     }
 }
@@ -6262,24 +6287,24 @@ declare module TypeScript {
         stringSignature: PullSignatureSymbol;
     }
     class PullTypeResolver {
-        
+        private compilationSettings;
         public semanticInfoChain: SemanticInfoChain;
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        private _cachedArrayInterfaceType;
+        private _cachedNumberInterfaceType;
+        private _cachedStringInterfaceType;
+        private _cachedBooleanInterfaceType;
+        private _cachedObjectInterfaceType;
+        private _cachedFunctionInterfaceType;
+        private _cachedIArgumentsInterfaceType;
+        private _cachedRegExpInterfaceType;
+        private _cachedAnyTypeArgs;
+        private typeCheckCallBacks;
+        private postTypeCheckWorkitems;
+        private _cachedFunctionArgumentsSymbol;
+        private assignableCache;
+        private subtypeCache;
+        private identicalCache;
+        private inResolvingOtherDeclsWalker;
         constructor(compilationSettings: ImmutableCompilationSettings, semanticInfoChain: SemanticInfoChain);
         private cachedArrayInterfaceType();
         public getArrayNamedType(): PullTypeSymbol;
@@ -6505,7 +6530,7 @@ declare module TypeScript {
         private getSomeInnermostFunctionScopeDecl(declPath);
         private isFromFunctionScope(nameSymbol, functionScopeDecl);
         private findConstructorDeclOfEnclosingType(decl);
-        private checkNameAsPartOfInitializerExpressionForInstanceMemberVariable(nameAST);
+        private checkNameAsPartOfInitializerExpressionForInstanceMemberVariable(nameAST, nameSymbol, context);
         private computeNameExpression(nameAST, context);
         private getCurrentParameterIndexForFunction(parameter, funcDecl);
         private resolveMemberAccessExpression(dottedNameAST, context);
@@ -6617,7 +6642,7 @@ declare module TypeScript {
         private sourceIsRelatableToTargetInCache(source, target, comparisonCache, comparisonInfo);
         private sourceIsRelatableToTarget(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private isSourceTypeParameterConstrainedToTargetTypeParameter(source, target);
-        private sourceIsRelatableToTargetWorker(source, target, sourceSubstitution, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourceIsRelatableToTargetWorker(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private sourceMembersAreRelatableToTargetMembers(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private infinitelyExpandingSourceTypeIsRelatableToTargetType(sourceType, targetType, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private infinitelyExpandingTypesAreIdentical(sourceType, targetType, context);
@@ -6701,7 +6726,7 @@ declare module TypeScript {
         public flags: TypeRelationshipFlags;
         public message: string;
         public stringConstantVal: AST;
-        
+        private indent;
         constructor(sourceComparisonInfo?: TypeComparisonInfo, useSameIndent?: boolean);
         private indentString();
         public addMessage(message: string): void;
@@ -6718,10 +6743,10 @@ declare module TypeScript {
     var symbolCacheHit: number;
     var symbolCacheMiss: number;
     class SemanticInfoChain {
-        
-        
-        
-        
+        private compiler;
+        private logger;
+        private documents;
+        private fileNameToDocument;
         public anyTypeDecl: PullDecl;
         public booleanTypeDecl: PullDecl;
         public numberTypeDecl: PullDecl;
@@ -6739,18 +6764,18 @@ declare module TypeScript {
         public voidTypeSymbol: PullPrimitiveTypeSymbol;
         public undefinedValueSymbol: PullSymbol;
         public emptyTypeSymbol: PullTypeSymbol;
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        private astSymbolMap;
+        private astAliasSymbolMap;
+        private astCallResolutionDataMap;
+        private declSymbolMap;
+        private declSignatureSymbolMap;
+        private declCache;
+        private symbolCache;
+        private fileNameToDiagnostics;
+        private _binder;
+        private _resolver;
+        private _topLevelDecls;
+        private _fileNames;
         constructor(compiler: TypeScriptCompiler, logger: ILogger);
         public getDocument(fileName: string): Document;
         public lineMap(fileName: string): LineMap;
@@ -6802,16 +6827,15 @@ declare module TypeScript {
     }
 }
 declare module TypeScript {
-    function getModuleNames(name: AST, result?: Identifier[]): Identifier[];
     module DeclarationCreator {
         function create(document: Document, semanticInfoChain: SemanticInfoChain, compilationSettings: ImmutableCompilationSettings): PullDecl;
     }
 }
 declare module TypeScript {
     class PullSymbolBinder {
-        
-        
-        
+        private semanticInfoChain;
+        private declsBeingBound;
+        private inBindingOtherDeclsWalker;
         constructor(semanticInfoChain: SemanticInfoChain);
         private getParent(decl, returnInstanceType?);
         private findDeclsInContext(startingDecl, declKind, searchGlobally);
@@ -6875,6 +6899,7 @@ declare module TypeScript {
         function getRootType(type: PullTypeSymbol): PullTypeSymbol;
         function isSymbolLocal(symbol: PullSymbol): boolean;
         function isExportedSymbolInClodule(symbol: PullSymbol): boolean;
+        function isSymbolDeclaredInScopeChain(symbol: PullSymbol, scopeSymbol: PullSymbol): boolean;
         interface PullTypeSymbolStructureWalker {
             memberSymbolWalk(memberSymbol: PullSymbol): boolean;
             callSignatureWalk(signatureSymbol: PullSignatureSymbol): boolean;
@@ -6885,14 +6910,14 @@ declare module TypeScript {
         }
         function walkPullTypeSymbolStructure(typeSymbol: PullTypeSymbol, walker: PullTypeSymbolStructureWalker): void;
         class OtherPullDeclsWalker {
-            
+            private currentlyWalkingOtherDecls;
             public walkOtherPullDecls(currentDecl: PullDecl, otherDecls: PullDecl[], callBack: (otherDecl: PullDecl) => void): void;
         }
     }
 }
 declare module TypeScript {
     class WrapsTypeParameterCache {
-        
+        private _wrapsTypeParameterCache;
         public getWrapsTypeParameter(typeParameterArgumentMap: TypeArgumentMap): number;
         public setWrapsTypeParameter(typeParameterArgumentMap: TypeArgumentMap, wrappingTypeParameterID: number): void;
     }
@@ -6993,8 +7018,8 @@ declare module TypeScript {
     }
     class TypeScriptCompiler {
         public logger: ILogger;
-        
-        
+        private _settings;
+        private semanticInfoChain;
         constructor(logger?: ILogger, _settings?: ImmutableCompilationSettings);
         public compilationSettings(): ImmutableCompilationSettings;
         public setCompilationSettings(newSettings: ImmutableCompilationSettings): void;
@@ -7024,7 +7049,7 @@ declare module TypeScript {
         private getSyntaxTree(fileName);
         private getSourceUnit(fileName);
         public getSemanticDiagnostics(fileName: string): Diagnostic[];
-        public getCompilerOptionsDiagnostics(): Diagnostic[];
+        public getCompilerOptionsDiagnostics(resolvePath: (path: string) => string): Diagnostic[];
         public resolveAllFiles(): void;
         public getSymbolOfDeclaration(decl: PullDecl): PullSymbol;
         private extractResolutionContextFromAST(resolver, ast, document, propagateContextualTypes);
@@ -7040,8 +7065,8 @@ declare module TypeScript {
         public getDeclForAST(ast: AST): PullDecl;
         public fileNames(): string[];
         public topLevelDecl(fileName: string): PullDecl;
-        private static getLocationText(location);
-        static getFullDiagnosticText(diagnostic: Diagnostic): string;
+        private static getLocationText(location, resolvePath);
+        static getFullDiagnosticText(diagnostic: Diagnostic, resolvePath: (path: string) => string): string;
     }
     function compareDataObjects(dst: any, src: any): boolean;
 }
@@ -7128,20 +7153,20 @@ declare module TypeScript {
     var nSpecializedTypeParameterCreated: number;
     class PullInstantiatedTypeReferenceSymbol extends PullTypeReferenceSymbol {
         public referencedTypeSymbol: PullTypeSymbol;
-        
+        private _typeParameterArgumentMap;
         public isInstanceReferenceType: boolean;
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        private _instantiatedMembers;
+        private _allInstantiatedMemberNameCache;
+        private _instantiatedMemberNameCache;
+        private _instantiatedCallSignatures;
+        private _instantiatedConstructSignatures;
+        private _instantiatedIndexSignatures;
+        private _typeArgumentReferences;
+        private _instantiatedConstructorMethod;
+        private _instantiatedAssociatedContainerType;
+        private _isArray;
         public getIsSpecialized(): boolean;
-        
+        private _generativeTypeClassification;
         public getGenerativeTypeClassification(enclosingType: PullTypeSymbol): GenerativeTypeClassification;
         public isArrayNamedTypeReference(): boolean;
         public getElementType(): PullTypeSymbol;
@@ -7163,7 +7188,7 @@ declare module TypeScript {
         public getIndexSignatures(): PullSignatureSymbol[];
     }
     class PullInstantiatedSignatureSymbol extends PullSignatureSymbol {
-        
+        private _typeParameterArgumentMap;
         public getTypeParameterArgumentMap(): TypeArgumentMap;
         constructor(rootSignature: PullSignatureSymbol, _typeParameterArgumentMap: TypeArgumentMap);
         public getIsSpecialized(): boolean;
@@ -7178,9 +7203,9 @@ declare module TypeScript {
 }
 declare module TypeScript {
     class SyntaxTreeToAstVisitor implements ISyntaxVisitor {
-        
+        private fileName;
         public lineMap: LineMap;
-        
+        private compilationSettings;
         public position: number;
         public previousTokenTrailingComments: Comment[];
         constructor(fileName: string, lineMap: LineMap, compilationSettings: ImmutableCompilationSettings);
@@ -7312,9 +7337,9 @@ declare module TypeScript {
         public _start: number;
         public _end: number;
         public _trailingTriviaWidth: number;
-        
-        
-        
+        private _astID;
+        private _preComments;
+        private _postComments;
         constructor();
         public syntaxID(): number;
         public start(): number;
@@ -7335,8 +7360,8 @@ declare module TypeScript {
         valueText(): string;
     }
     class ISyntaxList2 extends AST {
-        
-        
+        private _fileName;
+        private members;
         constructor(_fileName: string, members: AST[]);
         public childCount(): number;
         public childAt(index: number): AST;
@@ -7348,9 +7373,9 @@ declare module TypeScript {
         public structuralEquals(ast: ISyntaxList2, includingPosition: boolean): boolean;
     }
     class ISeparatedSyntaxList2 extends AST {
-        
-        
-        
+        private _fileName;
+        private members;
+        private _separatorCount;
         constructor(_fileName: string, members: AST[], _separatorCount: number);
         public nonSeparatorCount(): number;
         public separatorCount(): number;
@@ -7363,15 +7388,15 @@ declare module TypeScript {
     class SourceUnit extends AST {
         public moduleElements: ISyntaxList2;
         public endOfFileTokenLeadingComments: Comment[];
-        
+        private _fileName;
         constructor(moduleElements: ISyntaxList2, endOfFileTokenLeadingComments: Comment[], _fileName: string);
         public fileName(): string;
         public kind(): SyntaxKind;
         public structuralEquals(ast: SourceUnit, includingPosition: boolean): boolean;
     }
     class Identifier extends AST implements IASTToken {
-        
-        
+        private _text;
+        private _valueText;
         constructor(_text: string);
         public text(): string;
         public valueText(): string;
@@ -7380,9 +7405,9 @@ declare module TypeScript {
         public isExpression(): boolean;
     }
     class LiteralExpression extends AST {
-        
-        
-        
+        private _nodeType;
+        private _text;
+        private _valueText;
         constructor(_nodeType: SyntaxKind, _text: string, _valueText: string);
         public text(): string;
         public valueText(): string;
@@ -7391,8 +7416,8 @@ declare module TypeScript {
         public isExpression(): boolean;
     }
     class ThisExpression extends AST implements IASTToken {
-        
-        
+        private _text;
+        private _valueText;
         constructor(_text: string, _valueText: string);
         public text(): string;
         public valueText(): string;
@@ -7401,8 +7426,8 @@ declare module TypeScript {
         public isExpression(): boolean;
     }
     class SuperExpression extends AST implements IASTToken {
-        
-        
+        private _text;
+        private _valueText;
         constructor(_text: string, _valueText: string);
         public text(): string;
         public valueText(): string;
@@ -7411,9 +7436,9 @@ declare module TypeScript {
         public isExpression(): boolean;
     }
     class NumericLiteral extends AST implements IASTToken {
-        
-        
-        
+        private _value;
+        private _text;
+        private _valueText;
         constructor(_value: number, _text: string, _valueText: string);
         public text(): string;
         public valueText(): string;
@@ -7423,8 +7448,8 @@ declare module TypeScript {
         public isExpression(): boolean;
     }
     class RegularExpressionLiteral extends AST implements IASTToken {
-        
-        
+        private _text;
+        private _valueText;
         constructor(_text: string, _valueText: string);
         public text(): string;
         public valueText(): string;
@@ -7432,8 +7457,8 @@ declare module TypeScript {
         public isExpression(): boolean;
     }
     class StringLiteral extends AST implements IASTToken {
-        
-        
+        private _text;
+        private _valueText;
         constructor(_text: string, _valueText: string);
         public text(): string;
         public valueText(): string;
@@ -7447,9 +7472,9 @@ declare module TypeScript {
         public kind(): SyntaxKind;
     }
     class BuiltInType extends AST implements IASTToken {
-        
-        
-        
+        private _nodeType;
+        private _text;
+        private _valueText;
         constructor(_nodeType: SyntaxKind, _text: string, _valueText: string);
         public text(): string;
         public valueText(): string;
@@ -7506,7 +7531,7 @@ declare module TypeScript {
         public structuralEquals(ast: InterfaceDeclaration, includingPosition: boolean): boolean;
     }
     class HeritageClause extends AST {
-        
+        private _nodeType;
         public typeNames: ISeparatedSyntaxList2;
         constructor(_nodeType: SyntaxKind, typeNames: ISeparatedSyntaxList2);
         public kind(): SyntaxKind;
@@ -7557,7 +7582,7 @@ declare module TypeScript {
         public kind(): SyntaxKind;
     }
     class PrefixUnaryExpression extends AST {
-        
+        private _nodeType;
         public operand: AST;
         constructor(_nodeType: SyntaxKind, operand: AST);
         public kind(): SyntaxKind;
@@ -7688,7 +7713,7 @@ declare module TypeScript {
         public isExpression(): boolean;
     }
     class PostfixUnaryExpression extends AST {
-        
+        private _nodeType;
         public operand: AST;
         constructor(_nodeType: SyntaxKind, operand: AST);
         public kind(): SyntaxKind;
@@ -7719,7 +7744,7 @@ declare module TypeScript {
         public kind(): SyntaxKind;
     }
     class BinaryExpression extends AST {
-        
+        private _nodeType;
         public left: AST;
         public right: AST;
         constructor(_nodeType: SyntaxKind, left: AST, right: AST);
@@ -8043,7 +8068,7 @@ declare module TypeScript {
         public kind(): SyntaxKind;
     }
     class Comment {
-        
+        private _trivia;
         public endsLine: boolean;
         public _start: number;
         public _end: number;
