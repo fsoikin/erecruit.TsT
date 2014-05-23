@@ -2,14 +2,13 @@
 /// <reference path="../src/extractor.ts" />
 /// <reference path="../src/interfaces.ts" />
 /// <reference path="utils.ts" />
-/// <reference path="extractor.basic.ts" />
+/// <reference path="extractor.types.ts" />
+/// <reference path="extractor.classes.ts" />
 /// <reference path="extractor.comments.ts" />
 /// <reference path="extractor.generics.ts" />
 /// <reference path="extractor.modules.ts" />
 
 module erecruit.TsT.Tests.Extr {
-	export var path = require( "path" );
-	export var fs = require( "fs" );
 	export var c = jasmine.objectContaining;
 
 	export var e: Extractor;
@@ -40,7 +39,9 @@ module erecruit.TsT.Tests.Extr {
 			});
 		});
 
-		Extr.basic();
+
+		Extr.types();
+		Extr.classes();
 		Extr.modules();
 		Extr.generics();
 		Extr.comments();

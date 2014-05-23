@@ -1,6 +1,6 @@
 module erecruit.TsT.Tests.Extr {
 
-	export function basic() {
+	export function types() {
 		group( "should correctly parse data structure", () => {
 			it( " - simple", () => {
 				file = "export interface X { A: string; B: number; }";

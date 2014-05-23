@@ -8,12 +8,12 @@ module erecruit.TsT.Tests.Extr {
 				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types, false )[0].Directives ).toEqual( { dir: 'value' } );
 			});
 
-			xit( "on classes", () => {
+			it( "on classes", () => {
 				file = "/** @dir value*/ export class C {}";
 				expect( e.GetDocument( fileName ).Classes[0].Directives ).toEqual( { dir: 'value' } );
 			});
 
-			xit( "on variables with constructor signatures", () => {
+			it( "on variables with constructor signatures", () => {
 				file = "/** @dir value*/ export var C: { new: () => string } = null";
 				expect( e.GetDocument( fileName ).Classes[0].Directives ).toEqual( { dir: 'value' });
 			});

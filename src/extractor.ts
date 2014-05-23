@@ -64,22 +64,22 @@ module erecruit.TsT {
 
 			result.Classes = allModuleDecls
 				.where( d => d.kind === PEKind.Variable )
-				.select( d => {
-					var variable = this._compiler.getSymbolOfDeclaration( d );
-					this.EnsureResolved( variable );
+				.select( d => this._compiler.getSymbolOfDeclaration( d ) )
+				.doAction( this.EnsureResolved )
+				.select( variable => {
 					var varType = variable.isType() && ( <ts.PullTypeSymbol>variable );
 					var sigs = variable.type.getConstructSignatures();
-					//var ctor = variable.type.getConstructorMethod();
-					//if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
+					var ctor = variable.type.getHasDefaultConstructor() && variable.type.getConstructorMethod();
+					if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
 					var comments = variable.docComments() || ( varType && varType.docComments() );
 
 					return <Class> {
-						Name: d.name,
+						Name: variable.name,
 						Comment: comments,
 						Directives: parseDirectives( comments ),
 						Document: result,
-						InternalModule: this.GetInternalModule( d ),
-						ExternalModule: this.GetExternalModule( d ),
+						InternalModule: this.GetInternalModule( variable.getDeclarations()[0] ),
+						ExternalModule: this.GetExternalModule( variable.getDeclarations()[0] ),
 						Kind: ModuleElementKind.Class,
 						Implements: varType ? this.GetBaseTypes( varType ) : null,
 						GenericParameters: varType ? varType.getTypeParameters().map( x => this.GetType( x ) ) : null,

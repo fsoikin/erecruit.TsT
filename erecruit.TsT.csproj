@@ -3,7 +3,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <ProjectGuid>{7A72A9D3-68AE-4315-BA87-13663DDAB33C}</ProjectGuid>
-    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
@@ -24,25 +23,6 @@
     <RootNamespace>TypeScriptHTMLApp1</RootNamespace>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
-  <ProjectExtensions>
-    <VisualStudio>
-      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
-        <WebProjectProperties>
-          <UseIIS>True</UseIIS>
-          <AutoAssignPort>True</AutoAssignPort>
-          <DevelopmentServerPort>51549</DevelopmentServerPort>
-          <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:51549/</IISUrl>
-          <NTLMAuthentication>False</NTLMAuthentication>
-          <UseCustomServer>False</UseCustomServer>
-          <CustomServerUrl>
-          </CustomServerUrl>
-          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
-        </WebProjectProperties>
-      </FlavorProperties>
-    </VisualStudio>
-  </ProjectExtensions>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptRemoveComments>True</TypeScriptRemoveComments>
@@ -91,11 +71,14 @@
     <TypeScriptCompile Include="src\preprocessors\csharp.ts" />
     <TypeScriptCompile Include="tests\extractor.directives.ts" />
     <TypeScriptCompile Include="tests\extractor.comments.ts" />
+    <TypeScriptCompile Include="tests\extractor.classes.ts" />
     <TypeScriptCompile Include="tests\extractor.modules.ts" />
     <TypeScriptCompile Include="tests\extractor.generics.ts" />
+    <None Include="tests\integration\readme.md" />
+    <TypeScriptCompile Include="tests\integration\tstc.ts" />
     <TypeScriptCompile Include="tests\utils.ts" />
     <TypeScriptCompile Include="tests\extractor.ts" />
-    <TypeScriptCompile Include="tests\extractor.basic.ts" />
+    <TypeScriptCompile Include="tests\extractor.types.ts" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="examples\csharp\type.cs.tpl" />

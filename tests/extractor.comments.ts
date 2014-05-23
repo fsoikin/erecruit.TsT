@@ -10,14 +10,14 @@ module erecruit.TsT.Tests.Extr {
 				expect( ( <any>types[0].Interface ).Name ).toEqual( "I" );
 			});
 
-			xit( "on classes", () => {
+			it( "on classes", () => {
 				file = "/** A comment*/ export class C {}";
 				expect( e.GetDocument( fileName ).Classes ).toEqual( [
 					c( { Comment: "A comment", Name: "C" })
 				] );
 			});
 
-			xit( "on variables with constructor signatures", () => {
+			it( "on variables with constructor signatures", () => {
 				file = "/** A comment*/ export var C: { new: () => string } = null";
 				expect( e.GetDocument( fileName ).Classes ).toEqual( [
 					c( { Comment: "A comment", Name: "C" })

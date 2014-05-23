@@ -2,6 +2,8 @@
 /// <reference path="../src/utils.ts" />
 
 module erecruit.TsT.Tests {
+	export var path = require( "path" );
+	export var fs = require( "fs" );
 
 	interface It { ( name: string, define: () => void ): void; }
 	declare var GLOBAL: any;
