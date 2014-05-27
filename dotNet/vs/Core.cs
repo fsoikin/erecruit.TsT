@@ -126,12 +126,16 @@ namespace erecruit.vs
 		public static bool GetTranslateFlag( ProjectItem item ) {
 			if ( item.FileCount == 0 ) return false;
 
+			string firstFile;
+			try { firstFile = item.FileNames[0]; }
+			catch ( ArgumentException ) { return false; }
+
 			IVsHierarchy hierarchy;
 			uint itemID;
 			string result;
 			IVsSolution solution = (IVsSolution)Package.GetGlobalService( typeof( SVsSolution ) );
 			solution.GetProjectOfUniqueName( item.ContainingProject.UniqueName, out hierarchy );
-			hierarchy.ParseCanonicalName( item.FileNames[0], out itemID );
+			hierarchy.ParseCanonicalName( firstFile, out itemID );
 			(hierarchy as IVsBuildPropertyStorage).GetItemAttribute( itemID, TranslateFlagName, out result );
 
 			return string.Equals( result, true.ToString(), StringComparison.InvariantCultureIgnoreCase );
