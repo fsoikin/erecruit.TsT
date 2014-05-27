@@ -212,6 +212,8 @@ function updateLkg() {
 
         if (fs.existsSync(from)) {
             var to = path.relative('.', path.resolve(lkg, copyTo));
+            jake.mkdirP(to);
+
             var list = new jake.FileList();
             list.include(["*.dll", "*.exe", "*.vsixmanifest", "*.msi"].map(function (f) {
                 return path.resolve(from, f);
