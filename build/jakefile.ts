@@ -1,22 +1,24 @@
 /// <reference path="../lib/node/node.d.ts" />
 /// <reference path="../lib/jake/jake.d.ts" />
 
-var outDir = process.env.outDir || "./bin";
-var typescriptPath = process.env.typescriptPath || process.env.tsPath || "./node_modules/typescript/bin/tsc.js";
-var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
-var jasminePath = "./node_modules/jasmine-focused/bin/jasmine-focused";
-
 import path = require( "path" );
 import fs = require( "fs" );
 
-var sourceFiles = ["src/**/*.ts", "lib/**/*.ts"];
+var rootDir = path.resolve( path.dirname( require.resolve( "./jakefile.js" ) ), ".." );
+var fromRoot = ( p: string ) => path.resolve( rootDir, p );
+var outDir = process.env.outDir || fromRoot( "bin" );
+var typescriptPath = process.env.typescriptPath || process.env.tsPath || fromRoot( "node_modules/typescript/bin/tsc.js" );
+var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
+var jasminePath = fromRoot( "node_modules/jasmine-focused/bin/jasmine-focused" );
+
+var sourceFiles = ["src/**/*.ts", "lib/**/*.ts"].map( fromRoot );
 var sources = new jake.FileList();
 sources.include( sourceFiles );
 
 var tests = new jake.FileList();
 tests.include( sourceFiles );
-tests.include( ["tests/**/*.ts"] );
-tests.exclude( ["tests/integration/src/**/*.ts"] );
+tests.include( ["tests/**/*.ts"].map( fromRoot ) );
+tests.exclude( ["tests/integration/src/**/*.ts"].map( fromRoot ) );
 
 var nodeModule = toOutDir( 'tst-node.js' );
 var nodeModuleTypings = toOutDir( 'tst-node.d.ts' );
@@ -29,7 +31,6 @@ var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, exe
 
 var lib = wrapLibs();
 
-pullVersion();
 desc( "Build" ); task( 'default', outputs );
 desc( "Clean" ); task( 'clean', [], () => outputs.concat( lib ).forEach( f => fs.existsSync( f ) && fs.unlink( f ) ) );
 desc( "Clean, then build" ); task( 'rebuild', ['clean', 'default'] );
@@ -38,11 +39,13 @@ desc( "Compile tstc" ); task( 'tstc', executableModule );
 desc( "Compile NodeJS module" ); task( 'node', [nodeModule, nodeModuleTypings] );
 desc( "Compile free module" ); task( 'free', [freeModule, freeModuleTypings] );
 
+desc( "Set version number in the various source/config files" ); task( 'version', [], setVersion );
+
 compileTs( freeModule, sources.toArray(), lib, /* disableTypings */ false, /* mergeOutput */ true );
-compileTs( executableModule, ['node/tstc.ts'], [freeModule], /* disableTypings */ true, /* mergeOutput */ false, /* prereqs */ [typeScriptBaseTypings] );
+compileTs( executableModule, [fromRoot('node/tstc.ts')], [freeModule], /* disableTypings */ true, /* mergeOutput */ false, /* prereqs */ [typeScriptBaseTypings] );
 compileTs( testsModule, tests.toArray(), lib, /* disableTypings */ true, /* mergeOutput */ true );
 wrapFile( freeModule, nodeModule, "(function(erecruit){", "})( { TsT: module.exports } );" );
-file( typeScriptBaseTypings, ['node/lib.d.ts'], () => jake.cpR( 'node/lib.d.ts', typeScriptBaseTypings ) );
+file( typeScriptBaseTypings, [fromRoot('node/lib.d.ts')], () => jake.cpR( fromRoot( 'node/lib.d.ts' ), typeScriptBaseTypings ) );
 
 file( nodeModuleTypings, [freeModuleTypings], () => {
 	console.log( "Building " + nodeModuleTypings );
@@ -58,10 +61,10 @@ file( nodeModuleTypings, [freeModuleTypings], () => {
 });
 
 function wrapLibs() {
-	var raw = new jake.FileList(); raw.include( "lib/**/*.js" ); raw.exclude( "lib/wrapped/**/*" );
+	var raw = new jake.FileList(); raw.include( fromRoot( "lib/**/*.js" ) ); raw.exclude( fromRoot( "lib/wrapped/**/*" ) );
 	var wrapped = raw.toArray().map( ( f ) => ( {
 		raw: f,
-		wrapped: path.relative( '.', path.resolve( "lib/wrapped", path.relative( "lib", f ) ) )
+		wrapped: path.relative( '.', path.resolve( fromRoot( "lib/wrapped" ), path.relative( fromRoot( "lib" ), f ) ) )
 	}) );
 	wrapped.forEach( w => wrapFile( w.raw, w.wrapped,
 		"(function(__root__,module,exports,global,define,require) {",
@@ -140,23 +143,26 @@ function prepend( prefixFiles: string[], destinationFile: string ) {
 }
 
 function toOutDir( file: string ) {
-	return path.relative( '.', path.resolve( outDir, file ) );
+	return path.relative( rootDir, path.resolve( outDir, file ) );
 }
 
-function pullVersion() {
-	var enc = { encoding: 'utf8' };
-	var versionFileName = "src/version.ts";
-	var packageFileName = "package.json";
-
-	var versionFile: string = <any>fs.readFileSync( versionFileName, enc );
-	var packageFile: string = <any>fs.readFileSync( packageFileName, enc );
-
-	var version = JSON.parse( packageFile ).version || "0.0.0";
-	var newVersionFile = versionFile.replace( /(\/\*version_goes_here\=\>\*\/\")([^\"]+)/, (_,prefix,__) => prefix + version );
-
-	if ( versionFile !== newVersionFile ) {
-		fs.writeFileSync( versionFileName, newVersionFile, enc );
+function setVersion( versionValue: string ) {
+	if ( !versionValue ) {
+		console.error( "Version value is required. Pass it as task parameter, i.e. \"jake version[0.5.0]\"." );
+		return;
 	}
 
-	console.log( "Building version " + version );
+	replace( "src/version.ts", /(\/\*version_goes_here\=\>\*\/\")([^\"]+)(\")/ );
+	replace( "package.json", /(version\"\: \")([\d\.]+)(\")/ );
+	replace( "dotNet/setup/TsT.wxs", /(Version=\")([\d\.]+)(\")/ );
+	replace( "dotNet/vs/source.extension.vsixmanifest", /(\<Identity Id=\"[^\"]+\" Version=\")([\d\.]+)(\")/ );
+	replace( "dotNet/CommonAssemblyInfo.cs", /(Value = \")([\d\.]+)(\")/ );
+
+	function replace( file: string, regex: RegExp ) {
+		file = fromRoot( file );
+		var enc = { encoding: 'utf8' };
+		var contents: string = <any>fs.readFileSync( file, enc );
+		var newContents = contents.replace( regex, ( _, prefix, __, suffix ) => prefix + versionValue + suffix );
+		fs.writeFileSync( file, newContents, enc );
+	}
 }

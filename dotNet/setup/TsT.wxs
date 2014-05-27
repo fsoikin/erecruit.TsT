@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Product Id="*" Name="erecruit TypeScript Translator" Language="1033" Version="0.6.0" Manufacturer="erecruit" UpgradeCode="734a7972-17cf-4ba8-8af7-8f9d3fe3853c">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate />
+
+		<Feature Id="ProductFeature" Title="setup" Level="1">
+			<ComponentGroupRef Id="Components" />
+		</Feature>
+
+		<Property Id="VSINSTALLDIR12">
+			<RegistrySearch Id="VSInstallRegistry12" Root="HKLM" Key="SOFTWARE\Microsoft\VisualStudio\12.0" Name="InstallDir" Type="directory" />
+		</Property>
+
+		<ComponentGroup Id="Components">
+			<ComponentGroupRef Id="Files"/>
+			<ComponentRef Id="Registry"/>
+		</ComponentGroup>
+	</Product>
+	
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="erecruitDir" Name="erecruit">
+					<Directory Id="INSTALLFOLDER" Name="TsT">
+						<Directory Id="BinDir" Name="bin" />
+					</Directory>
+				</Directory>
+			</Directory>
+
+			<Directory Id="VSINSTALLDIR12">
+				<Directory Name="Extensions" Id="VSExtensionsDir">
+					<Directory Name="erecruit" Id="VSExtensionsErecruitDir">
+						<Directory Name="TsT" Id="VsixDir" />
+					</Directory>
+				</Directory>
+			</Directory>
+		</Directory>
+
+		<Component Id="Registry" Directory="INSTALLFOLDER">
+			<RegistryKey Root="HKLM" Key="Software\erecruit\TsT" Action="createAndRemoveOnUninstall">
+				<RegistryValue Type="string" Name="InstallDir" Value="[INSTALLFOLDER]"/>
+			</RegistryKey>
+		</Component>
+	</Fragment>
+</Wix>

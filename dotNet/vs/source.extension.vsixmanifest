@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
 	<Metadata>
-		<Identity Id="f95d8dce-65f6-412e-8a3d-512cf66547d9" Version="0.5.0" Language="en-US" Publisher="erecruit" />
+		<Identity Id="f95d8dce-65f6-412e-8a3d-512cf66547d9" Version="0.6.0" Language="en-US" Publisher="erecruit" />
 		<DisplayName>erecruit.TsT</DisplayName>
 		<Description xml:space="preserve">erecruit TsT - TypeScript Translator.
 Extract type information from your TypeScript files and generate other code (for example, C# classes) from it.</Description>
@@ -11,7 +11,7 @@ Extract type information from your TypeScript files and generate other code (for
 		<Icon>Resources\erecruit.TsT.ico</Icon>
 		<Tags>TypeScript Type Data DTO Interface</Tags>
 	</Metadata>
-	<Installation InstalledByMsi="false">
+	<Installation InstalledByMsi="true">
 		<InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Pro" />
 		<InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Premium" />
 		<InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Ultimate" />

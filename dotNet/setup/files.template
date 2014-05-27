@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Fragment>
+		<ComponentGroup Id="Files">
+			<Component Id="BinFiles" Directory="BinDir" Guid="{CFB051B6-D42C-41B6-97CC-5EF7AA5E5CC3}">
+				<!-- BINFILES -->
+			</Component>
+			<Component Id="VsixFiles" Directory="VsixDir" Guid="{C3ED40FA-D200-4C0A-8004-ED041988EEC6}">
+				<!-- VSIXFILES -->
+			</Component>
+		</ComponentGroup>
+	</Fragment>
+</Wix>
