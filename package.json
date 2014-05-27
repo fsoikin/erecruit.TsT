@@ -1,9 +1,9 @@
 {
-  "name": "erecruit-tst",
-  "version": "0.4.3",
-  "description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
-  "main": "./bin/tst-node.js",
-  "bin": { "tstc": "./bin/tstc.js" },
+	"name": "erecruit-tst",
+	"version": "0.5.0",
+	"description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
+	"main": "./bin/tst-node.js",
+	"bin": { "tstc": "./bin/tstc.js" },
 	"files": ["bin/lib.d.ts", "bin/tst-node.d.ts","bin/tst-node.js","bin/tst.d.ts","bin/tst.js","bin/tstc.js"],
 
 	"scripts": {
@@ -11,23 +11,23 @@
 	},
 
 	"license": "MIT",
-  "keywords": [
-    "typescript",
-    "type",
-    "javascript"
-  ],
-  "author": "Fyodor Soikin <fsoikin@erecruit.com> (http://erecruit.com)",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/erecruit/tst.git"
-  },
-  "preferGlobal": true,
-  "dependencies": {
-    "minimist": "0.0.8"
-  },
-  "devDependencies": {
-    "typescript": "0.9.x",
-    "jake": "0.7.x",
+	"keywords": [
+		"typescript",
+		"type",
+		"javascript"
+	],
+	"author": "Fyodor Soikin <fsoikin@erecruit.com> (http://erecruit.com)",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/erecruit/tst.git"
+	},
+	"preferGlobal": true,
+	"dependencies": {
+		"minimist": "0.0.8"
+	},
+	"devDependencies": {
+		"typescript": "0.9.x",
+		"jake": "0.7.x",
 		"jasmine-focused": "1.0.x"
-  }
+	}
 }

@@ -138,6 +138,7 @@ declare module "tst" {
         public LoadDocuments(docs: string[]): void;
         private addFile(f);
         public GetDocument(fileName: string): Document;
+        private GetClass(ctor);
         private GetCachedDoc(path);
         private GetCachedDocFromDecl(d);
         private GetCachedDocFromSymbol(s);
@@ -154,6 +155,7 @@ declare module "tst" {
         private GetDocumentForDecl(d);
         private GetGenericParameter(type);
         private EnsureResolved(s);
+        private SymbolFromDecl;
         private _compiler;
         private _typeCache;
         private _docCache;
