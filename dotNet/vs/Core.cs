@@ -20,8 +20,12 @@ namespace erecruit.vs
 		public const string DefaultTemplateFileName = "type.cs.tpl";
 		public static readonly string[] FoldersForDefaultTemplate = new[] { "scripts", "content" };
 
+		public const string MSBuildTargetsFileRelativePath = "erecruit\\TsT\\erecruit.TsT.targets";
+		public const string MSBuildExtensionsPathVariable = "$(MSBuildExtensionsPath32)";
+
 		public static void Translate( IEnumerable<File> inputFiles ) {
 			if ( !EnsureConfig( inputFiles ) ) return;
+			EnsureMSBuildImport( inputFiles.Select( f => f.Item.ContainingProject ).Distinct() );
 
 			var dte = (DTE2)Package.GetGlobalService( typeof( SDTE ) );
 			var files = inputFiles.ToList();
@@ -42,6 +46,29 @@ namespace erecruit.vs
 			).Subscribe( 
 				f => dte.StatusBar.Text = "Generated " + f.OutputFile, 
 				ex => dte.StatusBar.Text = ex.Message );
+		}
+
+		static HashSet<string> _askedAboutImports = new HashSet<string>();
+		static void EnsureMSBuildImport( IEnumerable<Project> projs ) {
+			var eligibleProjects = projs
+				.Where( proj => {
+					lock ( _askedAboutImports ) {
+						if ( _askedAboutImports.Contains( proj.FullName ) ) return false;
+						_askedAboutImports.Add( proj.FullName );
+						return true;
+					}
+				} )
+				.Select( proj => Microsoft.Build.Evaluation.ProjectCollection.GlobalProjectCollection.GetLoadedProjects( proj.FullName ).FirstOrDefault() )
+				.Where( msbuildProj => msbuildProj != null )
+				.Where( msbuildProj => !msbuildProj.Xml.Imports.Any( i => i.Project.IndexOf( MSBuildTargetsFileRelativePath, StringComparison.InvariantCultureIgnoreCase ) >= 0 ) )
+				.ToList();
+
+			if ( eligibleProjects.Any() ) {
+				var r = MessageBox.Show( Properties.Resources.TargetsImportMissing_Text, Properties.Resources.TargetsImportMissing_Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question );
+				if ( r == DialogResult.Yes ) {
+					eligibleProjects.ForEach( p => p.Xml.AddImport( MSBuildExtensionsPathVariable + "\\" + MSBuildTargetsFileRelativePath ) );
+				}
+			}
 		}
 
 		static bool EnsureConfig( IEnumerable<File> inputFiles ) {

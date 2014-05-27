@@ -24,7 +24,6 @@
 			 <File Name="ClearScriptV8-32.dll" Source="$(var.ProjectDir)bin\tmp\ClearScriptV8-32.dll" Id="ClearScriptV8_32.dll_vs" />
 			 <File Name="ClearScriptV8-64.dll" Source="$(var.ProjectDir)bin\tmp\ClearScriptV8-64.dll" Id="ClearScriptV8_64.dll_vs" />
 			 <File Name="erecruit.TsT.Host.dll" Source="$(var.ProjectDir)bin\tmp\erecruit.TsT.Host.dll" Id="erecruit.TsT.Host.dll_vs" />
-			 <File Name="extension.vsixmanifest" Source="$(var.ProjectDir)bin\tmp\extension.vsixmanifest" Id="extension.vsixmanifest_vs" />
 			 <File Name="Newtonsoft.Json.dll" Source="$(var.ProjectDir)bin\tmp\Newtonsoft.Json.dll" Id="Newtonsoft.Json.dll_vs" />
 			 <File Name="System.Interactive.dll" Source="$(var.ProjectDir)bin\tmp\System.Interactive.dll" Id="System.Interactive.dll_vs" />
 			 <File Name="System.Reactive.Core.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Core.dll" Id="System.Reactive.Core.dll_vs" />

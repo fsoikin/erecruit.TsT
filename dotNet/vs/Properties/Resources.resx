@@ -132,4 +132,12 @@ Would you like to add a default config and template now?</value>
   <data name="DefaultConfig_Itself" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\.tstconfig;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="TargetsImportMissing_Caption" xml:space="preserve">
+    <value>Build-time translation disabled</value>
+  </data>
+  <data name="TargetsImportMissing_Text" xml:space="preserve">
+    <value>Your project does not import components necessary for build-time TypeScript translation. 
+
+Would you like to add the necessary imports?</value>
+  </data>
 </root>

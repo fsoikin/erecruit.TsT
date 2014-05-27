@@ -1,0 +1,49 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
+		<VsToolsPath Condition="'$(VsToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VsToolsPath>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<CompileDependsOn>
+			erecruitTsTranslate;
+			$(CompileDependsOn);
+		</CompileDependsOn>
+		<CleanDependsOn>
+			erecruitTsTranslate_Clean;
+			$(CleanDependsOn);
+		</CleanDependsOn>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<TsTToolPath Condition="'$(TsTToolPath)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\erecruit\TsT@InstallDir)\bin</TsTToolPath>
+		<TsTToolExe Condition="'$(TsTToolExe)' == ''">tstc.exe</TsTToolExe>
+		<TsTArgs Condition="'$(TsTArgs)' == ''">-t 20</TsTArgs>
+		<TsTArgs Condition="'$(TsTDebug)' != ''">$(TsTArgs) -d -v</TsTArgs>
+	</PropertyGroup>
+	
+	<Target Name="erecruitTsTranslate_CreateOutputs" Inputs="%(Compile.Identity)" Outputs="__execute_me_always__">
+		<PropertyGroup>
+			<DependentUpon>%(Compile.DependentUpon)</DependentUpon>
+			<Extension>$([System.IO.Path]::GetExtension($(DependentUpon)))</Extension>
+		</PropertyGroup>
+		<CreateItem Include="%(Compile.FullPath)" Condition="'$(Extension)' == '.ts'" PreserveExistingMetadata="True">
+			<Output TaskParameter="Include" ItemName="erecruitTsTranslate_Output" />
+		</CreateItem>
+	</Target>
+
+	<Target Name="erecruitTsTranslate" Condition="'$(BuildingProject)' != 'false'" 
+		DependsOnTargets="erecruitTsTranslate_CreateOutputs"
+		Inputs="@(TypeScriptCompile)" Outputs="@(erecruitTsTranslate_Output)">
+		<ItemGroup>
+			<TsTFiles Include="@(TypeScriptCompile)" Condition="'%(TypeScriptCompile.TsTranslate)' == 'True'"></TsTFiles>
+		</ItemGroup>
+		<Exec Command="&quot;$(TsTToolPath)\$(TsTToolExe)&quot; $(TsTArgs) @(TsTFiles, ' ')" />
+	</Target>
+
+	<Target Name="erecruitTsTranslate_Clean" DependsOnTargets="erecruitTsTranslate_CreateOutputs">
+		<Delete Files="@(erecruitTsTranslate_Output)" />
+	</Target>
+	
+</Project>

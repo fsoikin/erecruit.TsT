@@ -17,6 +17,7 @@
 		<ComponentGroup Id="Components">
 			<ComponentGroupRef Id="Files"/>
 			<ComponentRef Id="Registry"/>
+			<ComponentRef Id="MSBuildExtension"/>
 		</ComponentGroup>
 	</Product>
 	
@@ -26,6 +27,12 @@
 				<Directory Id="erecruitDir" Name="erecruit">
 					<Directory Id="INSTALLFOLDER" Name="TsT">
 						<Directory Id="BinDir" Name="bin" />
+					</Directory>
+				</Directory>
+
+				<Directory Id="MSBuild" Name="MSBuild">
+					<Directory Id="erecruitMSBuildDir" Name="erecruit">
+						<Directory Id="TsTMSBuildDir" Name="TsT" />
 					</Directory>
 				</Directory>
 			</Directory>
@@ -43,6 +50,10 @@
 			<RegistryKey Root="HKLM" Key="Software\erecruit\TsT" Action="createAndRemoveOnUninstall">
 				<RegistryValue Type="string" Name="InstallDir" Value="[INSTALLFOLDER]"/>
 			</RegistryKey>
+		</Component>
+
+		<Component Id="MSBuildExtension" Directory="TsTMSBuildDir">
+			<File Name="erecruit.TsT.Targets" Source="$(var.ProjectDir)..\vs\erecruit.TsT.targets" />
 		</Component>
 	</Fragment>
 </Wix>
