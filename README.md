@@ -25,7 +25,7 @@ There are three ways to run TsT:
 
 1. Node.js console program (`npm install erecruit-tst`)
 2. .NET console program (in `bin/dotNet/tstc.exe` or compile from `dotNet\tstc\erecruit.TsT.Console.csproj`)
-3. [Visual Studio extension](https://github.com/erecruit/TsT/tree/master/dotNet/vs) (available from [Visual Studio Gallery](http://visualstudiogallery.msdn.microsoft.com/c61f8a99-cc0b-4b2e-8913-f00626c92a21) or download from `bin/tst.vsix`)
+3. [Visual Studio extension](https://github.com/erecruit/TsT/tree/master/dotNet/vs) (available from [Visual Studio Gallery](http://visualstudiogallery.msdn.microsoft.com/c61f8a99-cc0b-4b2e-8913-f00626c92a21) or download from `bin/setup/erecruit.TsT.msi`)
 
 #<a name="config"></a>Configuration file
 erecruit.TsT has a configuration file (usually named .tstconfig) to help make a few important decisions, such as which types and files should be translated and what templates to use for them.
