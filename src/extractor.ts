@@ -64,35 +64,14 @@ module erecruit.TsT {
 
 			result.Classes = allModuleDecls
 				.where( d => d.kind === PEKind.Variable )
-				.select( d => this._compiler.getSymbolOfDeclaration( d ) )
-				.doAction( this.EnsureResolved )
-				.select( variable => {
-					var varType = variable.isType() && ( <ts.PullTypeSymbol>variable );
-					var sigs = variable.type.getConstructSignatures();
-					var ctor = variable.type.getHasDefaultConstructor() && variable.type.getConstructorMethod();
-					if ( ctor ) sigs = sigs.concat( ctor.type.getConstructSignatures() );
-					var comments = variable.docComments() || ( varType && varType.docComments() );
-
-					return <Class> {
-						Name: variable.name,
-						Comment: comments,
-						Directives: parseDirectives( comments ),
-						Document: result,
-						InternalModule: this.GetInternalModule( variable.getDeclarations()[0] ),
-						ExternalModule: this.GetExternalModule( variable.getDeclarations()[0] ),
-						Kind: ModuleElementKind.Class,
-						Implements: varType ? this.GetBaseTypes( varType ) : null,
-						GenericParameters: varType ? varType.getTypeParameters().map( x => this.GetType( x ) ) : null,
-						Constructors: sigs.map( x => this.GetCallSignature( x ) )
-					};
-				})
+				.select( this.SymbolFromDecl )
+				.select( variable => this.GetClass( variable ) )
 				.where( c => c.Constructors.length > 0 )
 				.toArray();
 
 			result.Types = allModuleDecls
 				.where( d => d.kind === PEKind.Interface || d.kind === PEKind.Enum || d.kind === PEKind.Class )
-				.select( d => this._compiler.getSymbolOfDeclaration( d ) )
-				.doAction( this.EnsureResolved )
+				.select( this.SymbolFromDecl )
 				.select( x => this.GetType( <ts.PullTypeSymbol>x ) )
 				.toArray();
 
@@ -101,6 +80,44 @@ module erecruit.TsT {
 			debug( () => "GetDocument: types: " + result.Types.map( t => typeName( t ) ).join() );
 
 			return result;
+		}
+
+		private GetClass( ctor: ts.PullSymbol ) {
+			var ctorType = ctor.type;
+			var sigs = Enumerable
+				.from( ctor.getDeclarations() )
+				.selectMany( d => d.getChildDecls() )
+				.where( d => d.kind === PEKind.ConstructorMethod )
+				.select( this.SymbolFromDecl )
+				.selectMany( s => s.type.getConstructSignatures() )
+				.concat( Enumerable
+					.from( ctorType.getHasDefaultConstructor() ? [ctorType.getConstructorMethod()] : [] )
+					.selectMany( c => c.type.getConstructSignatures() ) )
+				.concat( Enumerable.from( ctorType
+					.getAllMembers( PEKind.Property, ts.GetAllMembersVisiblity.externallyVisible ) )
+					.where( m => m.name === "new" )
+					.selectMany( m => m.type.getCallSignatures() ) )
+				.distinct();
+
+			var comments = ctor.docComments() || ctorType.docComments();
+
+			return <Class> {
+				Name: ctor.name,
+				Comment: comments,
+				Directives: parseDirectives( comments ),
+				Document: this.GetCachedDocFromSymbol( ctor ),
+				InternalModule: this.GetInternalModule( ctor.getDeclarations()[0] ),
+				ExternalModule: this.GetExternalModule( ctor.getDeclarations()[0] ),
+				Kind: ModuleElementKind.Class,
+				Implements: Enumerable
+					.from( this.GetBaseTypes( ctorType ) )
+					.concat( [this.GetType( ctorType )] )
+					.where( t => t && ( !!t.Interface || !!t.GenericInstantiation ) )
+					.distinct()
+					.toArray(),
+				GenericParameters: ctor.isType() ? ctorType.getTypeParameters().map( x => this.GetType( x ) ) : null,
+				Constructors: sigs.select( x => this.GetCallSignature( x ) ).toArray()
+			};
 		}
 
 		private GetCachedDoc( path: string ) {
@@ -307,9 +324,15 @@ module erecruit.TsT {
 		}
 
 		private EnsureResolved( s: ts.PullSymbol ) {
-			var decls: any[] = ( <any>s )._declarations; // HACK: the _declarations property is not exposed as public, but _getResolver fails with an assert when called while _declarations is null or empty
+			var decls: any[] = ( <any>s )._declarations; // HACK: the _declarations property is not exposed as public, but _getResolver fails with an assert when called while _declarations is null or empty. TODO: check if this is still the case in TS 1.0.1
 			if ( decls && decls.length ) s._resolveDeclaredSymbol();
 		}
+
+		private SymbolFromDecl = ( s: ts.PullDecl ) => {
+			var r = this._compiler.getSymbolOfDeclaration( s );
+			this.EnsureResolved( r );
+			return r;
+		};
 
 		private _compiler = new ts.TypeScriptCompiler();
 		private _typeCache: { [globalTypeCheckPhase: number]: { [pullSymbolId: number]: { type: Type; symbol: ts.PullTypeSymbol } } } = {};

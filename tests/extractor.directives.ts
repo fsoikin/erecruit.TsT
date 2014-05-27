@@ -13,7 +13,7 @@ module erecruit.TsT.Tests.Extr {
 				expect( e.GetDocument( fileName ).Classes[0].Directives ).toEqual( { dir: 'value' } );
 			});
 
-			it( "on variables with constructor signatures", () => {
+			it( "on variables with construct signatures", () => {
 				file = "/** @dir value*/ export var C: { new: () => string } = null";
 				expect( e.GetDocument( fileName ).Classes[0].Directives ).toEqual( { dir: 'value' });
 			});

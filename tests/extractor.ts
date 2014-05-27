@@ -58,13 +58,29 @@ module erecruit.TsT.Tests.Extr {
 	}
 
 	/* Removes unnecessary back references and unwraps lazy evaluators for better readability of error messages */
+	export function trimAndUnwrapAllClasses( clss: Class[], trimComments: boolean = true ) {
+		if ( !clss ) return clss;
+		for ( var i = 0; i < clss.length; i++ ) {
+			clss[i] = trimAndUnwrapClass( clss[i], trimComments );
+		}
+		return clss;
+	}
+
+	/* Removes unnecessary back references and unwraps lazy evaluators for better readability of error messages */
+	export function trimAndUnwrapClass( cls: Class, trimComments: boolean = true ): Class {
+		if ( !cls || !( <any>cls ).hasOwnProperty( 'Document' ) ) return cls;
+		trimElement( cls, trimComments );
+		trimAndUnwrapAll( cls.GenericParameters );
+		trimAndUnwrapAll( cls.Implements );
+		trimAndUnwrapAll( cls.GenericParameters );
+		( cls.Constructors || [] ).forEach( s => trimAndUnwrapSignature( s, trimComments ) );
+		return cls;
+	}
+
+	/* Removes unnecessary back references and unwraps lazy evaluators for better readability of error messages */
 	export function trimAndUnwrap( type: Type, trimComments: boolean = true ): Type {
 		if ( !type || !(<any>type).hasOwnProperty( 'Document' ) ) return type;
-		delete type.Document;
-		delete type.Kind;
-		delete type.InternalModule;
-		delete type.ExternalModule;
-		if ( trimComments ) deleteComment( type );
+		trimElement( type, trimComments );
 
 		if ( type.Interface ) type.Interface = <any>trimAndUnwrapIntf( type.Interface(), trimComments );
 		if ( type.GenericParameter ) {
@@ -88,19 +104,29 @@ module erecruit.TsT.Tests.Extr {
 			trimAndUnwrap( p.Type, trimComments );
 			if ( trimComments ) deleteComment( p );
 		} );
-		(i.Methods||[]).forEach( p => p.Signatures.forEach( s => {
-			trimAndUnwrap( s.ReturnType, trimComments );
-			trimAndUnwrapAll( s.GenericParameters, trimComments );
-			(s.Parameters||[]).forEach( p => { 
-				trimAndUnwrap( p.Type, trimComments ); 
-				if ( trimComments ) deleteComment( p );
-			} );
-		}) );
+		(i.Methods||[]).forEach( p => p.Signatures.forEach( s => trimAndUnwrapSignature( s, trimComments ) ) );
 		return i;
+	}
+
+	function trimAndUnwrapSignature( s: CallSignature, trimComments: boolean ) {
+		trimAndUnwrap( s.ReturnType, trimComments );
+		trimAndUnwrapAll( s.GenericParameters, trimComments );
+		( s.Parameters || [] ).forEach( p => {
+			trimAndUnwrap( p.Type, trimComments );
+			if ( trimComments ) deleteComment( p );
+		});
 	}
 
 	function deleteComment( x: any ) {
 		delete x.Comment;
 		delete x.Directives;
+	}
+
+	function trimElement( x: ModuleElement, trimComments: boolean ) {
+		delete x.Document;
+		delete x.Kind;
+		delete x.InternalModule;
+		delete x.ExternalModule;
+		if ( trimComments ) deleteComment( x );
 	}
 }
