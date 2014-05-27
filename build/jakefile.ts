@@ -6,7 +6,7 @@ import fs = require( "fs" );
 
 var rootDir = path.resolve( path.dirname( require.resolve( "./jakefile.js" ) ), ".." );
 var fromRoot = ( p: string ) => path.resolve( rootDir, p );
-var outDir = process.env.outDir || fromRoot( "bin" );
+var outDir = process.env.outDir || fromRoot( "built" );
 var typescriptPath = process.env.typescriptPath || process.env.tsPath || fromRoot( "node_modules/typescript/bin/tsc.js" );
 var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
 var jasminePath = fromRoot( "node_modules/jasmine-focused/bin/jasmine-focused" );
@@ -25,9 +25,9 @@ var nodeModuleTypings = toOutDir( 'tst-node.d.ts' );
 var freeModule = toOutDir( 'tst.js' );
 var freeModuleTypings = toOutDir( 'tst.d.ts' );
 var executableModule = toOutDir( 'tstc.js' );
-var testsModule = toOutDir( 'tests/tstSpec.js' );
 var typeScriptBaseTypings = toOutDir( 'lib.d.ts' );
-var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule];
+var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule, typeScriptBaseTypings];
+var testsModule = toOutDir( 'tests/tstSpec.js' );
 
 var lib = wrapLibs();
 
@@ -40,6 +40,7 @@ desc( "Compile NodeJS module" ); task( 'node', [nodeModule, nodeModuleTypings] )
 desc( "Compile free module" ); task( 'free', [freeModule, freeModuleTypings] );
 
 desc( "Set version number in the various source/config files" ); task( 'version', [], setVersion );
+desc( "Update LKG binaries" ); task( 'lkg', outputs, updateLkg );
 
 compileTs( freeModule, sources.toArray(), lib, /* disableTypings */ false, /* mergeOutput */ true );
 compileTs( executableModule, [fromRoot('node/tstc.ts')], [freeModule], /* disableTypings */ true, /* mergeOutput */ false, /* prereqs */ [typeScriptBaseTypings] );
@@ -164,5 +165,30 @@ function setVersion( versionValue: string ) {
 		var contents: string = <any>fs.readFileSync( file, enc );
 		var newContents = contents.replace( regex, ( _, prefix, __, suffix ) => prefix + versionValue + suffix );
 		fs.writeFileSync( file, newContents, enc );
+	}
+}
+
+function updateLkg() {
+	var lkg = fromRoot( 'bin' );
+	jake.rmRf( lkg );
+	jake.mkdirP( lkg );
+
+	outputs.forEach( f => jake.cpR( f, lkg ) );
+	copyIfThere( 'tstc/bin/Release', 'dotNet' );
+	copyIfThere( 'setup/bin/Release', 'setup' );
+
+	function copyIfThere( where: string, copyTo: string ) {
+		var from = fromRoot( 'dotNet/' + where );
+
+		if ( fs.existsSync( from ) ) {
+			var to = path.relative( '.', path.resolve( lkg, copyTo ) );
+			var list = new jake.FileList();
+			list.include( ["*.dll", "*.exe", "*.vsixmanifest", "*.msi"].map( f => path.resolve( from, f ) ) );
+			list.exclude( ["*vshost*"].map( f => path.resolve( from, f ) ) );
+			list.toArray().forEach( f => jake.cpR( path.relative( '.', f ), to ) );
+		}
+		else {
+			console.warn( "WARNING: " + from + " doesn't exist." );
+		}
 	}
 }

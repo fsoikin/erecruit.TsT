@@ -4,7 +4,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <ProjectGuid>{7A72A9D3-68AE-4315-BA87-13663DDAB33C}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <OutputPath>bin\dummy</OutputPath>
+    <OutputPath>built\dummy</OutputPath>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>

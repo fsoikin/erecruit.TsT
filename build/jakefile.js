@@ -5,7 +5,7 @@ var rootDir = path.resolve(path.dirname(require.resolve("./jakefile.js")), "..")
 var fromRoot = function (p) {
     return path.resolve(rootDir, p);
 };
-var outDir = process.env.outDir || fromRoot("bin");
+var outDir = process.env.outDir || fromRoot("built");
 var typescriptPath = process.env.typescriptPath || process.env.tsPath || fromRoot("node_modules/typescript/bin/tsc.js");
 var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
 var jasminePath = fromRoot("node_modules/jasmine-focused/bin/jasmine-focused");
@@ -24,9 +24,9 @@ var nodeModuleTypings = toOutDir('tst-node.d.ts');
 var freeModule = toOutDir('tst.js');
 var freeModuleTypings = toOutDir('tst.d.ts');
 var executableModule = toOutDir('tstc.js');
-var testsModule = toOutDir('tests/tstSpec.js');
 var typeScriptBaseTypings = toOutDir('lib.d.ts');
-var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule];
+var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule, typeScriptBaseTypings];
+var testsModule = toOutDir('tests/tstSpec.js');
 
 var lib = wrapLibs();
 
@@ -51,6 +51,8 @@ task('free', [freeModule, freeModuleTypings]);
 
 desc("Set version number in the various source/config files");
 task('version', [], setVersion);
+desc("Update LKG binaries");
+task('lkg', outputs, updateLkg);
 
 compileTs(freeModule, sources.toArray(), lib, false, true);
 compileTs(executableModule, [fromRoot('node/tstc.ts')], [freeModule], true, false, [typeScriptBaseTypings]);
@@ -191,5 +193,37 @@ function setVersion(versionValue) {
             return prefix + versionValue + suffix;
         });
         fs.writeFileSync(file, newContents, enc);
+    }
+}
+
+function updateLkg() {
+    var lkg = fromRoot('bin');
+    jake.rmRf(lkg);
+    jake.mkdirP(lkg);
+
+    outputs.forEach(function (f) {
+        return jake.cpR(f, lkg);
+    });
+    copyIfThere('tstc/bin/Release', 'dotNet');
+    copyIfThere('setup/bin/Release', 'setup');
+
+    function copyIfThere(where, copyTo) {
+        var from = fromRoot('dotNet/' + where);
+
+        if (fs.existsSync(from)) {
+            var to = path.relative('.', path.resolve(lkg, copyTo));
+            var list = new jake.FileList();
+            list.include(["*.dll", "*.exe", "*.vsixmanifest", "*.msi"].map(function (f) {
+                return path.resolve(from, f);
+            }));
+            list.exclude(["*vshost*"].map(function (f) {
+                return path.resolve(from, f);
+            }));
+            list.toArray().forEach(function (f) {
+                return jake.cpR(path.relative('.', f), to);
+            });
+        } else {
+            console.warn("WARNING: " + from + " doesn't exist.");
+        }
     }
 }
