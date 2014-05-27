@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="*" Name="erecruit TypeScript Translator" Language="1033" Version="0.6.1" Manufacturer="erecruit" UpgradeCode="734a7972-17cf-4ba8-8af7-8f9d3fe3853c">
+	<Product Id="*" Name="erecruit TypeScript Translator" Language="1033" Version="0.6.5" Manufacturer="erecruit" UpgradeCode="734a7972-17cf-4ba8-8af7-8f9d3fe3853c">
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
@@ -9,6 +9,11 @@
 		<Feature Id="ProductFeature" Title="erecruit TypeScript Translator" Level="1">
 			<ComponentGroupRef Id="Components" />
 		</Feature>
+
+		<CustomAction Id='RescanVSExtensions' Directory='VSINSTALLDIR12' ExeCommand='[VSINSTALLDIR12]devenv.exe /setup' Return='asyncNoWait'/>
+		<InstallExecuteSequence>
+			<Custom Action='RescanVSExtensions' After='InstallFinalize' />
+		</InstallExecuteSequence>
 
 		<Property Id="VSINSTALLDIR12">
 			<RegistrySearch Id="VSInstallRegistry12" Root="HKLM" Key="SOFTWARE\Microsoft\VisualStudio\12.0" Name="InstallDir" Type="directory" />
@@ -47,7 +52,7 @@
 		</Directory>
 
 		<Component Id="Registry" Directory="INSTALLFOLDER">
-			<RegistryKey Root="HKLM" Key="Software\erecruit\TsT" Action="createAndRemoveOnUninstall">
+			<RegistryKey Root="HKLM" Key="Software\erecruit\TsT" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
 				<RegistryValue Type="string" Name="InstallDir" Value="[INSTALLFOLDER]"/>
 			</RegistryKey>
 		</Component>

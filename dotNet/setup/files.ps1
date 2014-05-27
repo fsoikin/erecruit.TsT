@@ -8,12 +8,12 @@ function Main {
 	if ( -not (test-path $tmpDir) ) { md $tmpDir }
 	del "$tmpDir\*" -Force
 
-	@( "tstc", "vs" ) | 
-		% { dir "$myDir\..\$_\bin\$Configuration\*" -Include *.dll,*.exe,*.vsixmanifest -Exclude *vshost* } |
+	@( "tstc\bin\$Configuration", "vs\bin\vsix" ) | 
+		% { dir "$myDir\..\$_\*" -Include *.dll,*.exe,*.vsixmanifest,*.pkgdef -Exclude *vshost* } |
 		copy -Destination $tmpDir -Force
 
-	$binFiles = files $tmpDir 'tstc'
-	$vsixFiles = files $tmpDir 'vs'
+	$binFiles = files $tmpDir "tstc\bin\$Configuration" 'c'
+	$vsixFiles = files $tmpDir "vs\bin\vsix" 'vs'
 
 	cat "$myDir\files.template" | 
 		%{ $_ -replace "<!-- BINFILES -->", $binFiles } | 
@@ -21,11 +21,11 @@ function Main {
 		Set-Content "$myDir\files.wxs"
 }
 
-function files( [string]$tmpDir, [string]$existsIn ) {
+function files( [string]$tmpDir, [string]$existsIn, [string] $idSuffix ) {
 	dir $tmpDir |
-	? { test-path "$myDir\..\$existsIn\bin\$Configuration\$($_.Name)" } |
+	? { test-path "$myDir\..\$existsIn\$($_.Name)" } |
 	%{ 
-		"<File Name=`"$($_.Name)`" Source=`"`$(var.ProjectDir)bin\tmp\$($_.Name)`" Id=`"$($_.Name -replace "[^A-Za-z0-9_\.]", "_")_$existsIn`" />`n`t`t`t" 
+		"<File Name=`"$($_.Name)`" Source=`"`$(var.ProjectDir)bin\tmp\$($_.Name)`" Id=`"$($_.Name -replace "[^A-Za-z0-9_\.]", "_")_$idSuffix`" />`n`t`t`t" 
 	};
 }
 

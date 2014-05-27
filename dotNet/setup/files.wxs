@@ -3,20 +3,20 @@
 	<Fragment>
 		<ComponentGroup Id="Files">
 			<Component Id="BinFiles" Directory="BinDir" Guid="{CFB051B6-D42C-41B6-97CC-5EF7AA5E5CC3}">
-				<File Name="ClearScript.dll" Source="$(var.ProjectDir)bin\tmp\ClearScript.dll" Id="ClearScript.dll_tstc" />
-			 <File Name="ClearScriptV8-32.dll" Source="$(var.ProjectDir)bin\tmp\ClearScriptV8-32.dll" Id="ClearScriptV8_32.dll_tstc" />
-			 <File Name="ClearScriptV8-64.dll" Source="$(var.ProjectDir)bin\tmp\ClearScriptV8-64.dll" Id="ClearScriptV8_64.dll_tstc" />
-			 <File Name="erecruit.TsT.Host.dll" Source="$(var.ProjectDir)bin\tmp\erecruit.TsT.Host.dll" Id="erecruit.TsT.Host.dll_tstc" />
-			 <File Name="NDesk.Options.dll" Source="$(var.ProjectDir)bin\tmp\NDesk.Options.dll" Id="NDesk.Options.dll_tstc" />
-			 <File Name="Newtonsoft.Json.dll" Source="$(var.ProjectDir)bin\tmp\Newtonsoft.Json.dll" Id="Newtonsoft.Json.dll_tstc" />
-			 <File Name="System.Interactive.dll" Source="$(var.ProjectDir)bin\tmp\System.Interactive.dll" Id="System.Interactive.dll_tstc" />
-			 <File Name="System.Reactive.Core.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Core.dll" Id="System.Reactive.Core.dll_tstc" />
-			 <File Name="System.Reactive.Interfaces.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Interfaces.dll" Id="System.Reactive.Interfaces.dll_tstc" />
-			 <File Name="System.Reactive.Linq.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Linq.dll" Id="System.Reactive.Linq.dll_tstc" />
-			 <File Name="System.Reactive.PlatformServices.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.PlatformServices.dll" Id="System.Reactive.PlatformServices.dll_tstc" />
-			 <File Name="tstc.exe" Source="$(var.ProjectDir)bin\tmp\tstc.exe" Id="tstc.exe_tstc" />
-			 <File Name="v8-ia32.dll" Source="$(var.ProjectDir)bin\tmp\v8-ia32.dll" Id="v8_ia32.dll_tstc" />
-			 <File Name="v8-x64.dll" Source="$(var.ProjectDir)bin\tmp\v8-x64.dll" Id="v8_x64.dll_tstc" />
+				<File Name="ClearScript.dll" Source="$(var.ProjectDir)bin\tmp\ClearScript.dll" Id="ClearScript.dll_c" />
+			 <File Name="ClearScriptV8-32.dll" Source="$(var.ProjectDir)bin\tmp\ClearScriptV8-32.dll" Id="ClearScriptV8_32.dll_c" />
+			 <File Name="ClearScriptV8-64.dll" Source="$(var.ProjectDir)bin\tmp\ClearScriptV8-64.dll" Id="ClearScriptV8_64.dll_c" />
+			 <File Name="erecruit.TsT.Host.dll" Source="$(var.ProjectDir)bin\tmp\erecruit.TsT.Host.dll" Id="erecruit.TsT.Host.dll_c" />
+			 <File Name="NDesk.Options.dll" Source="$(var.ProjectDir)bin\tmp\NDesk.Options.dll" Id="NDesk.Options.dll_c" />
+			 <File Name="Newtonsoft.Json.dll" Source="$(var.ProjectDir)bin\tmp\Newtonsoft.Json.dll" Id="Newtonsoft.Json.dll_c" />
+			 <File Name="System.Interactive.dll" Source="$(var.ProjectDir)bin\tmp\System.Interactive.dll" Id="System.Interactive.dll_c" />
+			 <File Name="System.Reactive.Core.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Core.dll" Id="System.Reactive.Core.dll_c" />
+			 <File Name="System.Reactive.Interfaces.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Interfaces.dll" Id="System.Reactive.Interfaces.dll_c" />
+			 <File Name="System.Reactive.Linq.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Linq.dll" Id="System.Reactive.Linq.dll_c" />
+			 <File Name="System.Reactive.PlatformServices.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.PlatformServices.dll" Id="System.Reactive.PlatformServices.dll_c" />
+			 <File Name="tstc.exe" Source="$(var.ProjectDir)bin\tmp\tstc.exe" Id="tstc.exe_c" />
+			 <File Name="v8-ia32.dll" Source="$(var.ProjectDir)bin\tmp\v8-ia32.dll" Id="v8_ia32.dll_c" />
+			 <File Name="v8-x64.dll" Source="$(var.ProjectDir)bin\tmp\v8-x64.dll" Id="v8_x64.dll_c" />
 			
 			</Component>
 			<Component Id="VsixFiles" Directory="VsixDir" Guid="{C3ED40FA-D200-4C0A-8004-ED041988EEC6}">
@@ -24,6 +24,7 @@
 			 <File Name="ClearScriptV8-32.dll" Source="$(var.ProjectDir)bin\tmp\ClearScriptV8-32.dll" Id="ClearScriptV8_32.dll_vs" />
 			 <File Name="ClearScriptV8-64.dll" Source="$(var.ProjectDir)bin\tmp\ClearScriptV8-64.dll" Id="ClearScriptV8_64.dll_vs" />
 			 <File Name="erecruit.TsT.Host.dll" Source="$(var.ProjectDir)bin\tmp\erecruit.TsT.Host.dll" Id="erecruit.TsT.Host.dll_vs" />
+			 <File Name="extension.vsixmanifest" Source="$(var.ProjectDir)bin\tmp\extension.vsixmanifest" Id="extension.vsixmanifest_vs" />
 			 <File Name="Newtonsoft.Json.dll" Source="$(var.ProjectDir)bin\tmp\Newtonsoft.Json.dll" Id="Newtonsoft.Json.dll_vs" />
 			 <File Name="System.Interactive.dll" Source="$(var.ProjectDir)bin\tmp\System.Interactive.dll" Id="System.Interactive.dll_vs" />
 			 <File Name="System.Reactive.Core.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Core.dll" Id="System.Reactive.Core.dll_vs" />
@@ -31,6 +32,7 @@
 			 <File Name="System.Reactive.Linq.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.Linq.dll" Id="System.Reactive.Linq.dll_vs" />
 			 <File Name="System.Reactive.PlatformServices.dll" Source="$(var.ProjectDir)bin\tmp\System.Reactive.PlatformServices.dll" Id="System.Reactive.PlatformServices.dll_vs" />
 			 <File Name="tst.VS.dll" Source="$(var.ProjectDir)bin\tmp\tst.VS.dll" Id="tst.VS.dll_vs" />
+			 <File Name="tst.VS.pkgdef" Source="$(var.ProjectDir)bin\tmp\tst.VS.pkgdef" Id="tst.VS.pkgdef_vs" />
 			 <File Name="v8-ia32.dll" Source="$(var.ProjectDir)bin\tmp\v8-ia32.dll" Id="v8_ia32.dll_vs" />
 			 <File Name="v8-x64.dll" Source="$(var.ProjectDir)bin\tmp\v8-x64.dll" Id="v8_x64.dll_vs" />
 			
