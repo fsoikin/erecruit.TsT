@@ -9,7 +9,7 @@ function Main {
 	del "$tmpDir\*" -Force
 
 	@( "tstc\bin\$Configuration", "vs\bin\vsix" ) | 
-		% { dir "$myDir\..\$_\*" -Include *.dll,*.exe,*.vsixmanifest,*.pkgdef -Exclude *vshost* } |
+		% { dir "$myDir\..\$_\*" -Include *.dll,*.exe,*.vsixmanifest,*.pkgdef -Exclude *vshost* -Recurse } |
 		copy -Destination $tmpDir -Force
 
 	$binFiles = files $tmpDir "tstc\bin\$Configuration" 'c'

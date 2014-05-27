@@ -7,6 +7,8 @@
 			</Component>
 			<Component Id="VsixFiles" Directory="VsixDir" Guid="{C3ED40FA-D200-4C0A-8004-ED041988EEC6}">
 				<!-- VSIXFILES -->
+				<File Name="erecruit.TsT.ico" Source="$(var.ProjectDir)..\vs\bin\vsix\Resources\erecruit.TsT.ico" Id="IconFile" />
+				<File Name="License.txt" Source="$(var.ProjectDir)..\vs\bin\vsix\License.txt" Id="LicenseFile" />
 			</Component>
 		</ComponentGroup>
 	</Fragment>

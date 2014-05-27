@@ -36,6 +36,8 @@
 			 <File Name="v8-ia32.dll" Source="$(var.ProjectDir)bin\tmp\v8-ia32.dll" Id="v8_ia32.dll_vs" />
 			 <File Name="v8-x64.dll" Source="$(var.ProjectDir)bin\tmp\v8-x64.dll" Id="v8_x64.dll_vs" />
 			
+				<File Name="erecruit.TsT.ico" Source="$(var.ProjectDir)..\vs\bin\vsix\Resources\erecruit.TsT.ico" Id="IconFile" />
+				<File Name="License.txt" Source="$(var.ProjectDir)..\vs\bin\vsix\License.txt" Id="LicenseFile" />
 			</Component>
 		</ComponentGroup>
 	</Fragment>
