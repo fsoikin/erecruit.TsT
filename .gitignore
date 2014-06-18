@@ -1,6 +1,5 @@
 /**/*.js
 /**/*.map
-!build/jakefile.js
 *.suo
 *.user
 *.dll
@@ -8,3 +7,7 @@
 obj
 node_modules
 /built
+
+!bin/*.js
+!build/jakefile.js
+!bin/dotNet/*.dll
