@@ -74405,11 +74405,11 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.6.6";
+        TsT.Version = "0.6.7";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
-﻿var fs = require('fs');
+var fs = require('fs');
 var path = require('path');
 var args = require("minimist")(process.argv.slice(2));
 
