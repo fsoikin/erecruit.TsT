@@ -1,7 +1,7 @@
 ﻿/// <amd-dependency path="ApiRoot" />
 /// <amd-dependency path="MvcRoot" />
-/// <reference path="../../tsd/jquery.d.ts"/>
-/// <reference path="../../tsd/knockout.d.ts"/>
+/// <reference path="../tsd/jquery.d.ts"/>
+/// <reference path="../tsd/knockout.d.ts"/>
 
 import ko = require( "ko" );
 import rx = require( "rx" );
