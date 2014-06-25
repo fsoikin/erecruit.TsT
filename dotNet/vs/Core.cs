@@ -142,30 +142,49 @@ namespace erecruit.vs
 		}
 
 		public static void SetTranslateFlag( ProjectItem item, bool flag ) {
-			IVsHierarchy hierarchy;
-			uint itemID;
-			IVsSolution solution = (IVsSolution)Package.GetGlobalService( typeof( SVsSolution ) );
-			solution.GetProjectOfUniqueName( item.ContainingProject.UniqueName, out hierarchy );
-			hierarchy.ParseCanonicalName( item.FileNames[0], out itemID );
-			(hierarchy as IVsBuildPropertyStorage).SetItemAttribute( itemID, TranslateFlagName, flag.ToString() );
+			var ctx = PrepareFlagOperation( item );
+			if ( ctx.PropertyStorage == null ) return;
+
+			ctx.PropertyStorage.SetItemAttribute( ctx.ItemID, TranslateFlagName, flag.ToString() );
 		}
 
 		public static bool GetTranslateFlag( ProjectItem item ) {
-			if ( item.FileCount == 0 ) return false;
+			var ctx = PrepareFlagOperation( item );
+			if ( ctx.PropertyStorage == null ) return false;
+
+			string result;
+			ctx.PropertyStorage.GetItemAttribute( ctx.ItemID, TranslateFlagName, out result );
+			return string.Equals( result, true.ToString(), StringComparison.InvariantCultureIgnoreCase );
+		}
+
+		static FlagContext PrepareFlagOperation( ProjectItem item ) {
+			if ( item.FileCount == 0 ) return new FlagContext();
+
+			var project = item.ContainingProject;
+			if ( project == null ) return new FlagContext();
 
 			string firstFile;
 			try { firstFile = item.FileNames[0]; }
-			catch ( ArgumentException ) { return false; }
+			catch ( ArgumentException ) { return new FlagContext(); }
+
+			var solution = Package.GetGlobalService( typeof( SVsSolution ) ) as IVsSolution;
+			if ( solution == null ) return new FlagContext();
 
 			IVsHierarchy hierarchy;
-			uint itemID;
-			string result;
-			IVsSolution solution = (IVsSolution)Package.GetGlobalService( typeof( SVsSolution ) );
-			solution.GetProjectOfUniqueName( item.ContainingProject.UniqueName, out hierarchy );
-			hierarchy.ParseCanonicalName( firstFile, out itemID );
-			(hierarchy as IVsBuildPropertyStorage).GetItemAttribute( itemID, TranslateFlagName, out result );
+			solution.GetProjectOfUniqueName( project.UniqueName, out hierarchy );
+			var propertyStorage = hierarchy as IVsBuildPropertyStorage;
+			if ( propertyStorage == null ) return new FlagContext();
 
-			return string.Equals( result, true.ToString(), StringComparison.InvariantCultureIgnoreCase );
+			uint itemID;
+			hierarchy.ParseCanonicalName( firstFile, out itemID );
+
+			return new FlagContext { PropertyStorage = propertyStorage, ItemID = itemID };
+		}
+
+		struct FlagContext
+		{
+			public IVsBuildPropertyStorage PropertyStorage;
+			public uint ItemID;
 		}
 
 		public static IEnumerable<ProjectItem> GetItems( ProjectItems items ) {
