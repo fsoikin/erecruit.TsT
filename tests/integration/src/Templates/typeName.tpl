@@ -3,6 +3,11 @@
 {<localTypeName}
 	{#. type=.}
 
+		{#.Directives.ServerSideType}
+			{.}
+			{#type.GenericInstantiation}{+genericArgs/}{/type.GenericInstantiation}
+		{:else}
+
 		{#.Enum}
 			{@select key="{.Name}"}
 				{@eq value="AboutType"}erecruit.BL.DataModel.AboutTypes{/eq}
@@ -25,7 +30,7 @@
 				{@select key="{.Name}"}
 					{@eq value="IHaveNameAndId"}erecruit.JS.NamedObject{/eq}
 					{@eq value="Range"}
-						erecruit.JS.Range
+						erecruit.Utils.Range
 						{#type.GenericInstantiation}{+genericArgs/}{/type.GenericInstantiation}
 					{/eq}
 					{@default}
@@ -39,7 +44,12 @@
 		{:else}
 		
 		{#.Array}
-			{+localTypeName/}[]
+			{@test str="{.PrimitiveType}" regex="3"} 
+				{! number !}
+				int[] 
+			{:else}
+				{+localTypeName/}[]
+			{/test}
 		{:else}
 
 		{@test str="{.PrimitiveType}" regex="3"} 
@@ -54,6 +64,7 @@
 		{/.GenericInstantiation}
 		{/.Interface}
 		{/.Enum}
+		{/.Directives.ServerSideType}
 
 	{/.}
 {/localTypeName}

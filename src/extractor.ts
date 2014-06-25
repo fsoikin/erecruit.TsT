@@ -77,7 +77,7 @@ module erecruit.TsT {
 
 			log( () => "GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types." );
 			debug( () => "GetDocument: classes: " + result.Classes.map( c => c.Name ).join() );
-			debug( () => "GetDocument: types: " + result.Types.map( t => typeName( t ) ).join() );
+			debug( () => "GetDocument: types: " + result.Types.map( t => objName( t ) ).join() );
 
 			return result;
 		}
@@ -109,9 +109,9 @@ module erecruit.TsT {
 				InternalModule: this.GetInternalModule( ctor.getDeclarations()[0] ),
 				ExternalModule: this.GetExternalModule( ctor.getDeclarations()[0] ),
 				Kind: ModuleElementKind.Class,
+				PrimaryInterface: this.GetType( ctorType ),
 				Implements: Enumerable
 					.from( this.GetBaseTypes( ctorType ) )
-					.concat( [this.GetType( ctorType )] )
 					.where( t => t && ( !!t.Interface || !!t.GenericInstantiation ) )
 					.distinct()
 					.toArray(),
@@ -188,7 +188,7 @@ module erecruit.TsT {
 			if ( type.name === "CSSStyleDeclaration" ) {
 				debug( () => (<any>new Error()).stack );
 			}
-			debug( () => "GetType: name = " + type.name + ", pullSymbolID=" + type.pullSymbolID + ", result = " + typeName( cached ) );
+			debug( () => "GetType: name = " + type.name + ", pullSymbolID=" + type.pullSymbolID + ", result = " + objName( cached ) );
 			return cached;
 		}
 

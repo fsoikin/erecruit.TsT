@@ -35,7 +35,7 @@ desc( "Build" ); task( 'default', outputs );
 desc( "Clean" ); task( 'clean', [], () => outputs.concat( lib ).forEach( f => fs.existsSync( f ) && fs.unlink( f ) ) );
 desc( "Clean, then build" ); task( 'rebuild', ['clean', 'default'] );
 desc( "Run tests" ); task( 'test', [testsModule, executableModule], runJasmine, { async: true } );
-desc( "Compile tstc" ); task( 'tstc', executableModule );
+desc( "Compile tstc" ); task( 'tstc', [executableModule] );
 desc( "Compile NodeJS module" ); task( 'node', [nodeModule, nodeModuleTypings] );
 desc( "Compile free module" ); task( 'free', [freeModule, freeModuleTypings] );
 

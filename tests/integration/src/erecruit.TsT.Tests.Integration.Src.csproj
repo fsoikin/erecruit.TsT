@@ -49,25 +49,27 @@
     <TypeScriptCompile Include="Base\keys.ts" />
     <TypeScriptCompile Include="Base\seq.ts" />
     <TypeScriptCompile Include="Base\userSettings.ts" />
+    <TypeScriptCompile Include="ExportedClass.ts" />
     <TypeScriptCompile Include="common.ts" />
     <TypeScriptCompile Include="tsd\erecruitjs.ascx.d.ts" />
     <TypeScriptCompile Include="tsd\jquery.d.ts" />
     <TypeScriptCompile Include="tsd\jqueryui.d.ts" />
     <TypeScriptCompile Include="tsd\kendo.d.ts" />
-    <TypeScriptCompile Include="tsd\knockout-2.2.d.ts" />
-    <TypeScriptCompile Include="tsd\knockout.mapping-2.0.d.ts" />
+    <TypeScriptCompile Include="tsd\knockout.d.ts" />
+    <TypeScriptCompile Include="tsd\knockout.mapping.d.ts" />
     <TypeScriptCompile Include="tsd\linq.amd.d.ts" />
     <TypeScriptCompile Include="tsd\linq.d.ts" />
     <TypeScriptCompile Include="tsd\moment.d.ts" />
     <TypeScriptCompile Include="tsd\polyfill.d.ts" />
     <TypeScriptCompile Include="tsd\require.d.ts" />
-    <TypeScriptCompile Include="tsd\rx.amd.d.ts" />
+    <TypeScriptCompile Include="tsd\rx.d.ts" />
     <TypeScriptCompile Include="tsd\rx.dom.d.ts" />
     <TypeScriptCompile Include="tsd\signalr.d.ts" />
     <TypeScriptCompile Include="tsd\tipped.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".tstconfig" />
+    <None Include="Templates\classRef.cs.tpl" />
     <None Include="Templates\genericParams.tpl" />
     <None Include="Templates\interface.cs.tpl" />
     <None Include="Templates\namespace.tpl" />

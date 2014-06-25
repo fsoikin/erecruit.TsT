@@ -49,7 +49,9 @@ module erecruit.TsT {
 		return Rx.Observable
 			.fromArray( files )
 			.selectMany(
-				f => formatTemplate( f, e.GetDocument( f ).Types, getFileConfig( config, f ), Config.toDustContext( config ), typeName ),
+				f =>
+					formatTemplate( f, e.GetDocument( f ).Types, getFileConfigTypes( config, f ), Config.toDustContext( config ), objName ).concat(
+					formatTemplate( f, e.GetDocument( f ).Classes, getFileConfigClasses( config, f ), Config.toDustContext( config ), objName ) ),
 				(f, x) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )
 			.doAction( x => log( () => "Finished generation: " + x.outputFile ) )
 			.groupBy( x => x.outputFile, x => x )
@@ -67,6 +69,9 @@ module erecruit.TsT {
 
 		function formatTemplate<TObject>( sourceFileName: string, objects: TObject[], config: CachedConfigPart[], baseCtx: dust.Context, objectName: ( o: TObject ) => string )
 			: Rx.IObservable<{ outputFileName: string; content: string }> {
+
+			log( () => "formatTemplate: Objects: " + JSON.stringify( objects.map( x=> (<any>x).Name ) ) );
+			log( () => "formatTemplate: Config: " + JSON.stringify( config ) );
 
 			return Rx.Observable
 				.fromArray( config )

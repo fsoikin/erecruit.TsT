@@ -23,7 +23,7 @@ module erecruit.TsT.Tests.Extr {
 			files = {};
 			e = new Extractor( <CachedConfig>{
 				Original: { RootDir: '.', ConfigDir: '.' },
-				File: [{ match: null, types: null }],
+				File: [{ Match: null, Types: null, Classes: null }],
 				Host: {
 					DirectoryExists: _ => false,
 					FetchFile: name =>

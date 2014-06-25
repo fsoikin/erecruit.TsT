@@ -30,6 +30,7 @@ module erecruit.TsT {
 
 	export interface Class extends ModuleElement {
 		Name: string;
+		PrimaryInterface: Type;
 		Implements: Type[];
 		GenericParameters?: Type[];
 		Constructors: CallSignature[];

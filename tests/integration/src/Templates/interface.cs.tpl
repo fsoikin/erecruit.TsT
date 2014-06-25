@@ -1,6 +1,7 @@
+// interface {~n}
 {^.Directives.skip}
 
-{>"./templates/namespace.tpl"/}
+{>"./Templates/namespace.tpl"/}
 { {~n}
 
 	{#Interface}
@@ -19,7 +20,7 @@
 {~n}
 } {~n}
 
-{<typeName}{>"./templates/typeName.tpl"/}{/typeName}
-{<genericParams}{>"./templates/genericParams.tpl"/}{/genericParams}
+{<typeName}{>"./Templates/typeName.tpl"/}{/typeName}
+{<genericParams}{>"./Templates/genericParams.tpl"/}{/genericParams}
 
 {/.Directives.skip}

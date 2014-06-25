@@ -1,7 +1,7 @@
 {?.GenericParameters}
 	<
 		{#.GenericParameters}
-			{>"./templates/typeName.tpl"/}
+			{>"./Templates/typeName.tpl"/}
 			{@sep},{/sep}
 		{/.GenericParameters}
 	>

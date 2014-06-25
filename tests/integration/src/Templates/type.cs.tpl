@@ -1,3 +1,4 @@
+// type {~n}
 {! 
 	This is a Dust template.
 	For more information about Dust and its usage see https://github.com/linkedin/dustjs/wiki/Dust-Tutorial
@@ -5,73 +6,56 @@
 !}
 {^.Directives.skip}
 
-{>"./templates/namespace.tpl"/}
+{>"./Templates/namespace.tpl"/}
 { {~n} 
-	{@whenType}
-		{?.Directives.Attributes}{@indent/}{.Directives.Attributes|s}{~n}{/.Directives.Attributes}
-		{#Interface}{?Properties}
+	{?.Directives.Attributes}{@indent/}{.Directives.Attributes|s}{~n}{/.Directives.Attributes}
+	{#Interface}{?Properties}
 			
-			{+comment/}
-			{@indent/}
+		{+comment/}
+		{@indent/}
 
-			public class {Name}{+genericParams/}{~s}
-				{?Extends}
-					: {~s}
-					{#Extends}
-						{+typeName/}
-						{@sep},{/sep}
-					{/Extends}
-				{/Extends}
-			 { {~n}
-				
-				{#Properties}{^.Directives.skip}
-					{@indent count=2/}
-					{.Directives.Attributes|s}
-					{+defaultValueHandling/}
-					public 
-						{#.Directives.type}
-							{.}
-						{:else}
-							{#Type}{+typeName/}{/Type}{?.Directives.Nullable}?{/.Directives.Nullable} 
-						{/.Directives.type}
-						{~s} {Name} 
-						{ get; set; } 
-					{~n}
-				{/.Directives.skip}{/Properties}
-
-				{@indent/}
-			}
-
-		{/Properties}{/Interface}
-
-		{#Enum}
-			{@indent/}
-			public enum {Name} { {~n}
-				{#Values}
-					{@indent count=2/}
-					{Name}={Value}
+		public class {Name}{+genericParams/}{~s}
+			{?Extends}
+				: {~s}
+				{#Extends}
+					{+typeName/}
 					{@sep},{/sep}
-					{~n}
-				{/Values} 
-				{@indent/}
-			}
-		{/Enum}
-	{/whenType}
+				{/Extends}
+			{/Extends}
+			{ {~n}
+				
+			{#Properties}{^.Directives.skip}
+				{@indent count=2/}
+				{.Directives.Attributes|s}
+				{+defaultValueHandling/}
+				public 
+					{#.Directives.type}
+						{.|s}
+					{:else}
+						{#Type}{+typeName/}{/Type}{?.Directives.Nullable}?{/.Directives.Nullable} 
+					{/.Directives.type}
+					{~s} {Name} 
+					{ get; set; } 
+				{~n}
+			{/.Directives.skip}{/Properties}
 
-	{@whenClass}
-		{@indent/}
-		public partial class {@fs_fileNameWithoutExtension path="Module.Path"/}{+genericParams/} { {~n}
-			{#Constructors}
-				{@indent count="2"/}
-				public static string {Name}(
-					{#Parameters}
-						{#Type}{+typeName/}{/Type} {Name}{@sep},{/sep}
-					{/Parameters}
-				) = "{Name}, {@fs_relativePath path="{Module.Path}"/}";{~n}
-			{/Constructors}
-		{@indent/}
+			{@indent/}
 		}
-	{/whenClass}
+
+	{/Properties}{/Interface}
+
+	{#Enum}
+		{@indent/}
+		public enum {Name} { {~n}
+			{#Values}
+				{@indent count=2/}
+				{Name}={Value}
+				{@sep},{/sep}
+				{~n}
+			{/Values} 
+			{@indent/}
+		}
+	{/Enum}
 
 {~n}
 } {~n}
@@ -86,8 +70,8 @@
 	<{#.Arguments}{+typeName/}{@sep},{/sep}{/.Arguments}>
 {/genericArgs}
 
-{<typeName}{>"./templates/typeName.tpl"/}{/typeName}
-{<genericParams}{>"./templates/genericParams.tpl"/}{/genericParams}
+{<typeName}{>"./Templates/typeName.tpl"/}{/typeName}
+{<genericParams}{>"./Templates/genericParams.tpl"/}{/genericParams}
 
 {<defaultValueHandling}
 	{#.Directives.DefaultValueHandling}

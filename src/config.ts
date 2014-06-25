@@ -8,7 +8,7 @@ module erecruit.TsT {
 	}
 
 	export interface FileConfig {
-		Class?: ConfigPart;
+		Classes?: ConfigPart;
 		Types?: ConfigPart;
 	}
 
@@ -25,20 +25,31 @@ module erecruit.TsT {
 		template: dust.SimpleRenderFn;
 	}
 
+	export interface CachedFileConfig {
+		Match: ( fileName: string ) => boolean;
+		Types: CachedConfigPart[];
+		Classes: CachedConfigPart[];
+	}
+
 	export interface CachedConfig {
 		Original: Config;
 		Host: ITsTHost;
-		File: {
-			match: ( fileName: string ) => boolean;
-			types: CachedConfigPart[];
-		}[];
+		File: CachedFileConfig[];
 	}
 
-	export function getFileConfig( config: CachedConfig, fileName: string ) {
+	export function getFileConfigTypes( config: CachedConfig, fileName: string ) {
+		return getFileConfig( config, fileName, b => b.Types );
+	}
+
+	export function getFileConfigClasses( config: CachedConfig, fileName: string ) {
+		return getFileConfig( config, fileName, b => b.Classes );
+	}
+
+	function getFileConfig( config: CachedConfig, fileName: string, getParts: (c: CachedFileConfig) => CachedConfigPart[] ) {
 		return Enumerable
 			.from( config.File )
-			.where( c => c.match( fileName ) )
-			.aggregate( <CachedConfigPart[]>[], ( a, b ) => ( a || [] ).concat( b.types || [] ) );
+			.where( c => c.Match( fileName ) )
+			.aggregate( <CachedConfigPart[]>[], ( a, b ) => ( a || [] ).concat( getParts( b ) || [] ) );
 	}
 
 	export function cacheConfig( host: ITsTHost, config: Config ): CachedConfig {
@@ -52,8 +63,9 @@ module erecruit.TsT {
 				.select( x => {
 					var regex = new RegExp( x.key );
 					return {
-						match: ( fileName: string ) => { var res = regex.test( fileName ); regex.test( '' ); return res; },
-						types: (x.value && cacheConfigPart( config, host, x.value.Types )) || []
+						Match: ( fileName: string ) => { var res = regex.test( fileName ); regex.test( '' ); return res; },
+						Types: (x.value && cacheConfigPart( config, host, x.value.Types )) || [],
+						Classes: ( x.value && cacheConfigPart( config, host, x.value.Classes ) ) || []
 					};
 				})
 				.toArray()

@@ -43,7 +43,7 @@ task('rebuild', ['clean', 'default']);
 desc("Run tests");
 task('test', [testsModule, executableModule], runJasmine, { async: true });
 desc("Compile tstc");
-task('tstc', executableModule);
+task('tstc', [executableModule]);
 desc("Compile NodeJS module");
 task('node', [nodeModule, nodeModuleTypings]);
 desc("Compile free module");

@@ -1,5 +1,6 @@
 ﻿import c = require( "../common" );
 import api = require( "./api" );
+import ctr = require( "../Controls/Base" );
 import ko = require( "ko" );
 import rx = require( "rx" );
 

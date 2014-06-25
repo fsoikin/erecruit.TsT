@@ -3,7 +3,7 @@
 // Definitions by: Boris Yankov <https://github.com/borisyankov/>
 // Definitions https://github.com/borisyankov/DefinitelyTyped
 
-/// <reference path="./knockout-2.2.d.ts" />
+/// <reference path="./knockout.d.ts" />
 
 declare module "ko.mapping" {
 	var _: KoMappingStatic;

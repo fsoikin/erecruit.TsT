@@ -6,8 +6,10 @@ import linq = require("linq");
 	 This is a late-binding reference that can be materialized into a JavaScript object.
 	 "Module" is the AMD module ID, "Class" is the name of a function from that module that will be used as object constructor,
 	 and "Arguments" are optional parameters for that function.
+
+	 @ServerSideType erecruit.JS.IClassRef
 **/
-export interface ClassRef {
+export interface ClassRef<T> {
 	// TODO: [fs] currently this definition assumes that the module ID
 	// should be an "absolute" one (i.e. not starting with a dot or two).
 	// For my current purposes (instantiating search filters), this is
@@ -19,7 +21,8 @@ export interface ClassRef {
 	Arguments?: any;
 }
 
-export function parse( classRef: string, args?: any ): ClassRef {
+export function parse<T>( classRef: string, args?: any ): ClassRef<T>;
+export function parse( classRef: string, args?: any ): ClassRef<any> {
 	var parts = ( classRef || "" ).split( ',' );
 	if( parts.length == 1 ) parts = ["", parts[0]];
 	if( parts.length != 2 ) { console.warn( "Invalid autobind controller specification: " + classRef ); return null; }
@@ -32,15 +35,15 @@ export function parse( classRef: string, args?: any ): ClassRef {
 	return { Module: parts[1].trim(), Class: parts[0].trim(), Arguments: args };
 }
 
-export function bind<T>( ref: ClassRef ) {
-	return <Ko.Observable<T>>(bindMany( [ref] )[0]);
+export function bind<T>( ref: ClassRef<T> ) {
+	return bindMany( [ref] )[0];
 }
 
-export function bindMany(refs: linqjs.IEnumerable<ClassRef>): Ko.Observable<any>[];
-export function bindMany(refs: ClassRef[]): Ko.Observable<any>[];
+export function bindMany<T>(refs: linqjs.IEnumerable<ClassRef<T>>): Ko.Observable<T>[];
+export function bindMany<T>(refs: ClassRef<T>[]): Ko.Observable<T>[];
 export function bindMany( _refs: any): Ko.Observable<any>[]{
 	if (!_refs) return [];
-	var refs = linq.from(<ClassRef[]>_refs);
+	var refs = linq.from(<ClassRef<any>[]>_refs);
 	return refs.select( cr => {
 		var r = ko.observable(null);
 		if ( cr && cr.Module ) req( linq.make( cr.Module ), m => {
@@ -53,11 +56,11 @@ export function bindMany( _refs: any): Ko.Observable<any>[]{
 	.toArray();
 }
 
-export function bindAll(refs: ClassRef[]): Ko.Observable<any[]>;
-export function bindAll(refs: linqjs.IEnumerable<ClassRef>): Ko.Observable<any[]>;
+export function bindAll<T>( refs: ClassRef<T>[]): Ko.Observable<T[]>;
+export function bindAll<T>( refs: linqjs.IEnumerable<ClassRef<T>>): Ko.Observable<T[]>;
 export function bindAll( _refs: any ): Ko.Observable<any[]> {
 	if (!_refs) return ko.observableArray<any>();
-	var refs = linq.from(<ClassRef[]>_refs);
+	var refs = linq.from( <ClassRef<any>[]>_refs);
 
 	var result = ko.observableArray<any>();
 	req(refs.select(r => r.Module), function () {
@@ -66,7 +69,7 @@ export function bindAll( _refs: any ): Ko.Observable<any[]> {
 	return result;
 }
 
-function instantiate( mod, ref: ClassRef ) {
+function instantiate( mod, ref: ClassRef<any> ) {
 	var ctor = ref.Class ? getClass(mod, ref.Class) : mod;
 
 	// TODO: [fs] this probably shouldn't throw, but should return the error up the chain so that the caller can handle it

@@ -2,18 +2,18 @@
 
 module erecruit.TsT.Tests.Integration {
 
-	// I'll be part of "/bin/tests/testSpec.js" at runtime, so "." maps to "/bin/tests"
+	// I'll be part of "/built/tests/testSpec.js" at runtime, so "." maps to "/built/tests"
 	var srcPath = path.dirname( require.resolve( "../../tests/integration/src/common.ts" ) );
 	var workingDir = path.resolve( srcPath, ".." );
-	var expectedResults = ["common.cs"];
+	var expectedResults = ["common.cs", "ExportedClass.cs"];
 	
 	describe( "tstc", () => {
-		it( "should successfully compile the test input set", (done: Function) => {
+		fit( "should successfully compile the test input set", (done: Function) => {
 
 			expectedResults.filter( fs.existsSync ).map( fs.unlinkSync );
 
 			require( 'child_process' ).exec(
-				['node', require.resolve( "../tstc.js" ), "-c", "src/.tstconfig", "src/common.ts"].join( ' ' ),
+				['node', require.resolve( "../tstc.js" ), "-c", "src/.tstconfig", "src/common.ts src/ExportedClass.ts"].join( ' ' ),
 				{ cwd: workingDir, stdio: ['ignore', 'ignore', 'pipe'] },
 				( err: any, stdout: string, stderr: string ) => {
 					expect( stderr ).toBeFalsy();

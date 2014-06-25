@@ -1,26 +1,25 @@
-﻿/// <reference path="tsd/require.d.ts"/>
-/// <reference path="tsd/polyfill.d.ts"/>
-/// <reference path="tsd/jquery.d.ts"/>
-/// <reference path="tsd/jqueryui.d.ts"/>
-/// <reference path="tsd/kendo.d.ts" />
-/// <reference path="../../../lib/rx/rx.d.ts" />
-/// <reference path="tsd/rx.dom.d.ts" />
-/// <reference path="tsd/rx.amd.d.ts" />
-/// <reference path="tsd/linq.d.ts"/>
-/// <reference path="tsd/linq.amd.d.ts"/>
-/// <reference path="tsd/knockout-2.2.d.ts"/>
-/// <reference path="tsd/knockout.mapping-2.0.d.ts"/>
-/// <reference path="tsd/moment.d.ts" />
+﻿/// <reference path="./tsd/require.d.ts"/>
+/// <reference path="./tsd/polyfill.d.ts"/>
+/// <reference path="./tsd/jquery.d.ts"/>
+/// <reference path="./tsd/jqueryui.d.ts"/>
+/// <reference path="./tsd/kendo.d.ts" />
+/// <reference path="./tsd/rx.d.ts" />
+/// <reference path="./tsd/rx.dom.d.ts" />
+/// <reference path="./tsd/linq.d.ts"/>
+/// <reference path="./tsd/linq.amd.d.ts"/>
+/// <reference path="./tsd/knockout.d.ts"/>
+/// <reference path="./tsd/knockout.mapping.d.ts"/>
+/// <reference path="./tsd/moment.d.ts" />
 
 import rx = require( "rx" );
 import ko = require( "ko" );
-import map = require( "ko.mapping" );
-import moment = require( 'moment' );
-export import Api = require( "./Base/api" );
-export import Seq = require( "./Base/seq" );
-export import Keys = require( "./Base/keys" );
-export import Dynamic = require( "./Base/dynamic" );
-export import UserSettings = require( "./Base/userSettings" );
+import moment = require( "moment" );
+import linq = require( "linq" );
+export import Api = require( "./Base/api" ); ( () => Api )(); // https://typescript.codeplex.com/workitem/2504
+export import Seq = require( "./Base/seq" ); ( () => Seq )();
+export import Keys = require( "./Base/keys" ); ( () => Keys )();
+export import Dynamic = require( "./Base/dynamic" ); ( () => Dynamic )();
+export import UserSettings = require( "./Base/userSettings" ); ( () => UserSettings )();
 
 /**
  * Represents system-wide ID of an AboutObject - i.e. combines AboutType
@@ -593,4 +592,18 @@ export class DateTime {
 	toString( ignoreTime?: boolean ) {
 		return this.Date ? ( ignoreTime ? this.Date.toLocaleDateString() : this.Date.toLocaleString() ) : "";
 	}
+}
+
+export function updateObservableArray<TVm, TModel, TKey>( vms: Ko.ObservableArray<TVm>, incoming: TModel[],
+	vmKey: ( vm: TVm ) => TKey, modelKey: ( m: TModel ) => TKey,
+	updateVm: ( model: TModel, vm: TVm ) => void, createVm: ( model: TModel ) => TVm ) {
+
+	// Update matching elements
+	linq.from( incoming ).join( vms(), modelKey, vmKey, updateVm ).lastOrDefault();
+
+	// Add newly arrived elements
+	linq.from( incoming ).groupJoin( vms(), modelKey, vmKey, ( m, xs ) => { if ( !xs.any() ) vms.push( createVm( m ) ); }).lastOrDefault();
+
+	// Remove disappeared elements
+	linq.from( vms() ).groupJoin( incoming, vmKey, modelKey, ( vm, ms ) => { if ( !ms.any() ) vms.remove( vm ); }).lastOrDefault();
 }

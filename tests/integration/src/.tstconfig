@@ -17,5 +17,12 @@
 			FileName: "{Path}{Name}.cs",
 			Template: "@./Templates/interface.cs.tpl"
 		}
+	},
+
+	Classes: {
+		'.': {
+			FileName: "{Path}{Name}.cs",
+			Template: "@./Templates/classRef.cs.tpl"
+		}
 	}
 }

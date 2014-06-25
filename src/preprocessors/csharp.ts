@@ -39,7 +39,7 @@ module erecruit.TsT.CSharp {
 		if ( type.Array ) return typeName( config, type.Array(), includeNamespace ) + "[]";
 		if ( type.PrimitiveType ) return primitiveTypeMap[type.PrimitiveType] || "object";
 
-		var n = TsT.typeName( type );
+		var n = TsT.objName( type );
 		if ( !n ) return "object";
 		if ( type.GenericParameter ) return n;
 

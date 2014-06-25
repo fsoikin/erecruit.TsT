@@ -11,7 +11,7 @@ module erecruit.TsT {
 		return a;
 	}
 
-	export function typeName( e: ModuleElement, safe: boolean = true ) {
+	export function objName( e: ModuleElement, safe: boolean = true ) {
 		if ( !e ) return undefined;
 
 		function name( x: { Name: string } ) {
@@ -26,7 +26,7 @@ module erecruit.TsT {
 			|| ( t.GenericParameter && name( t.GenericParameter() ) )
 			|| ( t.Interface && name( t.Interface() ) )
 			|| ( t.PrimitiveType && PrimitiveType[t.PrimitiveType] )
-			|| ( t.GenericInstantiation && typeName( t.GenericInstantiation().Definition, safe ) );
+			|| ( t.GenericInstantiation && objName( t.GenericInstantiation().Definition, safe ) );
 	}
 
 	export function log( msg: () => string ) {

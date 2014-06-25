@@ -21,7 +21,7 @@ module erecruit.TsT {
 
 	dust.helpers['typeName'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { path: string }) => {
 		var type: Type = ctx.current();
-		if ( type ) return chunk.write( erecruit.TsT.typeName( type ) );
+		if ( type ) return chunk.write( erecruit.TsT.objName( type ) );
 		else return chunk;
 	};
 
@@ -52,7 +52,7 @@ module erecruit.TsT {
 		if ( !path || !config ) return chunk;
 
 		var dir = config.Host.GetParentDirectory( path );
-		var name = path.substring( dir.length + 1 );
+		var name = path.substring( dir == '.' ? 0 : dir.length + 1 );
 		var nameParts = name.split( '.' );
 		return chunk.write( nameParts.slice( 0, nameParts.length - 1 ).join( '.' ) );
 	};
