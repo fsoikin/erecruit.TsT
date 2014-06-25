@@ -73458,14 +73458,27 @@ var TypeScript;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        function getFileConfig(config, fileName) {
-            return Enumerable.from(config.File).where(function (c) {
-                return c.match(fileName);
-            }).aggregate([], function (a, b) {
-                return (a || []).concat(b.types || []);
+        function getFileConfigTypes(config, fileName) {
+            return getFileConfig(config, fileName, function (b) {
+                return b.Types;
             });
         }
-        TsT.getFileConfig = getFileConfig;
+        TsT.getFileConfigTypes = getFileConfigTypes;
+
+        function getFileConfigClasses(config, fileName) {
+            return getFileConfig(config, fileName, function (b) {
+                return b.Classes;
+            });
+        }
+        TsT.getFileConfigClasses = getFileConfigClasses;
+
+        function getFileConfig(config, fileName, getParts) {
+            return Enumerable.from(config.File).where(function (c) {
+                return c.Match(fileName);
+            }).aggregate([], function (a, b) {
+                return (a || []).concat(getParts(b) || []);
+            });
+        }
 
         function cacheConfig(host, config) {
             return {
@@ -73476,12 +73489,13 @@ var erecruit;
                 }).select(function (x) {
                     var regex = new RegExp(x.key);
                     return {
-                        match: function (fileName) {
+                        Match: function (fileName) {
                             var res = regex.test(fileName);
                             regex.test('');
                             return res;
                         },
-                        types: (x.value && cacheConfigPart(config, host, x.value.Types)) || []
+                        Types: (x.value && cacheConfigPart(config, host, x.value.Types)) || [],
+                        Classes: (x.value && cacheConfigPart(config, host, x.value.Classes)) || []
                     };
                 }).toArray()
             };
@@ -73548,7 +73562,7 @@ var erecruit;
         dust.helpers['typeName'] = function (chunk, ctx, bodies, params) {
             var type = ctx.current();
             if (type)
-                return chunk.write(erecruit.TsT.typeName(type));
+                return chunk.write(erecruit.TsT.objName(type));
             else
                 return chunk;
         };
@@ -73583,7 +73597,7 @@ var erecruit;
                 return chunk;
 
             var dir = config.Host.GetParentDirectory(path);
-            var name = path.substring(dir.length + 1);
+            var name = path.substring(dir == '.' ? 0 : dir.length + 1);
             var nameParts = name.split('.');
             return chunk.write(nameParts.slice(0, nameParts.length - 1).join('.'));
         };
@@ -73617,7 +73631,7 @@ var erecruit;
         }
         TsT.ensureArray = ensureArray;
 
-        function typeName(e, safe) {
+        function objName(e, safe) {
             if (typeof safe === "undefined") { safe = true; }
             if (!e)
                 return undefined;
@@ -73631,9 +73645,9 @@ var erecruit;
             }
 
             var t = e, c = e;
-            return c.Kind === 0 /* Class */ ? c.Name : (t.Enum && name(t.Enum())) || (t.GenericParameter && name(t.GenericParameter())) || (t.Interface && name(t.Interface())) || (t.PrimitiveType && TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && typeName(t.GenericInstantiation().Definition, safe));
+            return c.Kind === 0 /* Class */ ? c.Name : (t.Enum && name(t.Enum())) || (t.GenericParameter && name(t.GenericParameter())) || (t.Interface && name(t.Interface())) || (t.PrimitiveType && TsT.PrimitiveType[t.PrimitiveType]) || (t.GenericInstantiation && objName(t.GenericInstantiation().Definition, safe));
         }
-        TsT.typeName = typeName;
+        TsT.objName = objName;
 
         function log(msg) {
             console.log && console.log(msg());
@@ -73786,7 +73800,7 @@ var erecruit;
                 });
                 TsT.debug(function () {
                     return "GetDocument: types: " + result.Types.map(function (t) {
-                        return TsT.typeName(t);
+                        return TsT.objName(t);
                     }).join();
                 });
 
@@ -73820,7 +73834,8 @@ var erecruit;
                     InternalModule: this.GetInternalModule(ctor.getDeclarations()[0]),
                     ExternalModule: this.GetExternalModule(ctor.getDeclarations()[0]),
                     Kind: 0 /* Class */,
-                    Implements: Enumerable.from(this.GetBaseTypes(ctorType)).concat([this.GetType(ctorType)]).where(function (t) {
+                    PrimaryInterface: this.GetType(ctorType),
+                    Implements: Enumerable.from(this.GetBaseTypes(ctorType)).where(function (t) {
                         return t && (!!t.Interface || !!t.GenericInstantiation);
                     }).distinct().toArray(),
                     GenericParameters: ctor.isType() ? ctorType.getTypeParameters().map(function (x) {
@@ -73921,7 +73936,7 @@ var erecruit;
                     });
                 }
                 TsT.debug(function () {
-                    return "GetType: name = " + type.name + ", pullSymbolID=" + type.pullSymbolID + ", result = " + TsT.typeName(cached);
+                    return "GetType: name = " + type.name + ", pullSymbolID=" + type.pullSymbolID + ", result = " + TsT.objName(cached);
                 });
                 return cached;
             };
@@ -74221,7 +74236,7 @@ var erecruit;
             e.LoadDocuments(files);
 
             return Rx.Observable.fromArray(files).selectMany(function (f) {
-                return formatTemplate(f, e.GetDocument(f).Types, TsT.getFileConfig(config, f), Config.toDustContext(config), TsT.typeName);
+                return formatTemplate(f, e.GetDocument(f).Types, TsT.getFileConfigTypes(config, f), Config.toDustContext(config), TsT.objName).concat(formatTemplate(f, e.GetDocument(f).Classes, TsT.getFileConfigClasses(config, f), Config.toDustContext(config), TsT.objName));
             }, function (f, x) {
                 return ({ outputFile: x.outputFileName, content: x.content, inputFile: f });
             }).doAction(function (x) {
@@ -74247,6 +74262,15 @@ var erecruit;
             });
 
             function formatTemplate(sourceFileName, objects, config, baseCtx, objectName) {
+                TsT.log(function () {
+                    return "formatTemplate: Objects: " + JSON.stringify(objects.map(function (x) {
+                        return x.Name;
+                    }));
+                });
+                TsT.log(function () {
+                    return "formatTemplate: Config: " + JSON.stringify(config);
+                });
+
                 return Rx.Observable.fromArray(config).select(function (cfg) {
                     return !cfg.template || !cfg.fileName ? null : Enumerable.from(objects).where(function (obj) {
                         return cfg.match(objectName(obj));
@@ -74346,7 +74370,7 @@ var erecruit;
                 if (type.PrimitiveType)
                     return primitiveTypeMap[type.PrimitiveType] || "object";
 
-                var n = TsT.typeName(type);
+                var n = TsT.objName(type);
                 if (!n)
                     return "object";
                 if (type.GenericParameter)

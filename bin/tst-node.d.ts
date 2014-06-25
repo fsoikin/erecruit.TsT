@@ -34,6 +34,7 @@ declare module "tst" {
     }
     interface Class extends ModuleElement {
         Name: string;
+        PrimaryInterface: Type;
         Implements: Type[];
         GenericParameters?: Type[];
         Constructors: CallSignature[];
@@ -95,7 +96,7 @@ declare module "tst" {
         };
     }
     interface FileConfig {
-        Class?: ConfigPart;
+        Classes?: ConfigPart;
         Types?: ConfigPart;
     }
     interface Config extends FileConfig {
@@ -111,20 +112,23 @@ declare module "tst" {
         fileName: dust.SimpleRenderFn;
         template: dust.SimpleRenderFn;
     }
+    interface CachedFileConfig {
+        Match: (fileName: string) => boolean;
+        Types: CachedConfigPart[];
+        Classes: CachedConfigPart[];
+    }
     interface CachedConfig {
         Original: Config;
         Host: ITsTHost;
-        File: {
-            match: (fileName: string) => boolean;
-            types: CachedConfigPart[];
-        }[];
+        File: CachedFileConfig[];
     }
-    function getFileConfig(config: CachedConfig, fileName: string): CachedConfigPart[];
+    function getFileConfigTypes(config: CachedConfig, fileName: string): CachedConfigPart[];
+    function getFileConfigClasses(config: CachedConfig, fileName: string): CachedConfigPart[];
     function cacheConfig(host: ITsTHost, config: Config): CachedConfig;
 
 
     function ensureArray<T>(a: T[]): T[];
-    function typeName(e: ModuleElement, safe?: boolean): any;
+    function objName(e: ModuleElement, safe?: boolean): any;
     function log(msg: () => string): void;
     function debug(msg: () => string): void;
 
