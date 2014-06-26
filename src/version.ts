@@ -1,3 +1,3 @@
 module erecruit.TsT {
-	export var Version = /*version_goes_here=>*/"0.6.10";
+	export var Version = /*version_goes_here=>*/"0.6.12";
 }

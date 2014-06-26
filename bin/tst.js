@@ -73613,6 +73613,16 @@ var erecruit;
 
             return chunk.write(config.Host.MakeRelativePath(from, to));
         };
+
+        dust.helpers['fs_dirName'] = function (chunk, ctx, bodies, params) {
+            var path = dust.helpers.tap(params.path, chunk, ctx);
+            var config = erecruit.TsT.Config.fromDustContext(ctx);
+            if (!path || !config)
+                return chunk;
+
+            var dir = config.Host.GetParentDirectory(path);
+            return chunk.write(dir === '.' ? '' : dir);
+        };
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
@@ -74414,7 +74424,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.6.10";
+        TsT.Version = "0.6.12";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));

@@ -66,7 +66,7 @@ module erecruit.TsT.Tests.Extr {
 				] );
 			});
 
-			fit( " should not put base class in the list of interfaces", () => {
+			it( " should not put base class in the list of interfaces", () => {
 				file = "export class A {} \
 								export interface I {}\
 								export class B extends A implements I {}";

@@ -43,7 +43,7 @@ namespace erecruit.TsT.Tests
 
 		public class MockHost : JS.ITsTHost
 		{
-			readonly Host _inner = new Host( "." );
+			readonly erecruit.TsT.Host _inner = new erecruit.TsT.Host( "." );
 
 			public string FetchFile( string fileName ) {
 				if ( fileName == _fileName ) return "export interface I {} export interface J {}";

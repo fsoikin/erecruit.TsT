@@ -13,7 +13,7 @@ namespace erecruit.TsT
 			to = Path.GetFullPath( to );
 
 			if ( from == to ) return "";
-			var fromUri = new Uri( from + "/x" );
+			var fromUri = new Uri( from + "/" );
 			var toUri = new Uri( to );
 			return fromUri.Scheme != toUri.Scheme ? to : Uri.UnescapeDataString( fromUri.MakeRelativeUri( toUri ).ToString() );
 		}

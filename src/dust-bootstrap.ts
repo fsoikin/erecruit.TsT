@@ -66,4 +66,13 @@ module erecruit.TsT {
 
 		return chunk.write( config.Host.MakeRelativePath( from, to ) );
 	};
+
+	dust.helpers['fs_dirName'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { path: string }) => {
+		var path = dust.helpers.tap( params.path, chunk, ctx );
+		var config = erecruit.TsT.Config.fromDustContext( ctx );
+		if ( !path || !config ) return chunk;
+
+		var dir = config.Host.GetParentDirectory( path );
+		return chunk.write( dir === '.' ? '' : dir );
+	};
 }
