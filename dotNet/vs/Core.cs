@@ -6,6 +6,7 @@ using System.Reactive.Linq;
 using System.Windows.Forms;
 using EnvDTE;
 using EnvDTE80;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -43,9 +44,27 @@ namespace erecruit.vs
 
 			 from _ in IncludeInProjectIfNotThere( item, Path.GetFullPath( Path.Combine( solutionDir, g.OutputFile ) ) )
 			 select g
-			).Subscribe( 
-				f => dte.StatusBar.Text = "Generated " + f.OutputFile, 
-				ex => dte.StatusBar.Text = ex.Message );
+			)
+			.Select( f => "Generated " + f.OutputFile )
+			.Catch( ( Exception ex ) => Observable.Return( ex.Message ) )
+			.Subscribe( msg => {
+				dte.StatusBar.Text = msg;
+				WriteToOutputWindow( msg );
+			} );
+
+		}
+
+		static void WriteToOutputWindow( string msg ) {
+			var output = Package.GetGlobalService( typeof( SVsOutputWindow ) ) as IVsOutputWindow;
+			if ( output == null ) return;
+
+			var paneID = VSConstants.OutputWindowPaneGuid.GeneralPane_guid;
+			output.CreatePane( ref paneID, "General", 1, 0 );
+
+			IVsOutputWindowPane pane;
+			if ( ErrorHandler.Failed( output.GetPane( ref paneID, out pane ) ) || pane == null ) return;
+
+			pane.OutputString( string.Format( "{0:HH:mm:ss}: erecruit.TsT: {1}{2}", DateTime.Now, msg, Environment.NewLine ) );
 		}
 
 		static HashSet<string> _askedAboutImports = new HashSet<string>();
