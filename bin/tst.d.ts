@@ -35,8 +35,8 @@ declare module erecruit.TsT {
     interface Class extends ModuleElement {
         Name: string;
         PrimaryInterface: Type;
+        BaseClass: () => Class;
         Implements: Type[];
-        Extends: Type[];
         GenericParameters?: Type[];
         Constructors: CallSignature[];
     }
@@ -159,7 +159,7 @@ declare module erecruit.TsT {
         private GetCallSignature(s);
         private GetPrimitiveType(type);
         private GetImplemented(type, includeExtended?);
-        private GetBaseClasses(type);
+        private GetBaseClass(type);
         private GetInterface(type);
         private GetEnum(type);
         private GetDocumentForDecl(d);
