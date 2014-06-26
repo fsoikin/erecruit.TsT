@@ -10,13 +10,33 @@ module erecruit.TsT.Tests.Helpers {
 		});
 
 		group( "dirName", () => {
-			fit( " should return parent path for a regular input", (cb) => {
+			it( " should return parent path for a regular input", (cb) => {
 				var cfg = Config.toDustContext( {
 					File: null, Original: null,
 					Host: <any>{ GetParentDirectory: ( path: string ) => "parent: " + path }
 				});
 
 				assertRender( "{@fs_dirName path=\"x/y/z\" /}", cfg, "parent: x/y/z", cb );
+			});
+		});
+
+		group( "fileNameWithoutExtension", () => {
+			it( " should return the whole file name when GetParentDirectory returns a dot", ( cb ) => {
+				var cfg = Config.toDustContext( {
+					File: null, Original: null,
+					Host: <any>{ GetParentDirectory: ( path: string ) => "." }
+				});
+
+				assertRender( "{@fs_fileNameWithoutExtension path=\"file.ext\" /}", cfg, "file", cb );
+			});
+
+			it( " should return the whole file name when GetParentDirectory returns empty string", ( cb ) => {
+				var cfg = Config.toDustContext( {
+					File: null, Original: null,
+					Host: <any>{ GetParentDirectory: ( path: string ) => "" }
+				});
+
+				assertRender( "{@fs_fileNameWithoutExtension path=\"file.ext\" /}", cfg, "file", cb );
 			});
 		});
 	});

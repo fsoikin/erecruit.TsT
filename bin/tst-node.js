@@ -73597,7 +73597,7 @@ var erecruit;
                 return chunk;
 
             var dir = config.Host.GetParentDirectory(path);
-            var name = path.substring(dir == '.' ? 0 : dir.length + 1);
+            var name = path.substring((dir == '.' || !dir) ? 0 : dir.length + 1);
             var nameParts = name.split('.');
             return chunk.write(nameParts.slice(0, nameParts.length - 1).join('.'));
         };
@@ -74424,7 +74424,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.6.12";
+        TsT.Version = "0.6.13";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));

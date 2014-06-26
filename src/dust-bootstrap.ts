@@ -52,7 +52,7 @@ module erecruit.TsT {
 		if ( !path || !config ) return chunk;
 
 		var dir = config.Host.GetParentDirectory( path );
-		var name = path.substring( dir == '.' ? 0 : dir.length + 1 );
+		var name = path.substring( (dir == '.' || !dir) ? 0 : dir.length + 1 );
 		var nameParts = name.split( '.' );
 		return chunk.write( nameParts.slice( 0, nameParts.length - 1 ).join( '.' ) );
 	};
