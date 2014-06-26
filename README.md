@@ -337,4 +337,4 @@ Returns the parent directory of the given file.
 
 |Parameters:| |
 |----|----|
-| **path** | file path path |
+| **path** | file path |
