@@ -73554,7 +73554,8 @@ var erecruit;
         dust.helpers['test'] = function (chunk, ctx, bodies, params) {
             var str = dust.helpers.tap(params.str, chunk, ctx);
             var regex = dust.helpers.tap(params.regex, chunk, ctx);
-            if (!str || !regex || !new RegExp(regex).test(str))
+            var flags = dust.helpers.tap(params.flags, chunk, ctx);
+            if (!str || !regex || !new RegExp(regex, flags).test(str))
                 return bodies['else'] ? chunk.render(bodies['else'], ctx) : chunk;
             return chunk.render(bodies.block, ctx);
         };
@@ -74424,7 +74425,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.6.15";
+        TsT.Version = "0.6.16";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));

@@ -12,10 +12,11 @@ module erecruit.TsT {
 		return chunk.write( str.replace( new RegExp( regex, flags ), replacement || "" ) );
 	};
 
-	dust.helpers['test'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { str: string; regex: string }) => {
+	dust.helpers['test'] = ( chunk: dust.Chunk, ctx: dust.Context, bodies: any, params: { str: string; regex: string; flags: string; }) => {
 		var str = dust.helpers.tap( params.str, chunk, ctx );
 		var regex = dust.helpers.tap( params.regex, chunk, ctx );
-		if ( !str || !regex || !new RegExp( regex ).test( str ) ) return bodies['else'] ? chunk.render( bodies['else'], ctx ) : chunk;
+		var flags = dust.helpers.tap( params.flags, chunk, ctx );
+		if ( !str || !regex || !new RegExp( regex, flags ).test( str ) ) return bodies['else'] ? chunk.render( bodies['else'], ctx ) : chunk;
 		return chunk.render( bodies.block, ctx );
 	};
 

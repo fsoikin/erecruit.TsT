@@ -226,6 +226,12 @@ For specification of regular expression language and flags, [see MDN](https://de
 ###test
 Executes the inside block when the given string matches given regex, otherwise executes the `:else` block.
 
+|Parameters:| |
+|----|----|
+| **str** | input string|
+| **regex** | regular expression to test against|
+| **flags** | regular expression flags|
+
 ```
    {@test str="{Name}" regex="^I"}
       interface
