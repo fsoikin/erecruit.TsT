@@ -36,6 +36,7 @@ declare module "tst" {
         Name: string;
         PrimaryInterface: Type;
         Implements: Type[];
+        Extends: Type[];
         GenericParameters?: Type[];
         Constructors: CallSignature[];
     }
@@ -153,7 +154,8 @@ declare module "tst" {
         private GetGenericInstantiation(type);
         private GetCallSignature(s);
         private GetPrimitiveType(type);
-        private GetBaseTypes(type);
+        private GetImplemented(type, includeExtended?);
+        private GetBaseClasses(type);
         private GetInterface(type);
         private GetEnum(type);
         private GetDocumentForDecl(d);

@@ -73835,9 +73835,8 @@ var erecruit;
                     ExternalModule: this.GetExternalModule(ctor.getDeclarations()[0]),
                     Kind: 0 /* Class */,
                     PrimaryInterface: this.GetType(ctorType),
-                    Implements: Enumerable.from(this.GetBaseTypes(ctorType)).where(function (t) {
-                        return t && (!!t.Interface || !!t.GenericInstantiation);
-                    }).distinct().toArray(),
+                    Extends: Enumerable.from(this.GetBaseClasses(ctorType)).distinct().toArray(),
+                    Implements: Enumerable.from(this.GetImplemented(ctorType)).distinct().toArray(),
                     GenericParameters: ctor.isType() ? ctorType.getTypeParameters().map(function (x) {
                         return _this.GetType(x);
                     }) : null,
@@ -73979,12 +73978,20 @@ var erecruit;
                 return type.name === "string" ? 1 /* String */ : type.name === "boolean" ? 2 /* Boolean */ : type.name === "number" ? 3 /* Number */ : 0 /* Any */;
             };
 
-            Extractor.prototype.GetBaseTypes = function (type) {
+            Extractor.prototype.GetImplemented = function (type, includeExtended) {
                 var _this = this;
-                return Enumerable.from(type.getExtendedTypes()).concat(type.getImplementedTypes()).select(function (x) {
+                if (typeof includeExtended === "undefined") { includeExtended = false; }
+                return Enumerable.from(type.getImplementedTypes()).concat(includeExtended ? type.getExtendedTypes() : null).select(function (x) {
                     return _this.GetType(x);
                 }).where(function (t) {
                     return !!t.Interface || !!t.GenericInstantiation;
+                }).toArray();
+            };
+
+            Extractor.prototype.GetBaseClasses = function (type) {
+                var _this = this;
+                return Enumerable.from(type.getExtendedTypes()).select(function (x) {
+                    return _this.GetClass(x);
                 }).toArray();
             };
 
@@ -73992,7 +73999,7 @@ var erecruit;
                 var _this = this;
                 return {
                     Name: type.name,
-                    Extends: this.GetBaseTypes(type),
+                    Extends: this.GetImplemented(type, true),
                     GenericParameters: Enumerable.from(type.getTypeParameters()).select(function (t) {
                         return _this.GetType(t);
                     }).toArray(),
@@ -74405,7 +74412,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.6.8";
+        TsT.Version = "0.6.9";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
