@@ -331,3 +331,10 @@ Given two paths, "from" and "to", renders a relative path which would lead from 
 |----|----|
 | **from** | starting path |
 | **to** | destination path |
+
+###fs_dirName
+Returns the parent directory of the given file.
+
+|Parameters:| |
+|----|----|
+| **path** | file path |
