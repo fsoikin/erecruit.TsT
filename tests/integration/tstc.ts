@@ -8,7 +8,7 @@ module erecruit.TsT.Tests.Integration {
 	var expectedResults = ["common.cs", "ExportedClass.cs"];
 	
 	describe( "tstc", () => {
-		fit( "should successfully compile the test input set", (done: Function) => {
+		it( "should successfully compile the test input set", (done: Function) => {
 
 			expectedResults.filter( fs.existsSync ).map( fs.unlinkSync );
 

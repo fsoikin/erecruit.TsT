@@ -21,7 +21,8 @@
 					{@sep},{/sep}
 				{/Parameters}
 			) { 
-				return ClassRef.Create<{class.Name}>( "app/{@fs_fileNameWithoutExtension path="{class.Document.Path}" /}", "{class.Name}", {#Parameters} {Name} {@sep},{/sep} {/Parameters} );
+				return ClassRef.Create<{class.Name}>( "app/{@fs_fileNameWithoutExtension path="{class.Document.Path}" /}", "{class.Name}"
+					{#Parameters} , {Name} {/Parameters} );
 			}
 		{/Constructors}
 	}

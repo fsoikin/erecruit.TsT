@@ -32,6 +32,7 @@ module erecruit.TsT {
 		Name: string;
 		PrimaryInterface: Type;
 		Implements: Type[];
+		Extends: Type[];
 		GenericParameters?: Type[];
 		Constructors: CallSignature[];
 	}

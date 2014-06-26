@@ -5,7 +5,7 @@ module erecruit.TsT.Tests.Extr {
 			it( " - simple", () => {
 				file = "export class C { }";
 				var m = e.GetDocument( fileName );
-				expect( trimAndUnwrapAllClasses( m.Classes ) ).toEqual( [c( { Name: 'C', Implements: [{ Interface: c( { Name: 'C' })}] })] );
+				expect( trimAndUnwrapAllClasses( m.Classes ) ).toEqual( [c( { Name: 'C', PrimaryInterface: { Interface: c( { Name: 'C' })} })] );
 				expect( trimAndUnwrapAll( m.Types ) ).toEqual( [{ Interface: c({ Name: 'C' }) }] );
 			});
 

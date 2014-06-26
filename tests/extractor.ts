@@ -70,9 +70,10 @@ module erecruit.TsT.Tests.Extr {
 	export function trimAndUnwrapClass( cls: Class, trimComments: boolean = true ): Class {
 		if ( !cls || !( <any>cls ).hasOwnProperty( 'Document' ) ) return cls;
 		trimElement( cls, trimComments );
-		trimAndUnwrapAll( cls.GenericParameters );
-		trimAndUnwrapAll( cls.Implements );
-		trimAndUnwrapAll( cls.GenericParameters );
+		cls.PrimaryInterface = trimAndUnwrap( cls.PrimaryInterface, trimComments );
+		trimAndUnwrapAll( cls.Implements, trimComments );
+		trimAndUnwrapAll( cls.Extends, trimComments );
+		trimAndUnwrapAll( cls.GenericParameters, trimComments );
 		( cls.Constructors || [] ).forEach( s => trimAndUnwrapSignature( s, trimComments ) );
 		return cls;
 	}
