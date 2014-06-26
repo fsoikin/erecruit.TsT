@@ -66,6 +66,21 @@ module erecruit.TsT.Tests.Extr {
 				] );
 			});
 
+			fit( " should not put base class in the list of interfaces", () => {
+				file = "export class A {} \
+								export interface I {}\
+								export class B extends A implements I {}";
+				expect( trimAndUnwrapAllClasses( e.GetDocument( fileName ).Classes ) ).toEqual( [
+					c( { Name: 'A', PrimaryInterface: c({ Interface: c({ Name: 'A' }) }) }),
+					c( {
+						Name: 'B',
+						PrimaryInterface: c({ Interface: c({ Name: 'B' }) }),
+						BaseClass: c( { Name: 'A' }),
+						Implements: [c( { Interface: c( { Name: 'I' }) })]
+					})
+				] );
+			});
+
 			it( " with multiple constructor overloads", () => {
 				file = "export class C { \
 					constructor( x: number, y: string ) {} \

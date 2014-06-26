@@ -31,8 +31,8 @@ module erecruit.TsT {
 	export interface Class extends ModuleElement {
 		Name: string;
 		PrimaryInterface: Type;
+		BaseClass: () => Class;
 		Implements: Type[];
-		Extends: Type[];
 		GenericParameters?: Type[];
 		Constructors: CallSignature[];
 	}

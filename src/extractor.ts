@@ -110,8 +110,8 @@ module erecruit.TsT {
 				ExternalModule: this.GetExternalModule( ctor.getDeclarations()[0] ),
 				Kind: ModuleElementKind.Class,
 				PrimaryInterface: this.GetType( ctorType ),
-				Extends: Enumerable.from( this.GetBaseClasses( ctorType ) ).distinct().toArray(),
-				Implements: Enumerable.from( this.GetImplemented( ctorType ) ).distinct().toArray(),
+				BaseClass: () => this.GetBaseClass( ctorType ),
+				Implements: Enumerable.from( this.GetImplemented( ctorType, /* includeExtended */ false ) ).distinct().toArray(),
 				GenericParameters: ctor.isType() ? ctorType.getTypeParameters().map( x => this.GetType( x ) ) : null,
 				Constructors: sigs.select( x => this.GetCallSignature( x ) ).toArray()
 			};
@@ -223,7 +223,7 @@ module erecruit.TsT {
 				: PrimitiveType.Any;
 		}
 
-		private GetImplemented( type: ts.PullTypeSymbol, includeExtended: boolean = false ) {
+		private GetImplemented( type: ts.PullTypeSymbol, includeExtended: boolean = true ) {
 			return Enumerable
 				.from( type.getImplementedTypes() )
 				.concat( includeExtended ? type.getExtendedTypes() : null )
@@ -232,17 +232,17 @@ module erecruit.TsT {
 				.toArray();
 		}
 
-		private GetBaseClasses( type: ts.PullTypeSymbol ) {
+		private GetBaseClass( type: ts.PullTypeSymbol ) {
 			return Enumerable
 				.from( type.getExtendedTypes() )
 				.select( x => this.GetClass( x ) )
-				.toArray();
+				.firstOrDefault();
 		}
 
 		private GetInterface( type: ts.PullTypeSymbol ) {
 			return {
 				Name: type.name,
-				Extends: this.GetImplemented( type, /* includeExtended */ true ),
+				Extends: this.GetImplemented( type ),
 				GenericParameters: Enumerable.from( type.getTypeParameters() ).select( t => this.GetType( t ) ).toArray(),
 				Properties: type.getMembers()
 					.filter( m => m.isProperty() && m.isExternallyVisible() )
