@@ -58,8 +58,8 @@ namespace erecruit.vs
 			var output = Package.GetGlobalService( typeof( SVsOutputWindow ) ) as IVsOutputWindow;
 			if ( output == null ) return;
 
-			var paneID = VSConstants.OutputWindowPaneGuid.GeneralPane_guid;
-			output.CreatePane( ref paneID, "General", 1, 0 );
+			var paneID = VSConstants.OutputWindowPaneGuid.BuildOutputPane_guid;
+			output.CreatePane( ref paneID, "Build", 1, 0 );
 
 			IVsOutputWindowPane pane;
 			if ( ErrorHandler.Failed( output.GetPane( ref paneID, out pane ) ) || pane == null ) return;
