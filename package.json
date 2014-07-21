@@ -1,6 +1,6 @@
 {
 	"name": "erecruit-tst",
-	"version": "0.6.18",
+	"version": "0.6.22",
 	"description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
 	"main": "./bin/tst-node.js",
 	"bin": { "tstc": "./bin/tstc.js" },
@@ -26,7 +26,7 @@
 		"minimist": "0.0.8"
 	},
 	"devDependencies": {
-		"typescript": "0.9.x",
+		"typescript": "1.0.x",
 		"jake": "0.7.x",
 		"jasmine-focused": "1.0.x"
 	}
