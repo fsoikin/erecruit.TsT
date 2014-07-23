@@ -284,6 +284,7 @@ Replaces a substring with another using regular expression.
 This is different from Nunjucks' own [replace](http://mozilla.github.io/nunjucks/templating.html#builtin-filters) filter, because the latter works with plain strings, not regular expressions.
 
 Parameters:
+* **[input]** input string 
 * regular expression to test against
 * replacement string. Can include regular JavaScript named and numbered references like $1, $2, $myGroup, etc.
 * regular expression flags (optional)
@@ -298,6 +299,7 @@ For specification of regular expression language and flags, [see MDN](https://de
 Checks if the input matches given regular expression.
 
 Parameters:
+* **[input]** input string
 * regular expression to test against
 * regular expression flags (optional)
 
@@ -314,7 +316,7 @@ Parameters:
 Renders the name of a given type.<br/>
 
 Parameters:
-* the type
+* **[input]** the type
 
 ```
 	 // Rendering type {{ this | typeName }}, defined in {{ Module.Path }}
@@ -326,7 +328,7 @@ Parameters:
 Return true if the given object is a type or a class respectively.
 
 Parameters:
-* the object to examine
+* **[input]** the object to examine
 
 ```
 
@@ -346,7 +348,7 @@ Parameters:
 Generates the local name of the type (not including namespace). Takes care of the primitive types, mapping them correctly to the .NET analogs.
 
 Parameters:
-* the type
+* **[input]** the type
 
 
 ```
@@ -360,7 +362,7 @@ Parameters:
 Generates full name of the type (same as previous, but including namespace when necessary).
 
 Parameters:
-* the type
+* **[input]** the type
 
 ```
 	 {% for p in Properties %}
@@ -373,7 +375,7 @@ Parameters:
 Generates namespace of the type from the path of the file. File name itself is not included in the namespace. For example, namespace for all types in *js/src/xyz.ts* will be *js.src*.
 
 Parameters:
-* the type
+* **[input]** the type
 
 ```
 		namespace MyApp.{{ this | cs_typeNamespace }} {
@@ -389,7 +391,7 @@ Parameters:
 Given a path, returns the name of the file without extension.
 
 Parameters:
-* the path out of which to parse the file name.
+* **[input]** the path out of which to parse the file name.
 
 ```
 	 // This type was defined in the module {{ Module.Path | getFileNameWithoutExtension }}
@@ -400,7 +402,8 @@ Parameters:
 Returns relative path from the input to the argument.
 
 Parameters:
-* starting path (i.e. the 'source' path)
+* **[input]** destination path
+* source path
 
 ```
  {{ "work/abc" | pathRelativeTo("work") }} {# renders "abc" #}
@@ -411,6 +414,9 @@ Parameters:
 
 ###dirName
 Returns the parent directory of the given file.
+
+Parameters:
+* **[input]** path
 
 ```
 	{{ "work/x/y/z.ts" | dirName }} {# renders "work/x/y" #}
