@@ -1,3 +1,6 @@
+<font color='red'>*NOTE: a breaking change:* in version 0.7.0, the templating engine has been switched from dust.js to Nunjucks.</font>
+
+
 TsT
 ===
 
