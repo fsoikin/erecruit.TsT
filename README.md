@@ -241,11 +241,12 @@ For example:
 
 ##Whitespace control
 Nunjucks has a nice little [feature for whitespace control](http://mozilla.github.io/nunjucks/templating.html#whitespace-control), where one can add a dash to a block's opening/closing brace
-to have Nunjucks remove all whitespace on that side of the block. For example, the following template will yield "abc123", even though there some whitespace around "1", "2", and "3" in the template itself:
+to have Nunjucks remove all whitespace on that side of the block. For example, the following template will yield "abc123", even though there is some whitespace around "1", "2", and "3" in the template itself:
 
 ```
 	{{ "abc" }}
 	{%- for x in range(1,3) -%}
+		{{ x }}
 	{%- endfor -%}
 ```
 
