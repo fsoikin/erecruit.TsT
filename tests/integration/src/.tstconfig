@@ -4,25 +4,25 @@
 {
 	Types: {
 		'^(?!VmBase)(?!AboutType)(?!AboutObjectId)(?!Range)(?!DateTime)[^I].+(?!Vm)..$': {
-			FileName: "{Path}{Name}.cs",
-			Template: "@./Templates/type.cs.tpl"
+			FileName: "{{Path}}{{Name}}.cs",
+			Template: "@./TsT-Templates/type.cs.tpl"
 		},
 
 		'.': {
-			FileName: "{Path}{Name}.cs",
-			Template: "@./Templates/userSettingsMarshal.tpl"
+			FileName: "{{Path}}{{Name}}.cs",
+			Template: "@./TsT-Templates/userSettingsMarshal.tpl"
 		},
 
 		"(?!IHaveName|IHaveId)^I.+(?!Vm)..$": {
-			FileName: "{Path}{Name}.cs",
-			Template: "@./Templates/interface.cs.tpl"
+			FileName: "{{Path}}{{Name}}.cs",
+			Template: "@./TsT-Templates/interface.cs.tpl"
 		}
 	},
 
 	Classes: {
 		'.': {
-			FileName: "{Path}{Name}.cs",
-			Template: "@./Templates/classRef.cs.tpl"
+			FileName: "{{Path}}{{Name}}.cs",
+			Template: "@./TsT-Templates/classRef.cs.tpl"
 		}
 	}
 }

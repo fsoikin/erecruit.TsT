@@ -1,5 +1,5 @@
+/// <reference path="../lib/nunjucks/nunjucks.d.ts" />
 /// <reference path="../lib/linq/linq.d.ts" />
-/// <reference path="../lib/dust/dust.d.ts" />
 /// <reference path="../lib/typescript/typescript.d.ts" />
 /// <reference path="../lib/rx/rx.d.ts" />
 declare module "tst" {
@@ -110,8 +110,8 @@ declare module "tst" {
     }
     interface CachedConfigPart {
         match: (name: string) => boolean;
-        fileName: dust.SimpleRenderFn;
-        template: dust.SimpleRenderFn;
+        fileName: Nunjucks.ITemplate;
+        template: Nunjucks.ITemplate;
     }
     interface CachedFileConfig {
         Match: (fileName: string) => boolean;
@@ -122,14 +122,15 @@ declare module "tst" {
         Original: Config;
         Host: ITsTHost;
         File: CachedFileConfig[];
+        NunjucksEnv: Nunjucks.IEnvironment;
     }
     function getFileConfigTypes(config: CachedConfig, fileName: string): CachedConfigPart[];
     function getFileConfigClasses(config: CachedConfig, fileName: string): CachedConfigPart[];
     function cacheConfig(host: ITsTHost, config: Config): CachedConfig;
 
-
     function ensureArray<T>(a: T[]): T[];
     function objName(e: ModuleElement, safe?: boolean): any;
+    function merge(...hashes: any[]): any;
     function log(msg: () => string): void;
     function debug(msg: () => string): void;
 
@@ -172,17 +173,24 @@ declare module "tst" {
         private realPath(pathRelativeToRoot);
     }
 
-    module Config {
-        function fromDustContext(context: dust.Context): CachedConfig;
-        function toDustContext(config: CachedConfig): dust.Context;
+    function markupFilters(config: CachedConfig): {
+        [key: string]: Function;
+    };
+    class DummyTagExtension implements Nunjucks.IExtension {
+        public tags: string[];
+        public parse(parser: Nunjucks.Parser.IParser, nodes: Nunjucks.Parser.Nodes, lexer: Nunjucks.Parser.ILexer): Nunjucks.Parser.INode;
     }
+
+    function markupFilters(config: CachedConfig): {
+        [key: string]: Function;
+    };
+
     interface FileContent {
         OutputFile: string;
         Content: string;
         SourceFiles: string[];
     }
-    function Emit(cfg: Config, files: string[], host: ITsTHost): Rx.IObservable<FileContent>;
-
+    function Emit(cfg: Config, files: string[], host: ITsTHost): FileContent[];
 
     var Version: string;
 }

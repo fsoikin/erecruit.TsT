@@ -1,51 +1,32 @@
-{! 
-	This is a Dust template.
-	For more information about Dust and its usage see https://github.com/linkedin/dustjs/wiki/Dust-Tutorial
-	For more information about TsT-specific helpers see https://github.com/erecruit/TsT
-!}
+{# 
+	This is a Nunjucks template.
+	For more information about Nunjucks and its usage, see http://mozilla.github.io/nunjucks/templating.html
+	For more information about TsT-specific filters, see https://github.com/erecruit/TsT
+#}
 
-namespace erecruit.JS{@cs_whenEmptyNamespace}{:else}.{/cs_whenEmptyNamespace}{@cs_typeNamespace/} { {~n}
+{%- set ns = (this|cs_typeNamespace) -%}
+{%- set intf = Interface() if Interface -%}
+{%- set enum = Enum() if Enum -%}
 
-	{@whenType}
-		{#Interface}{?Properties}
-			{@indent/}
-			public class {Name}{>genericParams/} { {~n}
-				{#Properties}
-					{@indent count=2/}
-					public {#Type}{@cs_typeFullName/}{/Type} {Name} { get; set; } {~n}
-				{/Properties}
-				{@indent/}
-			}
-		{/Properties}{/Interface}
+{# Import path is relative to the config->RootDir (see .tstconfig file) #}
+{%- from "csharp/genericParams.tpl" import genericParams -%}
 
-		{#Enum}
-			{@indent/}
-			public enum {Name} { {~n}
-				{#Values}
-					{@indent count=2/}
-					{Name}={Value}
-					{@sep},{/sep}
-					{~n}
-				{/Values} 
-				{@indent/}
-			}
-		{/Enum}
-	{/whenType}
-
-	{@whenClass}
-		{@indent/}
-		public partial class {@fs_fileNameWithoutExtension path="Module.Path"/}{>genericParams/} { {~n}
-			{#Constructors}
-				{@indent count="2"/}
-				public static string {Name}(
-					{#Parameters}
-						{#Type}{@cs_typeFullName/}{/Type} {Name}{@sep},{/sep}
-					{/Parameters}
-				) = "{Name}, {@fs_relativePath path="{Module.Path}"/}";{~n}
-			{/Constructors}
-		{@indent/}
+namespace erecruit.JS{{ "." if ns }}{{ ns }} {
+	{%- if intf and (intf.Properties|nonempty) %}
+		public class {{ intf.Name }}{{ genericParams(intf.GenericParameters) }} {
+				
+			{%- for prop in intf.Properties %}
+				public {{ prop.Type | cs_typeFullName }} {{prop.Name}} { get; set; }
+			{%- endfor %}
 		}
-	{/whenClass}
+	{%- endif %}
 
-{~n}
-} {~n}
+	{%- if enum and (enum.Values|nonempty) %}
+		public enum {{enum.Name}} {
+			{%- for v in enum.Values %}
+				{{v.Name}} = {{v.Value}}{{ "," if not loop.last }}
+			{%- endfor %} 
+		}
+	{%- endif %}
+
+}

@@ -184,7 +184,7 @@
     <None Include="erecruit.TsT.targets" />
     <None Include="packages.config" />
     <Content Include="Resources\.tstconfig" />
-    <Content Include="Resources\type.cs.tpl" />
+    <Content Include="Resources\TsT-Templates\type.cs.tpl" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>

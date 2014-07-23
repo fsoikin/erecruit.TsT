@@ -5,5 +5,5 @@ export class BaseClass implements I { }
 export class TheClass extends BaseClass {
 	constructor( x: number );
 	constructor( y: string );
-	constructor( y: any ) { }
+	constructor( y: any ) { super(); }
 }

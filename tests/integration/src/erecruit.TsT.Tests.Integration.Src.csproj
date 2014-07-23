@@ -69,13 +69,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".tstconfig" />
-    <None Include="Templates\classRef.cs.tpl" />
-    <None Include="Templates\genericParams.tpl" />
-    <None Include="Templates\interface.cs.tpl" />
-    <None Include="Templates\namespace.tpl" />
-    <None Include="Templates\type.cs.tpl" />
-    <None Include="Templates\typeName.tpl" />
-    <None Include="Templates\userSettingsMarshal.tpl" />
+    <None Include="TsT-Templates\classRef.cs.tpl" />
+    <None Include="TsT-Templates\interface.cs.tpl" />
+    <None Include="TsT-Templates\propertyDeclaration.tpl" />
+    <None Include="TsT-Templates\type.cs.tpl" />
+    <None Include="TsT-Templates\userSettingsMarshal.tpl" />
+    <None Include="TsT-Templates\utils.tpl" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

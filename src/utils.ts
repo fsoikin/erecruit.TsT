@@ -29,6 +29,20 @@ module erecruit.TsT {
 			|| ( t.GenericInstantiation && objName( t.GenericInstantiation().Definition, safe ) );
 	}
 
+	export function merge( ...hashes: any[] ) {
+		var destination = hashes[0] || {};
+		for ( var i = 1; i < hashes.length; i++ ) {
+			var source = hashes[i];
+			for ( var property in source ) {
+				if ( source.hasOwnProperty( property ) ) {
+					destination[property] = source[property];
+				}
+			}
+		}
+
+		return destination;
+	};
+
 	export function log( msg: () => string ) {
 		console.log && console.log( msg() );
 	}

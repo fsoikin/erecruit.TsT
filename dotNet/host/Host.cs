@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace erecruit.TsT
 {
-    public class Host : JS.ITsTHost
-    {
+		public class Host : JS.ITsTHost
+		{
 			private readonly string _originPath;
 			private readonly Action<string> _log;
 

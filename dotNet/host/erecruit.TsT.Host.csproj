@@ -68,6 +68,7 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="JS\config.cs" />
+    <Compile Include="JS\interfaces.cs" />
     <Compile Include="ScriptEngine.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -79,7 +80,6 @@
     <Compile Include="TsT.cs" />
     <Compile Include="Host.cs" />
     <Compile Include="JS\emitter.cs" />
-    <Compile Include="JS\interfaces.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -172,7 +172,8 @@ declare module linqjs {
 		toLookup<TKey>(keySelector: (element: T) => TKey): ILookup<TKey, any>;
 		toLookup<TKey, TElement>(keySelector: (element: T) => TKey, elementSelector: (element: T) => TElement): ILookup<TKey, TElement>;
 		toLookup<TKey, TElement, TCompare>(keySelector: (element: T) => TKey, elementSelector: (element: T) => TElement, compareSelector: (key: TKey) => TCompare): ILookup<TKey, TElement>;
-		toObject(keySelector: (element: T) => any, elementSelector?: (element: T) => any): Object;
+		toObject<TElement>( keySelector: ( element: T ) => string, elementSelector?: ( element: T ) => TElement ): { [key: string]: TElement };
+		toObject<TElement>( keySelector: ( element: T ) => number, elementSelector?: ( element: T ) => TElement ): { [key: number]: TElement };
 		// :IDictionary<TKey, T>
 		toDictionary<TKey>(keySelector: (element: T) => TKey): IDictionary<TKey, any>;
 		toDictionary<TKey, TValue>(keySelector: (element: T) => TKey, elementSelector: (element: T) => TValue): IDictionary<TKey, TValue>;

@@ -42,6 +42,9 @@
     <Content Include="doc\screenshot1.png" />
     <Content Include="doc\screenshot2.png" />
     <Content Include="doc\screenshot3.png" />
+    <Content Include="lib\nunjucks\nunjucks.a_fake_browser.js" />
+    <Content Include="lib\nunjucks\nunjucks.z_unfake_browser.js" />
+    <Content Include="lib\nunjucks\nunjucks.js" />
     <Content Include="package.json" />
     <Content Include="README.md" />
     <TypeScriptCompile Include="build\jakefile.ts" />
@@ -52,23 +55,24 @@
     <Content Include="doc\diagram.gliffy" />
     <Content Include="examples\self\.tstconfig" />
     <None Include="examples\csharp\genericParams.tpl" />
+    <Content Include="examples\csharp\class.cs.tpl" />
     <None Include="jakefile" />
     <TypeScriptCompile Include="lib\jake\jake.d.ts" />
     <TypeScriptCompile Include="lib\jasmine\jasmine.d.ts" />
     <TypeScriptCompile Include="lib\node\node.d.ts" />
+    <TypeScriptCompile Include="lib\nunjucks\nunjucks.d.ts" />
     <TypeScriptCompile Include="lib\typescript\typescript.d.ts" />
     <TypeScriptCompile Include="node\lib.d.ts" />
     <TypeScriptCompile Include="node\tstc.ts" />
     <TypeScriptCompile Include="src\utils.ts" />
     <TypeScriptCompile Include="src\config.ts" />
-    <TypeScriptCompile Include="src\dust-bootstrap.ts" />
-    <TypeScriptCompile Include="lib\dust\dust.d.ts" />
+    <TypeScriptCompile Include="src\filters\general.ts" />
     <TypeScriptCompile Include="src\extractor.ts" />
     <TypeScriptCompile Include="src\interfaces.ts" />
     <TypeScriptCompile Include="lib\linq\linq.d.ts" />
     <TypeScriptCompile Include="lib\rx\rx.d.ts" />
     <TypeScriptCompile Include="src\emitter.ts" />
-    <TypeScriptCompile Include="src\preprocessors\csharp.ts" />
+    <TypeScriptCompile Include="src\filters\csharp.ts" />
     <TypeScriptCompile Include="src\version.ts" />
     <TypeScriptCompile Include="tests\extractor.directives.ts" />
     <TypeScriptCompile Include="tests\extractor.comments.ts" />
@@ -77,15 +81,13 @@
     <TypeScriptCompile Include="tests\extractor.generics.ts" />
     <None Include="tests\integration\readme.md" />
     <TypeScriptCompile Include="tests\integration\tstc.ts" />
-    <TypeScriptCompile Include="tests\helpers.fs.ts" />
+    <TypeScriptCompile Include="tests\filters.general.ts" />
     <TypeScriptCompile Include="tests\utils.ts" />
     <TypeScriptCompile Include="tests\extractor.ts" />
     <TypeScriptCompile Include="tests\extractor.types.ts" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="examples\csharp\type.cs.tpl" />
-    <Content Include="lib\dust\dust-full.js" />
-    <Content Include="lib\dust\dust-helpers.js" />
     <Content Include="lib\linq\linq.js" />
     <Content Include="lib\rx\rx.js" />
     <Content Include="lib\typescript\typescript.js" />

@@ -52,4 +52,10 @@ module erecruit.TsT.Tests {
 	};
 
 	erecruit.TsT.log = erecruit.TsT.debug = () => { };
+
+	export function renderTemplate( tpl: string, ctx: any, filters: { [key: string]: Function }) {
+		var env = new nunjucks.Environment( [] );
+		for ( var f in filters ) env.addFilter( f, filters[f] );
+		return env.renderString( tpl, ctx );
+	}
 }

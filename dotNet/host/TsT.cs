@@ -76,6 +76,7 @@ namespace erecruit.TsT
 		/// <param name="configJson">The config itself, serialized as JSON.</param>
 		/// <param name="files">List of file paths to parse. Must be either absolute or relative to the "origin" of the given host.</param>
 		/// <param name="host">Bridge between the JS core and the host file system.</param>
+		// TODO: this can be a lot simpler now that we have all-synchronous template rendering
 		public IObservable<JS.FileContent> Emit( string configDir, string configJson, IEnumerable<string> files, JS.ITsTHost host ) {
 			return from _ in EnsureInitialized()
 						 from jsonSerialize in _engine.Evaluate( "JSON.stringify" )
@@ -86,16 +87,10 @@ namespace erecruit.TsT
 						 let _3 = log( "TsT: Read config from " + configDir + ", ConfigDir=" + config.ConfigDir + ", RootDir=" + config.RootDir )
 						 let filesRelativeToRoot = files.Select( f => host.MakeRelativePath( rootDir, f ) )
 
-						 let result = new Subject<dynamic>()
-						 from __ in _engine.QueueAction( () =>
-							 _emit( config, filesRelativeToRoot.ToArray(), host )
-							 .subscribe( new {
-								 onNext = new Action<dynamic>( x => result.OnNext( x ) ),
-								 onError = new Action<object>( err => { result.OnError( new DynamicException( err ) ); result.OnCompleted(); } ),
-								 onCompleted = new Action( () => result.OnCompleted() )
-							 } ) )
+						 from result in _engine.Queue( () => _emit( config, filesRelativeToRoot.ToArray(), host ) )
+						 let array = Enumerable.Range( 0, (int)result.length ).Select( x => result[x] )
 
-						 from r in result
+						 from r in array.ToObservable()
 								.Merge( _engine.WaitForDeferredExecutions().Select( _1 => (dynamic)null ) ) // I need to merge this in here in order to catch errors from deferred executions
 								.Where( x => x != null )
 								.Timeout( ScriptEngine.JavaScriptCallTimeout )
@@ -121,10 +116,12 @@ namespace erecruit.TsT
 				str => Observable.FromAsync( str.ReadToEndAsync ) );
 		}
 
-		static IObservable<Unit> WriteContents( string path, string contents ) {
+		IObservable<Unit> WriteContents( string path, string contents ) {
 			return Observable.Using(
 				() => System.IO.File.CreateText( path ),
-				str => Observable.FromAsync( async () => await str.WriteAsync( contents ) ) );
+				str => Observable.FromAsync( async () => await str.WriteAsync( contents ) ) )
+				.Do( _ => { }, ( Exception ex ) => log( "Error writing file " + path + ", will retry. The error was: " + ex.Message, o.Error ) )
+				.Retry( 10 );
 		}
 
 		IObservable<Unit> AmendConfig( string configDir, JS.Config c ) {

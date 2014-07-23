@@ -11,13 +11,13 @@ The primary intended use for this tool is generating server-side data transfer o
 2. [Configuration file](#config)
 3. [Templates and the simplified AST data structure](#templates)
 4. [Types vs Classes](#typesclasses)
-5. [TsT-specific dust.js helpers](#helpers)
+5. [TsT-specific Nunjucks extensions](#filters)
 
 
 #<a name="basics"></a>Basics
-erecruit TS Translator does not have a hard-coded way to generate code based on TypeScript-extracted type information. Instead, it uses user-defined templates for that purpose. The templates are rendered using the [dust.js template engine](http://linkedin.github.io/dustjs/), which is light, sufficiently powerful, and, unlike most modern JavaScript template engines, not focused on HTML.
+erecruit TS Translator does not have a hard-coded way to generate code based on TypeScript-extracted type information. Instead, it uses user-defined templates for that purpose. The templates are rendered using the [Nunjucks templating engine](http://mozilla.github.io/nunjucks/).
 
-erecruit.TsT uses the [Typescript](http://typescriptlang.org) compiler to pull type information from the source TypeScript files, generates a simplified AST in the form of JavaScript data structure (object tree), and then feeds that data structure to dust.js, which ultimately produces the resulting code.
+erecruit.TsT uses the [Typescript](http://typescriptlang.org) compiler to pull type information from the source TypeScript files, generates a simplified AST in the form of JavaScript data structure (object tree), and then feeds that data structure to Nunjucks, which ultimately produces the resulting code.
 
 <img src="https://raw.githubusercontent.com/erecruit/TsT/master/doc/diagram.png"/>
 
@@ -36,81 +36,81 @@ The config file format is the following:
 
 ```JavaScript
 {
-    // The directory to be used as origin for relative paths.
-    // If this path is not absolute, it is assumed relative to the
-    // directory of the config file itself.
-    // optional; default is '.'
-    RootDir: '../../js', 
+		// The directory to be used as origin for relative paths.
+		// If this path is not absolute, it is assumed relative to the
+		// directory of the config file itself.
+		// optional; default is '.'
+		RootDir: '../../js', 
 
-    // Typing files to be implicitly included with the compilation.
-    // If you have typings referenced with a ///<reference> directive
-    // within your TypeScript files, these do not have to be included here
-    // The standard lib.d.ts also does not have to be included.
-    // The paths of typings are relative to RootDir (see above).
-    // optional
-    IncludedTypingFiles: [ '../typings/jQuery.d.ts', '../typings/knockout.d.ts' ],
+		// Typing files to be implicitly included with the compilation.
+		// If you have typings referenced with a ///<reference> directive
+		// within your TypeScript files, these do not have to be included here
+		// The standard lib.d.ts also does not have to be included.
+		// The paths of typings are relative to RootDir (see above).
+		// optional
+		IncludedTypingFiles: [ '../typings/jQuery.d.ts', '../typings/knockout.d.ts' ],
 
-    // Map of type names to their configurations.
-    // (see also "Types vs Classes" below)
-    // This allows to have [potentially] different configurations
-    // for different types. Keys of the map are regular expressions.
-    // Because it is possible for several regular expressions to match
-    // the same type, some types may end up having several
-    // configurations. This situation is allowed and supported.
-    // optional
-    Types: {
-        'regex': {
+		// Map of type names to their configurations.
+		// (see also "Types vs Classes" below)
+		// This allows to have [potentially] different configurations
+		// for different types. Keys of the map are regular expressions.
+		// Because it is possible for several regular expressions to match
+		// the same type, some types may end up having several
+		// configurations. This situation is allowed and supported.
+		// optional
+		Types: {
+				'regex': {
 
-            // Name of output file to which the generated result
-            // will be written. This string is actually a dust.js
-            // template with allowed properties: {Path}, {Name}, {Extension},
-            // which refer to the source file. The {Path} includes
-            // the trailing slash (when not empty). The {Extension}
-            // does not include the leading dot.
-            //
-            // When multiple types end up targeted to the same
-            // output file, their contents are simply concatenated.
-            // REQUIRED
-            FileName: '{Path}{Name}.cs',
-                    
-            // The actual template to be used for rendering the type.
-            // Normally, the string is treated as the template itself.
-            // If the string starts with the '@' symbol, then the rest
-            // of it is treated as the path to a file (relative to the 
-            // config file itself).
-            // from which the template should be loaded.
-            // The same '@' convention also works for FileName (above).
-            // REQUIRED
-            Template: '@./templates/type.cs.tpl'
-        }
-    },
+						// Name of output file to which the generated result
+						// will be written. This string is actually a Nunjucks
+						// template with allowed properties: {{Path}}, {{Name}}, {{Extension}},
+						// which refer to the source file. The {{Path}} includes
+						// the trailing slash (when not empty). The {{Extension}}
+						// does not include the leading dot.
+						//
+						// When multiple types end up targeted to the same
+						// output file, their contents are simply concatenated.
+						// REQUIRED
+						FileName: '{{Path}}{{Name}}.cs',
+										
+						// The actual template to be used for rendering the type.
+						// Normally, the string is treated as the template itself.
+						// If the string starts with the '@' symbol, then the rest
+						// of it is treated as the path to a file (relative to the 
+						// config file itself).
+						// from which the template should be loaded.
+						// The same '@' convention also works for FileName (above).
+						// REQUIRED
+						Template: '@./templates/type.cs.tpl'
+				}
+		},
 
-    // Map of class names to their configurations.
-    // (see Types vs Classes below)
-    // Works the same way as the Types map.
-    Classes: {
-        '.': {
-            FileName: '{Path}{Name}.cs',
-            Template: '@./templates/class.cs.tpl'
-        }
-    }
+		// Map of class names to their configurations.
+		// (see Types vs Classes below)
+		// Works the same way as the Types map.
+		Classes: {
+				'.': {
+						FileName: '{Path}{Name}.cs',
+						Template: '@./templates/class.cs.tpl'
+				}
+		}
 
-    // Map of source file names to their configurations.
-    // This works the same way as the Types and Classes map -
-    // i.e. keyed by regular expressions, collisions allowed.
-    // Each entry has the same two 'Types' and 'Classes'
-    // substructures as those described above.
-    // This section allows to override the configuration for
-    // specific files or files matching specific patterns.
-    // optional
-    Files: {
-        'legacy/.*\.ts$': {
-           Types: {
-               FileName: '{Path}{Name}.cs',
-               Template: '@./templates/legacy.type.cs.tpl'
-           }
-        }
-    }
+		// Map of source file names to their configurations.
+		// This works the same way as the Types and Classes map -
+		// i.e. keyed by regular expressions, collisions allowed.
+		// Each entry has the same two 'Types' and 'Classes'
+		// substructures as those described above.
+		// This section allows to override the configuration for
+		// specific files or files matching specific patterns.
+		// optional
+		Files: {
+				'legacy/.*\.ts$': {
+					 Types: {
+							 FileName: '{Path}{Name}.cs',
+							 Template: '@./templates/legacy.type.cs.tpl'
+					 }
+				}
+		}
 }
 ```
 
@@ -124,223 +124,289 @@ The format of that structure for Type (can be found in src/interfaces.ts):
 // the GenericInstantiation option contains a reference
 // to another Type data structure, as do many others.
 {
-    // The TypeScript document (i.e. file) from which this type came
-    Document: {
-        Path: 'lib/path/to/file.ts', // Relative to RootDir in config file
-        Classes: [ /* all classes in this document */ ],
-        Types: [ /* all types in this document */ ]
-    },
+		// The TypeScript document (i.e. file) from which this type came
+		Document: {
+				Path: 'lib/path/to/file.ts', // Relative to RootDir in config file
+				Classes: [ /* all classes in this document */ ],
+				Types: [ /* all types in this document */ ]
+		},
 
-    // Name of the module as it appears for external inclusion (i.e. require() call)
-    // External module name usually matches the file name (or path),
-    // but not always. The exception is explicitly declared external
-    // modules residing in .d.ts files. For example, if the file tsd/jQuery.d.ts
-    // contains the declaration of "declare module "jQuery" { ... }", then
-    // Document.Path will be tsd/jQuery.d.ts, but ExternalModule will
-    // be "jQuery".
-    // Note the double quotes around the module name. This is not a typo,
-    // this is how TypeScript names external modules.
-    ExternalModule: '"lib/path/to/file.ts"',
+		// Name of the module as it appears for external inclusion (i.e. require() call)
+		// External module name usually matches the file name (or path),
+		// but not always. The exception is explicitly declared external
+		// modules residing in .d.ts files. For example, if the file tsd/jQuery.d.ts
+		// contains the declaration of "declare module "jQuery" { ... }", then
+		// Document.Path will be tsd/jQuery.d.ts, but ExternalModule will
+		// be "jQuery".
+		// Note the double quotes around the module name. This is not a typo,
+		// this is how TypeScript names external modules.
+		ExternalModule: '"lib/path/to/file.ts"',
 
-    // Alternatively:
-    // ExternalModule: '"jQuery"',
-    
-    // If the type is nested in an internal module (in TS sense),
-    // this is that module's full name
-    InternalModule: 'Ts.Module.Name',
+		// Alternatively:
+		// ExternalModule: '"jQuery"',
+		
+		// If the type is nested in an internal module (in TS sense),
+		// this is that module's full name
+		InternalModule: 'Ts.Module.Name',
 
-    Kind: 1,  // 0 for class, 1 for type
+		Kind: 1,  // 0 for class, 1 for type
  
-    // *******************************************************************
-    // The following substructures represent the different breeds
-    // of types that exist in TypeScript. Only one of these will be
-    // actually present.
-    // *******************************************************************
+		// *******************************************************************
+		// The following substructures represent the different breeds
+		// of types that exist in TypeScript. Only one of these will be
+		// actually present.
+		// *******************************************************************
 
-    PrimitiveType: 0,  // 0 = any, 1 = string, 2 = boolean, 3 = number
+		PrimitiveType: 0,  // 0 = any, 1 = string, 2 = boolean, 3 = number
 
-    Enum: {
-        Name: 'SomeEnum',
-        Values: [ { Name: 'A', Value: 0 }, { Name: 'B', Value: 1 } ]
-    },
+		Enum: function() => {
+				Name: 'SomeEnum',
+				Values: [ { Name: 'A', Value: 0 }, { Name: 'B', Value: 1 } ]
+		},
 
-    GenericParameter: {
-        Name: 'T',
-        Constraint: { /* data structure representing another Type */ }
-    },
+		GenericParameter: function() => {
+				Name: 'T',
+				Constraint: { /* data structure representing another Type */ }
+		},
 
-    GenericInstantiation: {
-        Definition: { /* a data structure representing another Type */ },
-        Arguments: [ /* an array of Types */ ]
-    },
+		GenericInstantiation: function() => {
+				Definition: { /* a data structure representing another Type */ },
+				Arguments: [ /* an array of Types */ ]
+		},
 
-    Array: { /* another Type, representing the array element */ }
+		Array: function() => { /* another Type, representing the array element */ }
 
-    Interface: {
-        Name: 'SomeObject',
-        Extends: [ /* array of Types */ ],
-        GenericParameters: [ /* array of Types */ ],
-        Properties: [ 
-            { Name: 'x', Type: { /* another Type */ } },
-            { Name: 'y', Type: { /* another Type */ } } 
-        ],
-        Methods: [
-            { 
-                Name: 'method', 
-                Signatures: [
-                    {
-                        GenericParameters: [ /* array of Types */ ],
-                        Parameters: [ 
-                            { Name: 'x', Type: { /* another Type */ } },
-                            { Name: 'y', Type: { /* another Type */ } } 
-                        ],
-                        ReturnType: { /* another type */ }
-                    }
-                ]
-            }
-        ]
-    }
+		Interface: function() => {
+				Name: 'SomeObject',
+				Extends: [ /* array of Types */ ],
+				GenericParameters: [ /* array of Types */ ],
+				Properties: [ 
+						{ Name: 'x', Type: { /* another Type */ } },
+						{ Name: 'y', Type: { /* another Type */ } } 
+				],
+				Methods: [
+						{ 
+								Name: 'method', 
+								Signatures: [
+										{
+												GenericParameters: [ /* array of Types */ ],
+												Parameters: [ 
+														{ Name: 'x', Type: { /* another Type */ } },
+														{ Name: 'y', Type: { /* another Type */ } } 
+												],
+												ReturnType: { /* another type */ }
+										}
+								]
+						}
+				]
+		}
 }
 ```
 
-#<a name="helpers"></a>TsT-specific Dust.js helpers
+Note that most members of the `Type` data structure (i.e. `Interface`, `Enum`, etc.) are not plain properties, but functions.
+This means that they have to be called within the template in order to get to the data.
+It is done this way in order to achieve _laziness_ - that is, types are not parsed and processed unless the template actually requires it.
+This gives a significant performance boost, since TypeScript compiler is a rather slow beast.
 
-##General Helpers
+For example:
 
-###replace
+```
+	{% set intf = Interface() if Interface %}
+	{% if intf %}
+		public class {{ intf.Name }} {
+			...
+		}
+	{% endif %}
+```
+
+Final note: do not be afraid to call the functions multiple times, because they are memoized (that is, the result is cached on the first call and returned from cache on subsequent calls).
+
+
+#<a name="filters"></a>TsT-specific Nunjucks extensions
+
+##Special "this" variable
+A special `this` variable added to Nunjucks (achieved via [monkeypatching](https://github.com/erecruit/TsT/tree/master/src/filters/general.ts#L62)), returns the context object itself.
+For example:
+
+```
+	namespace {{ namespaceFor( this ) }} {
+		public class {{ Name }}{{ genericParametersFor( this ) }}
+			...
+	}
+```
+
+##Whitespace control
+Nunjucks has a nice little [feature for whitespace control](http://mozilla.github.io/nunjucks/templating.html#whitespace-control), where one can add a dash to a block's opening/closing brace
+to have Nunjucks remove all whitespace on that side of the block. For example, the following template will yield "abc123", even though there some whitespace around "1", "2", and "3" in the template itself:
+
+```
+	{{ "abc" }}
+	{%- for x in range(1,3) -%}
+	{%- endfor -%}
+```
+
+However, sometimes it is necessary to eliminate whitespace where there are no blocks to hinge on:
+
+```
+	{{ "This should be " }}
+	{{ "one line, " }}
+	{{ "but it aint" }}
+```
+
+This situation could be remedied by introducing a block artificially:
+
+```
+	{{ "This will be " }} {%- if false %}{% endif -%}
+	{{ "one line. " }}     {%- if false %}{% endif -%}
+	{{ "But boy is this ugly!" }}
+```
+
+To reduce the noise, TsT defines a special "dummy" block "_" (underscore character). This block does not have a closing tag, making it much less noisy:
+
+```
+	{{ "This will be " }}	{%-_-%}
+	{{ "one line. " }}		{%-_-%}
+	{{ "Still not perfect, but it's a start." }}
+```
+
+As a bonus, the "no-whitespace-here" sign now looks like a squinty face :-)
+
+
+##General Filters
+
+###regexReplace
 Replaces a substring with another using regular expression.
+This is different from Nunjucks' own [replace](http://mozilla.github.io/nunjucks/templating.html#builtin-filters) filter, because the latter works with plain strings, not regular expressions.
 
-|Parameters:| |
-|----|----|
-| **str** | input string|
-| **regex** | regular expression to test against|
-| **flags** | regular expression flags|
-| **replacement** | replacement string. Can include regular JavaScript named and numbered references like $1, $2, $myGroup, etc.|
+Parameters:
+* regular expression to test against
+* replacement string. Can include regular JavaScript named and numbered references like $1, $2, $myGroup, etc.
+* regular expression flags (optional)
 
 For specification of regular expression language and flags, [see MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp).
 
 ```
-   {@replace str="{Name}" regex="-" flags="g" replacement="_" /}
+	 {{ "Some string containing substrings" | regexReplace( "string", "line", "g" ) }} {# will yield "Some line containing sublines" #}
 ```
 
-###test
-Executes the inside block when the given string matches given regex, otherwise executes the `:else` block.
+###match
+Checks if the input matches given regular expression.
 
-|Parameters:| |
-|----|----|
-| **str** | input string|
-| **regex** | regular expression to test against|
-| **flags** | regular expression flags|
+Parameters:
+* regular expression to test against
+* regular expression flags (optional)
 
 ```
-   {@test str="{Name}" regex="^I"}
-      interface
-   {:else}
-      class
-   {/test}
+	 {% if Name | match( "^I" ) %}
+			interface
+	 {% else %}
+			class
+	 {% endif %}
 ```
 
 
 ###typeName
-Renders the name of the current type.<br/>
-*Current context* must be the type object itself.
+Renders the name of a given type.<br/>
+
+Parameters:
+* the type
 
 ```
-   // Rendering type {@typeName /}, defined in {Module.Path}
-   public interface ...
+	 // Rendering type {{ this | typeName }}, defined in {{ Module.Path }}
+	 public interface ...
 ```
 
 
-###indent
-Renders an sequence of one or more TAB characters.
+###isType and isClass
+Return true if the given object is a type or a class respectively.
 
-|Parameters:| |
-|----|----|
-|**count** *(optional)*| the number of TAB characters to render. Default is 1.|
+Parameters:
+* the object to examine
 
 ```
-   {@indent}
-   public interface {@typeName/} { {~n}
-      {@indent count=2}
-      {#Properties} ... {/Properties}
+
+	{% if this | isClass %}
+		class
+	{% elif this | isType %}
+		type
+	{% else %}
+		WTF?!
+	{% endif %}
+
 ```
 
-###whenType and whenClass
-Render the inside block when the current entry is a Type or a Class (respectively). Otherwise, renders the `:else` block.
-
-##C# Helpers
+##C#-specific Helpers
 
 ###cs_typeName
 Generates the local name of the type (not including namespace). Takes care of the primitive types, mapping them correctly to the .NET analogs.
-*Current context* must be the type object itself.
+
+Parameters:
+* the type
+
 
 ```
-   public interface {@cs_typeName/} {
-      ...
-   }
+	 public interface {{ this | cs_typeName }} {
+			...
+	 }
 ```
 
 
 ###cs_typeFullName
 Generates full name of the type (same as previous, but including namespace when necessary).
-*Current context* must be the type object itself.
+
+Parameters:
+* the type
 
 ```
-   {#Properties}
-      public {#Type}{@cs_typeFullName/}{/Type} {Name} { get; set; }
-   {/Properties}
+	 {% for p in Properties %}
+			public {{ p.Type | cs_typeFullName }} {{ Name }} { get; set; }
+	 {% endfor %}
 ```
 
 
 ###cs_typeNamespace
 Generates namespace of the type from the path of the file. File name itself is not included in the namespace. For example, namespace for all types in *js/src/xyz.ts* will be *js.src*.
-*Current context* must be the type object itself.
+
+Parameters:
+* the type
 
 ```
-    namespace MyApp.{@cs_typeNamespace} {
-       ...
-    }
+		namespace MyApp.{{ this | cs_typeNamespace }} {
+			 ...
+		}
 ```
 
 
-###cs_whenEmptyNamespace
-Executes the inside block when the current type's namespace is empty (i.e. it comes from a file that is located in the root directory), or the `:else` block otherwise.
-*Current context* must be the type object itself.
+
+##File System-related Helpers
+
+###getFileNameWithoutExtension
+Given a path, returns the name of the file without extension.
+
+Parameters:
+* the path out of which to parse the file name.
 
 ```
-   namespace MyApp
-      {! Append a dot, but only when the namespace is not empty !}
-      {@cs_whenEmptyNamespace}{:else}.{/cs_whenEmptyNamespace}
-
-      {! Then append the namespace itself }
-      {@cs_typeNamespace/}
+	 // This type was defined in the module {{ Module.Path | getFileNameWithoutExtension }}
+	 public interface ...
 ```
 
-##File System Helpers
+###pathRelativeTo
+Returns relative path from the input to the argument.
 
-###fs_fileNameWithoutExtension
-Given a path, renders the name of the file without extension.
-
-|Parameters:| |
-|----|----|
-| **path** | the path out of which to parse the file name.|
+Parameters:
+* starting path (i.e. the 'source' path)
 
 ```
-   // This type was defined in the module {@fs_fileNameWithoutExtension path="{Module.Path}" /}
-   public interface ...
+ {{ "work/abc" | pathRelativeTo("work") }} {# renders "abc" #}
+ {{ "work/x/y/z" | pathRelativeTo("work") }} {# renders "x/y/z" #}
+ {{ "" | pathRelativeTo("work") }} {# renders ".." #}
 ```
 
-###fs_relativePath
-Given two paths, "from" and "to", renders a relative path which would lead from the former to the latter.
 
-|Parameters:| |
-|----|----|
-| **from** | starting path |
-| **to** | destination path |
-
-###fs_dirName
+###dirName
 Returns the parent directory of the given file.
 
-|Parameters:| |
-|----|----|
-| **path** | file path |
+```
+	{{ "work/x/y/z.ts" | dirName }} {# renders "work/x/y" #}
+```

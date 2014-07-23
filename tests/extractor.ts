@@ -1,3 +1,4 @@
+/// <reference path="../lib/nunjucks/nunjucks.d.ts" />
 /// <reference path="../lib/jasmine/jasmine.d.ts" />
 /// <reference path="../src/extractor.ts" />
 /// <reference path="../src/interfaces.ts" />
@@ -24,6 +25,7 @@ module erecruit.TsT.Tests.Extr {
 			e = new Extractor( <CachedConfig>{
 				Original: { RootDir: '.', ConfigDir: '.' },
 				File: [{ Match: null, Types: null, Classes: null }],
+				NunjucksEnv: <Nunjucks.IEnvironment>null,
 				Host: {
 					DirectoryExists: _ => false,
 					FetchFile: name =>

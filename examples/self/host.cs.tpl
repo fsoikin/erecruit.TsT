@@ -1,33 +1,29 @@
-{! 
-	This is a Dust template.
-	For more information about Dust and its usage see https://github.com/linkedin/dustjs/wiki/Dust-Tutorial
-	For more information about TsT-specific helpers see https://github.com/erecruit/TsT
-!}
+{# 
+	This is a Nunjucks template.
+	For more information about Nunjucks and its usage, see http://mozilla.github.io/nunjucks/templating.html
+	For more information about TsT-specific filters, see https://github.com/erecruit/TsT
+#}
 
-namespace erecruit.TsT.JS{@cs_whenEmptyNamespace}{:else}.{/cs_whenEmptyNamespace}{@cs_typeNamespace/} { {~n}
+{%- set intf = Interface() if Interface -%}
+{%- if intf -%}
 
-	{#Interface}
-		{@indent/}
-		public interface {Name} { {~n}
-			{#Properties}
-				{@indent count=2/}
-				public {#Type}{@cs_typeFullName/}{/Type} {Name} { get; set; } {~n}
-			{/Properties}
+namespace erecruit.JS {
 
-			{#Methods}
-				{#Signatures}
-					{@indent count=2/}
-					{#ReturnType}{@cs_typeFullName/}{:else}void{/ReturnType} {Name}(
-						{#Parameters}
-							{#Type}{@cs_typeFullName/}{/Type} {Name}{@sep},{/sep}
-						{/Parameters}
-					); {~n}
-				{/Signatures}
-			{/Methods}
+	public interface {{intf.Name}} {
+		{%- for p in intf.Properties %}
+			public {{ intf.Type | cs_typeFullName }} {{ p.Name }} { get; set; }
+		{%- endfor -%}
 
-			{@indent/}
-		}
-	{/Interface}
+		{%- for m in intf.Methods -%}
+			{%- for s in m.Signatures %}
+				{{ (s.ReturnType | cs_typeFullName) if s.ReturnType else "void" }} {{m.Name}}(
+					{%- for p in s.Parameters -%}
+						{{ p.Type | cs_typeFullName }} {{p.Name}} {{ "," if not loop.last }}
+					{%- endfor -%}
+				);
+			{%- endfor -%}
+		{%- endfor %}
+	}
+}
 
-{~n}
-} {~n}
+{%- endif -%}

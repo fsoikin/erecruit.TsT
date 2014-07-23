@@ -62,15 +62,20 @@ file( nodeModuleTypings, [freeModuleTypings], () => {
 });
 
 function wrapLibs() {
-	var raw = new jake.FileList(); raw.include( fromRoot( "lib/**/*.js" ) ); raw.exclude( fromRoot( "lib/wrapped/**/*" ) );
-	var wrapped = raw.toArray().map( ( f ) => ( {
-		raw: f,
-		wrapped: path.relative( '.', path.resolve( fromRoot( "lib/wrapped" ), path.relative( fromRoot( "lib" ), f ) ) )
-	}) );
+	var raw = new jake.FileList();
+	raw.include( fromRoot( "lib/**/*.js" ) );
+	if ( fs.existsSync( fromRoot( "lib/wrapped" ) ) ) raw.exclude( fromRoot( "lib/wrapped/**/*" ) );
+
+	var wrapped = raw.toArray()
+		.map( ( f ) => ( {
+			raw: f,
+			wrapped: path.relative( '.', path.resolve( fromRoot( "lib/wrapped" ), path.relative( fromRoot( "lib" ), f ) ) )
+		}) )
+		.sort();
 	wrapped.forEach( w => wrapFile( w.raw, w.wrapped,
 		"(function(__root__,module,exports,global,define,require) {",
-		"  if ( typeof TypeScript !== 'undefined' ) __root__.TypeScript = TypeScript;\
-		 })( typeof global === 'undefined' ? this : global );" ) );
+		" if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;" +
+		"})( typeof global === 'undefined' ? this : global );" ) );
 
 	return wrapped.map( w => w.wrapped );
 }
