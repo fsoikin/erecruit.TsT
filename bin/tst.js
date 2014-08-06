@@ -3004,7 +3004,7 @@
     };
     Grouping.prototype = new ArrayEnumerable();
     root.Enumerable = Enumerable;
-})(this); if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;})( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {
+})(this);  if ( typeof TypeScript !== 'undefined' ) __root__.TypeScript = TypeScript;		 })( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {
 // For some reason Nunjucks is only available as a bundle for the browser scenario.
 // Presumably, the only other scenario is NodeJS, and for that one can (presumably) afford not to bundle the files.
 // This, however, is a mistake, because there is a third scenario - free JS chunk of code agnostic of the environment.
@@ -3019,7 +3019,7 @@
 if (typeof window === "undefined") {
 	window = {};
 	__root__.__I_faked_window = true;
-} if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;})( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {// Browser bundle of nunjucks 1.0.4 
+}  if ( typeof TypeScript !== 'undefined' ) __root__.TypeScript = TypeScript;		 })( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {// Browser bundle of nunjucks 1.0.4 
 
 (function() {
 var modules = {};
@@ -8012,10 +8012,10 @@ else {
 }
 
 })();
- if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;})( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {if (__root__.__I_faked_window) {
+  if ( typeof TypeScript !== 'undefined' ) __root__.TypeScript = TypeScript;		 })( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {if (__root__.__I_faked_window) {
 	nunjucks = window.nunjucks;
 	window = undefined;
-} if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;})( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
+}  if ( typeof TypeScript !== 'undefined' ) __root__.TypeScript = TypeScript;		 })( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
 
 ;(function (undefined) {
 
@@ -12271,7 +12271,7 @@ else {
     	// in a browser or Rhino
     	root.Rx = Rx;
     }
-}.call(this)); if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;})( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {/*! *****************************************************************************
+}.call(this));  if ( typeof TypeScript !== 'undefined' ) __root__.TypeScript = TypeScript;		 })( typeof global === 'undefined' ? this : global );(function(__root__,module,exports,global,define,require) {/*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved. 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
@@ -73787,7 +73787,7 @@ var TypeScript;
     })();
     TypeScript.Comment = Comment;
 })(TypeScript || (TypeScript = {}));
- if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;})( typeof global === 'undefined' ? this : global );﻿var erecruit;
+  if ( typeof TypeScript !== 'undefined' ) __root__.TypeScript = TypeScript;		 })( typeof global === 'undefined' ? this : global );﻿var erecruit;
 (function (erecruit) {
     (function (TsT) {
         (function (ModuleElementKind) {
@@ -74059,6 +74059,7 @@ var erecruit;
             };
 
             Extractor.prototype.addFile = function (f) {
+                f = this.normalizePath(f);
                 TsT.log(function () {
                     return "addFile: " + f;
                 });
@@ -74070,6 +74071,7 @@ var erecruit;
 
             Extractor.prototype.GetDocument = function (fileName) {
                 var _this = this;
+                fileName = this.normalizePath(fileName);
                 this.LoadDocuments([fileName]);
 
                 var mod = this._compiler.topLevelDeclaration(fileName);
@@ -74431,7 +74433,7 @@ var erecruit;
             };
 
             Extractor.prototype.normalizePath = function (path) {
-                return (path || "").replace(/\\/g, '/');
+                return TypeScript.switchToForwardSlashes(path || "");
             };
 
             Extractor.prototype.rootRelPath = function (realPath) {
@@ -74745,7 +74747,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.7.1";
+        TsT.Version = "0.7.2";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));
