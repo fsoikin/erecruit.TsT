@@ -74550,7 +74550,7 @@ var erecruit;
                     var nameParts = name.split('.');
                     return nameParts.slice(0, nameParts.length - 1).join('.');
                 },
-                relativePath: function (path, from) {
+                pathRelativeTo: function (path, from) {
                     if (!path || !from)
                         return path;
                     return config.Host.MakeRelativePath(from, path);
@@ -74745,7 +74745,7 @@ var erecruit;
 var erecruit;
 (function (erecruit) {
     (function (TsT) {
-        TsT.Version = "0.7.0";
+        TsT.Version = "0.7.1";
     })(erecruit.TsT || (erecruit.TsT = {}));
     var TsT = erecruit.TsT;
 })(erecruit || (erecruit = {}));

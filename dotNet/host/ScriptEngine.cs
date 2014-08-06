@@ -53,7 +53,7 @@ namespace erecruit.TsT
 				.Publish();
 			var queueSize = queueTransition
 				.Scan( 0, ( size, queued ) => size + (queued ? 1 : -1) )
-				.Do( s => log( "ScriptEngine: Queue size = " + s, OutputKind.Debug ) )
+				.Do( s => log( "ScriptEngine: Queue size = " + s, OutputKind.Debug ), (Exception ex) => log( ex.ToString(), OutputKind.Error ) )
 				.Replay( 1 );
 
 			_runningQueue = new CompositeDisposable( runQueue.Connect(), queueSize.Connect() );
@@ -69,12 +69,19 @@ namespace erecruit.TsT
 		}
 
 		public IObservable<Unit> QueueAction( Action a ) {
-			var result = _doneActions
+			var timestamp = Environment.TickCount;
+			log( "Action #" + timestamp + " queued up.", OutputKind.Debug );
+			IDisposable listeningForWhenDone = null;
+			var whenDone = _doneActions
 				.Where( x => x == a )
+				.Do( _ => log( "Action #" + timestamp + " executed.", OutputKind.Debug ) )
 				.Take( 1 ).Select( _ => Unit.Default )
-				.Replay( 1 ).RefCount();
+				.Timeout( JavaScriptCallTimeout )
+				.Replay( 1 );
+			listeningForWhenDone = whenDone.Connect();
+
 			_queue.OnNext( a );
-			return result.Timeout( JavaScriptCallTimeout );
+			return whenDone;
 		}
 
 		public IObservable<dynamic> Evaluate( string code ) {

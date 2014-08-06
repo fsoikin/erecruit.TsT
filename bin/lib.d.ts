@@ -978,7 +978,7 @@ declare var JSON: JSON;
 /// ECMAScript Array API (specially handled by compiler)
 /////////////////////////////
 
-	interface Array<T> {
+interface Array<T> {
     /**
       * Returns a string representation of an array.
       */
