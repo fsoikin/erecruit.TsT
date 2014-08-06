@@ -36,6 +36,7 @@ module erecruit.TsT {
 		}
 
 		private addFile( f: string ) {
+			f = this.normalizePath( f );
 			log( () => "addFile: " + f );
 			var snapshot = this._tsHost.getScriptSnapshot( f );
 			if ( snapshot ) this._compiler.addFile( f, snapshot, null, 0, false, [] );
@@ -43,6 +44,7 @@ module erecruit.TsT {
 		}
 
 		GetDocument( fileName: string ): Document {
+			fileName = this.normalizePath( fileName );
 			this.LoadDocuments( [fileName] );
 
 			var mod = this._compiler.topLevelDeclaration( fileName );
@@ -344,7 +346,7 @@ module erecruit.TsT {
 		private _snapshots: { [fileName: string]: ts.IScriptSnapshot } = {};
 
 		private normalizePath( path: string ): string {
-			return (path||"").replace( /\\/g, '/' );
+			return TypeScript.switchToForwardSlashes( path || "" );
 		}
 
 		private _tsHost: ts.IReferenceResolverHost = {
