@@ -21,7 +21,8 @@ namespace erecruit.vs
 		public const string DefaultTemplateFileName = "type.cs.tpl";
 		public static readonly string[] FoldersForDefaultTemplate = new[] { "scripts", "content" };
 
-		public const string MSBuildTargetsFileRelativePath = "erecruit\\TsT\\erecruit.TsT.targets";
+		public const string MSBuildTargetsFileName = "erecruit.TsT.targets";
+		public const string MSBuildTargetsFileRelativePath = "erecruit\\TsT\\";
 		public const string MSBuildExtensionsPathVariable = "$(MSBuildExtensionsPath32)";
 
 		public static void Translate( IEnumerable<File> inputFiles ) {
@@ -79,13 +80,13 @@ namespace erecruit.vs
 				} )
 				.Select( proj => Microsoft.Build.Evaluation.ProjectCollection.GlobalProjectCollection.GetLoadedProjects( proj.FullName ).FirstOrDefault() )
 				.Where( msbuildProj => msbuildProj != null )
-				.Where( msbuildProj => !msbuildProj.Xml.Imports.Any( i => i.Project.IndexOf( MSBuildTargetsFileRelativePath, StringComparison.InvariantCultureIgnoreCase ) >= 0 ) )
+				.Where( msbuildProj => !msbuildProj.Xml.Imports.Any( i => i.Project.IndexOf( MSBuildTargetsFileName, StringComparison.InvariantCultureIgnoreCase ) >= 0 ) )
 				.ToList();
 
 			if ( eligibleProjects.Any() ) {
 				var r = MessageBox.Show( Properties.Resources.TargetsImportMissing_Text, Properties.Resources.TargetsImportMissing_Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question );
 				if ( r == DialogResult.Yes ) {
-					eligibleProjects.ForEach( p => p.Xml.AddImport( MSBuildExtensionsPathVariable + "\\" + MSBuildTargetsFileRelativePath ) );
+					eligibleProjects.ForEach( p => p.Xml.AddImport( MSBuildExtensionsPathVariable + "\\" + MSBuildTargetsFileRelativePath + MSBuildTargetsFileName ) );
 				}
 			}
 		}
