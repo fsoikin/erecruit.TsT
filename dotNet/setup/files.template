@@ -5,10 +5,15 @@
 			<Component Id="BinFiles" Directory="BinDir" Guid="{CFB051B6-D42C-41B6-97CC-5EF7AA5E5CC3}">
 				<!-- BINFILES -->
 			</Component>
-			<Component Id="VsixFiles" Directory="VsixDir" Guid="{C3ED40FA-D200-4C0A-8004-ED041988EEC6}">
-				<!-- VSIXFILES -->
-				<File Name="erecruit.TsT.ico" Source="$(var.ProjectDir)..\vs\bin\vsix\Resources\erecruit.TsT.ico" Id="IconFile" />
-				<File Name="License.txt" Source="$(var.ProjectDir)..\vs\bin\vsix\License.txt" Id="LicenseFile" />
+			<Component Id="VsixFiles12" Directory="VsixDir12" Guid="{C3ED40FA-D200-4C0A-8004-ED041988EEC6}">
+				<!-- VSIXFILES12 -->
+				<File Name="erecruit.TsT.ico" Source="$(var.ProjectDir)..\vs\bin\vsix\Resources\erecruit.TsT.ico" Id="IconFile_vs12" />
+				<File Name="License.txt" Source="$(var.ProjectDir)..\vs\bin\vsix\License.txt" Id="LicenseFile_vs12" />
+			</Component>
+			<Component Id="VsixFiles14" Directory="VsixDir14" Guid="{B0513AB0-21AA-41C7-B218-98328D9BA5CF}">
+				<!-- VSIXFILES14 -->
+				<File Name="erecruit.TsT.ico" Source="$(var.ProjectDir)..\vs\bin\vsix\Resources\erecruit.TsT.ico" Id="IconFile_vs14" />
+				<File Name="License.txt" Source="$(var.ProjectDir)..\vs\bin\vsix\License.txt" Id="LicenseFile_vs14" />
 			</Component>
 		</ComponentGroup>
 	</Fragment>

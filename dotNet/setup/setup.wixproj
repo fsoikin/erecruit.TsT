@@ -33,6 +33,6 @@
     <PreBuildEvent />
   </PropertyGroup>
   <Target Name="BeforeBuild">
-    <Exec Command="$(SYSTEMROOT)\sysnative\WindowsPowershell\v1.0\powershell.exe &quot;&amp; $(ProjectDir)files.ps1 $(Configuration)&quot; -ExecutionPolicy Unrestricted" IgnoreExitCode="false" />
+    <Exec Command="$(SYSTEMROOT)\system32\WindowsPowershell\v1.0\powershell.exe &quot;&amp; $(ProjectDir)files.ps1 $(Configuration)&quot; -ExecutionPolicy Unrestricted" IgnoreExitCode="false" />
 		</Target>
 </Project>

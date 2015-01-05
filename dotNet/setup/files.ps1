@@ -13,11 +13,13 @@ function Main {
 		copy -Destination $tmpDir -Force
 
 	$binFiles = files $tmpDir "tstc\bin\$Configuration" 'c'
-	$vsixFiles = files $tmpDir "vs\bin\vsix" 'vs'
+	$vsixFiles12 = files $tmpDir "vs\bin\vsix" 'vs12'
+	$vsixFiles14 = files $tmpDir "vs\bin\vsix" 'vs14'
 
 	cat "$myDir\files.template" | 
 		%{ $_ -replace "<!-- BINFILES -->", $binFiles } | 
-		%{ $_ -replace "<!-- VSIXFILES -->", $vsixFiles } | 
+		%{ $_ -replace "<!-- VSIXFILES12 -->", $vsixFiles12 } | 
+		%{ $_ -replace "<!-- VSIXFILES14 -->", $vsixFiles14 } | 
 		Set-Content "$myDir\files.wxs"
 }
 
