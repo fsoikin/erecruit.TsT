@@ -1,6 +1,7 @@
 /**/*.js
 /**/*.map
 *.suo
+*.sln.ide
 *.user
 *.dll
 *.pdb
