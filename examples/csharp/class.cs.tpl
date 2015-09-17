@@ -17,7 +17,7 @@ namespace erecruit.JS{{ "." if ns }}{{ ns }} {
 				{%- for p in c.Parameters -%}
 					{{ p.Type | cs_typeFullName }} {{ p.Name }} {{ "," if not loop.last }}
 				{%- endfor -%}
-			) { return "{{this.Name}}, {{ Document.Path | dirName | relativePath }}{{ Document.Path | getFileNameWithoutExtension }}"; }
+			) { return "{{this.Name}}, {{ Document.Path | dirName | pathRelativeTo("") }}{{ Document.Path | getFileNameWithoutExtension }}"; }
 		{% endfor %}
 	}
 

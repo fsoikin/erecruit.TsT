@@ -113,5 +113,14 @@ module erecruit.TsT.Tests.Extr {
 				] );
 			});
 		});
+
+		xit( "should parse exported var with new() member as a class",() => {
+			file = " \
+					export interface I { } \
+					export var x: { new ( n: number ): I } = null;";
+			var m = e.GetDocument( fileName );
+			expect( trimAndUnwrapAllClasses( m.Classes ) ).toEqual( [c( { Name: 'x', PrimaryInterface: { Interface: c( { Name: 'I' }) } })] );
+			expect( trimAndUnwrapAll( m.Types ) ).toEqual( [{ Interface: c( { Name: 'I' }) }] );
+		});
 	}
 }
