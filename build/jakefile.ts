@@ -7,7 +7,7 @@ import fs = require( "fs" );
 var rootDir = path.resolve( path.dirname( require.resolve( "./jakefile.js" ) ), ".." );
 var fromRoot = ( p: string ) => path.resolve( rootDir, p );
 var outDir = process.env.outDir || fromRoot( "built" );
-var typescriptPath = process.env.typescriptPath || process.env.tsPath || fromRoot( "node_modules/typescript/bin/tsc.js" );
+var typescriptPath = process.env.typescriptPath || process.env.tsPath || fromRoot( "node_modules/typescript/bin/tsc" );
 var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
 var jasminePath = fromRoot( "node_modules/jasmine-focused/bin/jasmine-focused" );
 
@@ -98,7 +98,7 @@ function compileTs( outFile: string, sources: string[], prefixes: string[], disa
 		if ( !mergeOutput ) jake.mkdirP( "temp.tmp" );
 
 		var cmd = typescriptHost + " " + typescriptPath +
-			" -removeComments -propagateEnumConstants -noImplicitAny --module commonjs " +
+			" --removeComments --noImplicitAny --module commonjs " +
 			( disableTypings ? "" : "-declaration " ) +
 			sources.join( " " ) +
 			( mergeOutput ? ( " -out " + outFile ) : ( " -outDir temp.tmp" ) );

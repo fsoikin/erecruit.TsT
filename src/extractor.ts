@@ -84,7 +84,7 @@ module erecruit.TsT {
 			return result;
 		}
 
-		private GetClass( ctor: ts.PullSymbol ) {
+		private GetClass( ctor: ts.PullSymbol ): Class {
 			var ctorType = ctor.type;
 			var sigs = Enumerable
 				.from( ctor.getDeclarations() )
@@ -277,8 +277,8 @@ module erecruit.TsT {
 					var value: any = ( <ts.PullEnumElementDecl>decl ).constantValue;
 					if ( typeof value !== "number" ) {
 						var expr = doc && <ts.EnumElement>doc._getASTForDecl( decl );
-						var eval = expr && expr.equalsValueClause && evalExpr( expr.equalsValueClause.value );
-						if ( eval ) value = eval.errorMessage || eval.result;
+						var evaled = expr && expr.equalsValueClause && evalExpr( expr.equalsValueClause.value );
+						if ( evaled ) value = evaled.errorMessage || evaled.result;
 					}
 					values[decl.name] = value;
 				});

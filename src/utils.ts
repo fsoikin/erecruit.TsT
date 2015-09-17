@@ -11,7 +11,7 @@ module erecruit.TsT {
 		return a;
 	}
 
-	export function objName( e: ModuleElement, safe: boolean = true ) {
+	export function objName( e: ModuleElement, safe: boolean = true ): string {
 		if ( !e ) return undefined;
 
 		function name( x: { Name: string } ) {

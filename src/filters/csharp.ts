@@ -13,7 +13,7 @@ module erecruit.TsT.CSharp {
 			cs_isEmptyNamespace: ( e: ModuleElement ) => typeNamespace( e ) ? <any>e : false
 		};
 
-		function typeName( e: ModuleElement, includeNamespace?: boolean ) {
+		function typeName( e: ModuleElement, includeNamespace?: boolean ): string {
 			if ( !e ) return "";
 
 			var type = e.Kind === ModuleElementKind.Type ? <Type>e : null;
