@@ -5,22 +5,22 @@ module erecruit.TsT.Tests.Extr {
 		group( "should extract directives", () => {
 			it( "on interfaces", () => {
 				file = "/** @dir value*/ export interface I {}";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types, false )[0].Directives ).toEqual( { dir: 'value' } );
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types, false )[0].Directives ).toEqual( { dir: 'value' } );
 			});
 
 			it( "on classes", () => {
 				file = "/** @dir value*/ export class C {}";
-				expect( e.GetDocument( fileName ).Classes[0].Directives ).toEqual( { dir: 'value' } );
+				expect( e().GetDocument( fileName ).Classes[0].Directives ).toEqual( { dir: 'value' } );
 			});
 
 			it( "on variables with construct signatures", () => {
-				file = "/** @dir value*/ export var C: { new: () => string } = null";
-				expect( e.GetDocument( fileName ).Classes[0].Directives ).toEqual( { dir: 'value' });
+				file = "/** @dir value*/ export var C: { new(): string } = null";
+				expect( e().GetDocument( fileName ).Classes[0].Directives ).toEqual( { dir: 'value' });
 			});
 
 			it( "on properties", () => {
 				file = "export interface I { \r\n/** @dir value*/ X: string }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types, false )[0] ).toEqual( c( {
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types, false )[0] ).toEqual( c( {
 					Interface: c( {
 						Properties: [
 							c( {
@@ -34,7 +34,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( "on methods", () => {
 				file = "export interface I { \r\n/** @dir value1*/ X(): string; \r\n/** @dir value2*/ X( p: number ): number; }";
-				var m = <Method>( <any>trimAndUnwrapAll( e.GetDocument( fileName ).Types, false )[0].Interface ).Methods[0];
+				var m = <Method>( <any>trimAndUnwrapAll( e().GetDocument( fileName ).Types, false )[0].Interface ).Methods[0];
 				expect( m.Name ).toEqual( 'X' );
 				expect( m.Signatures.sort( ( a, b ) => a.Parameters.length - b.Parameters.length ) ).toEqual( [
 					c( { Directives: { dir: "value1" }, Parameters: [] }),
@@ -68,8 +68,11 @@ module erecruit.TsT.Tests.Extr {
 		});
 	}
 
+	/** Verifies directives parsing mechanism:
+	  * runs the extractor with a single interface declaration with given comment text on it,
+	  * and checks that the resulting model has specified directives. */
 	function t( comment: string, directives: { [dir: string]: string }) {
 		file = "/** " + comment + "*/\r\nexport interface I { }";
-		expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types, false )[0].Directives ).toEqual( directives );
+		expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types, false )[0].Directives ).toEqual( directives );
 	}
 }

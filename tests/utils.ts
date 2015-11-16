@@ -52,6 +52,7 @@ module erecruit.TsT.Tests {
 	};
 
 	erecruit.TsT.log = erecruit.TsT.debug = () => { };
+	//erecruit.TsT.debug = erecruit.TsT.log;
 
 	export function renderTemplate( tpl: string, ctx: any, filters: { [key: string]: Function }) {
 		var env = new nunjucks.Environment( [] );

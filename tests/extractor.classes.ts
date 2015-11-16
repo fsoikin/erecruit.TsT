@@ -4,14 +4,14 @@ module erecruit.TsT.Tests.Extr {
 		group( "should correctly parse class", () => {
 			it( " - simple", () => {
 				file = "export class C { }";
-				var m = e.GetDocument( fileName );
+				var m = e().GetDocument( fileName );
 				expect( trimAndUnwrapAllClasses( m.Classes ) ).toEqual( [c( { Name: 'C', PrimaryInterface: { Interface: c( { Name: 'C' })} })] );
 				expect( trimAndUnwrapAll( m.Types ) ).toEqual( [{ Interface: c({ Name: 'C' }) }] );
 			});
 
 			it( " with parameterless constructors", () => {
 				file = "export class C { constructor() {} }";
-				expect( trimAndUnwrapAllClasses( e.GetDocument( fileName ).Classes ) ).toEqual( [
+				expect( trimAndUnwrapAllClasses( e().GetDocument( fileName ).Classes ) ).toEqual( [
 					c( {
 						Name: 'C',
 						Constructors: [c( { Parameters: [] })]
@@ -21,7 +21,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( " with constructors with parameters", () => {
 				file = "export class C { constructor( x: number, y: string ) {} }";
-				expect( trimAndUnwrapAllClasses( e.GetDocument( fileName ).Classes ) ).toEqual( [
+				expect( trimAndUnwrapAllClasses( e().GetDocument( fileName ).Classes ) ).toEqual( [
 					c( {
 						Name: 'C',
 						Constructors: [c( {
@@ -36,7 +36,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( " which is generic", () => {
 				file = "export class C<T> { constructor( x: number, y: string ) {} }";
-				expect( trimAndUnwrapAllClasses( e.GetDocument( fileName ).Classes ) ).toEqual( [
+				expect( trimAndUnwrapAllClasses( e().GetDocument( fileName ).Classes ) ).toEqual( [
 					c( {
 						Name: 'C',
 						GenericParameters: [c( { GenericParameter: c( {Name: 'T'})})],
@@ -52,7 +52,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( " which is generic and has constructor with generic parameters", () => {
 				file = "export class C<T> { constructor( x: T, y: string ) {} }";
-				expect( trimAndUnwrapAllClasses( e.GetDocument( fileName ).Classes ) ).toEqual( [
+				expect( trimAndUnwrapAllClasses( e().GetDocument( fileName ).Classes ) ).toEqual( [
 					c( {
 						Name: 'C',
 						GenericParameters: [c( { GenericParameter: c( { Name: 'T' }) })],
@@ -70,55 +70,39 @@ module erecruit.TsT.Tests.Extr {
 				file = "export class A {} \
 								export interface I {}\
 								export class B extends A implements I {}";
-				expect( trimAndUnwrapAllClasses( e.GetDocument( fileName ).Classes ) ).toEqual( [
-					c( { Name: 'A', PrimaryInterface: c({ Interface: c({ Name: 'A' }) }) }),
+				expect( trimAndUnwrapAllClasses( e().GetDocument( fileName ).Classes ) ).toEqual( [
+					c( { Name: 'A', PrimaryInterface: c( { Interface: c( { Name: 'A' }) }) }),
 					c( {
 						Name: 'B',
-						PrimaryInterface: c({ Interface: c({ Name: 'B' }) }),
+						PrimaryInterface: c( { Interface: c( { Name: 'B' }) }),
 						BaseClass: c( { Name: 'A' }),
 						Implements: [c( { Interface: c( { Name: 'I' }) })]
 					})
 				] );
 			});
 
-			it( " with multiple constructor overloads", () => {
-				file = "export class C { \
-					constructor( x: number, y: string ) {} \
-					constructor( x: string; y: string ) {} \
-					constructor( x: any; y: any ) {} }";
-				expect( trimAndUnwrapAllClasses( e.GetDocument( fileName ).Classes ) ).toEqual( [
+			it( " should extract list of interfaces when some are generic", () => {
+				file = "export interface I {}\
+								export interface J<T> {}\
+								export class B implements I, J<number> {}";
+				expect( trimAndUnwrapAllClasses( e().GetDocument( fileName ).Classes ) ).toEqual( [
 					c( {
-						Name: 'C',
-						Constructors: [
-							c( {
-								Parameters: [
-									{ Name: 'x', Type: { PrimitiveType: PrimitiveType.Number } },
-									{ Name: 'y', Type: { PrimitiveType: PrimitiveType.String } },
-								]
-							}),
-							c( {
-								Parameters: [
-									{ Name: 'x', Type: { PrimitiveType: PrimitiveType.String } },
-									{ Name: 'y', Type: { PrimitiveType: PrimitiveType.String } },
-								]
-							}),
-							c( {
-								Parameters: [
-									{ Name: 'x', Type: { PrimitiveType: PrimitiveType.Any } },
-									{ Name: 'y', Type: { PrimitiveType: PrimitiveType.Any } },
-								]
-							})
+						Name: 'B',
+						PrimaryInterface: c( { Interface: c( { Name: 'B' }) }),
+						Implements: [
+							c( { Interface: c( { Name: 'I' }) }),
+							{ GenericInstantiation: { Definition: 'J', Arguments: [{ PrimitiveType: PrimitiveType.Number }] } }
 						]
 					})
 				] );
 			});
 		});
 
-		xit( "should parse exported var with new() member as a class",() => {
+		it( "should parse exported var with new() member as a class",() => {
 			file = " \
 					export interface I { } \
 					export var x: { new ( n: number ): I } = null;";
-			var m = e.GetDocument( fileName );
+			var m = e().GetDocument( fileName );
 			expect( trimAndUnwrapAllClasses( m.Classes ) ).toEqual( [c( { Name: 'x', PrimaryInterface: { Interface: c( { Name: 'I' }) } })] );
 			expect( trimAndUnwrapAll( m.Types ) ).toEqual( [{ Interface: c( { Name: 'I' }) }] );
 		});

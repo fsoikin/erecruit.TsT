@@ -1,10 +1,11 @@
 module erecruit.TsT.Tests.Extr {
 
 	export function generics() {
+
 		group( "should correctly parse generic interfaces", () => {
 			it( "with one parameter", () => {
 				file = "export interface I<T> { X: T[]; Y: T; }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'I',
 						GenericParameters: [c( { GenericParameter: { Name: 'T', Constraint: null } })],
@@ -18,7 +19,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( "with two parameters", () => {
 				file = "export interface I<T,S> { X: T[]; Y: S; }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'I',
 						GenericParameters: [
@@ -35,7 +36,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( "inheriting from other generic interfaces", () => {
 				file = "export interface I<T> extends J<T> { X: T[]; } export interface J<S> { Y: S }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'I',
 						GenericParameters: [{ GenericParameter: { Name: 'T', Constraint: null } }],
@@ -57,9 +58,42 @@ module erecruit.TsT.Tests.Extr {
 				] );
 			});
 
+			it( "inheriting from other generic interfaces with multiple inheritance clauses", () => {
+				file = `
+					export interface I<T> extends J<T> { X: T[]; }
+					export interface J<S> { Y: S } 
+					export interface K<U> { Z: U }
+					export interface I<T> extends K<T[]> {}
+				`;
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+					c( {
+						Name: 'I',
+						GenericParameters: [{ GenericParameter: { Name: 'T', Constraint: null } }],
+						Extends: [
+							c( {
+								GenericInstantiation: {
+									Definition: 'J',
+									Arguments: [{ GenericParameter: c( { Name: 'T' }) }]
+								}
+							}),
+							c( {
+								GenericInstantiation: {
+									Definition: 'K',
+									Arguments: [ { Array: { GenericParameter: c( { Name: 'T' }) } } ]
+								}
+							})],
+						Properties: [
+							{ Name: 'X', Type: { Array: { GenericParameter: { Name: 'T', Constraint: null } } } },
+						]
+					}),
+					c( { Name: 'J' }),
+					c( { Name: 'K' })
+				] );
+			});
+
 			it( "concretely instantiated and used in a base type position", () => {
 				file = "export interface I extends J<number> { } export interface J<S> { Y: S }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'I',
 						Extends: [{
@@ -79,7 +113,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( "with parameters constrained by regular types", () => {
 				file = "export interface I<T extends J> { X: T; } export interface J {}";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'I',
 						GenericParameters: [

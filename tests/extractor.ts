@@ -12,17 +12,17 @@
 module erecruit.TsT.Tests.Extr {
 	export var c = jasmine.objectContaining;
 
-	export var e: Extractor;
+	export var e: () => Extractor;
 	export var file: string;
-	export var files: { [name: string]: string };
+	export var extraFiles: { [name: string]: string };
 	export var fileName = "a.ts";
 
 	describe( "Extractor", () => {
 
 		beforeEach( () => {
 			file = null;
-			files = {};
-			e = new Extractor( <CachedConfig>{
+			extraFiles = {};
+			e = () => createExtractor( <CachedConfig>{
 				Original: { RootDir: '.', ConfigDir: '.' },
 				File: [{ Match: null, Types: null, Classes: null }],
 				NunjucksEnv: <Nunjucks.IEnvironment>null,
@@ -30,7 +30,7 @@ module erecruit.TsT.Tests.Extr {
 					DirectoryExists: _ => false,
 					FetchFile: name =>
 						( name === fileName && file ) ||
-						files[name] ||
+						extraFiles[name] ||
 						fs.existsSync( name ) && fs.readFileSync( name, { encoding: 'utf8' })
 						|| null,
 					GetParentDirectory: _ => "",
@@ -38,7 +38,7 @@ module erecruit.TsT.Tests.Extr {
 					ResolveRelativePath: (path, directory) => path,
 					GetIncludedTypingFiles: () => [require.resolve( '../lib.d.ts' )]
 				}
-			});
+			}, Object.keys( extraFiles ).concat( [fileName] ) );
 		});
 
 

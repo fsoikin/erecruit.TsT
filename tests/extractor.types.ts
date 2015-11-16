@@ -4,7 +4,7 @@ module erecruit.TsT.Tests.Extr {
 		group( "should correctly parse data structure", () => {
 			it( " - simple", () => {
 				file = "export interface X { A: string; B: number; }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'X',
 						Properties: [
@@ -17,7 +17,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( "with a substructure", () => {
 				file = "export interface X { A: string; B: Y; } export interface Y { C: number; }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'X',
 						Properties: [
@@ -38,7 +38,7 @@ module erecruit.TsT.Tests.Extr {
 		group( "should correctly parse an interface", () => {
 			it( "with methods", () => {
 				file = "export interface I { M( x: string ): number; N( x: number ): string; }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'I',
 						Methods: [
@@ -63,7 +63,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( "with multiple method overloads", () => {
 				file = "export interface I { M( x: string ): number; M( x: number ): string; }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 					c( {
 						Name: 'I',
 						Methods: [
@@ -89,7 +89,7 @@ module erecruit.TsT.Tests.Extr {
 		group( "should correctly parse enums", () => {
 			it( "with implicit values", () => {
 				file = "export enum X { A, B, C }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Enum() ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Enum() ) ).toEqual( [
 					c( {
 						Name: 'X',
 						Values: [{ Name: 'A', Value: 0 }, { Name: 'B', Value: 1 }, { Name: 'C', Value: 2 }]
@@ -99,7 +99,7 @@ module erecruit.TsT.Tests.Extr {
 
 			it( "with explicit values", () => {
 				file = "export enum X { A = 5, B = 8, C = 10 }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Enum() ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Enum() ) ).toEqual( [
 					c( {
 						Name: 'X',
 						Values: [{ Name: 'A', Value: 5 }, { Name: 'B', Value: 8 }, { Name: 'C', Value: 10 }]
@@ -112,7 +112,7 @@ module erecruit.TsT.Tests.Extr {
 					D = A | B, E = B & C, F = ~B \
 					G = A + B, H = B - C, I = C ^ B, \
 					J = -B }";
-				expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Enum() ) ).toEqual( [
+				expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Enum() ) ).toEqual( [
 					c( {
 						Name: 'X',
 						Values: [{ Name: 'A', Value: 1 }, { Name: 'B', Value: 2 }, { Name: 'C', Value: 6 },
@@ -126,7 +126,7 @@ module erecruit.TsT.Tests.Extr {
 
 		it( "should correctly parse array-typed properties", () => {
 			file = "export interface I { X: string[]; Y: number[]; Z: J[]; } export interface J {}";
-			expect( trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
+			expect( trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface ) ).toEqual( [
 				c( {
 					Name: 'I',
 					Properties: [
@@ -141,7 +141,7 @@ module erecruit.TsT.Tests.Extr {
 
 		it( "should ignore private properties on interfaces", () => {
 			file = "export class I { X: string; private Y: number; }";
-			var types = <Interface[]><any[]>trimAndUnwrapAll( e.GetDocument( fileName ).Types ).map( t => t.Interface );
+			var types = <Interface[]><any[]>trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface );
 			expect( types ).toEqual( [c( { Name: 'I' })] );
 			expect( types[0].Properties ).toEqual( [c( { Name: 'X' })] );
 		});
