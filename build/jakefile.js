@@ -1,13 +1,12 @@
-/// <reference path="../lib/node/node.d.ts" />
-/// <reference path="../lib/jake/jake.d.ts" />
 var path = require("path");
 var fs = require("fs");
+var Jasmine = require("jasmine");
 var rootDir = path.resolve(path.dirname(require.resolve("./jakefile.js")), "..");
 var fromRoot = function (p) { return path.resolve(rootDir, p); };
 var outDir = process.env.outDir || fromRoot("built");
 var typescriptPath = process.env.typescriptPath || process.env.tsPath || fromRoot("node_modules/typescript/bin/tsc");
 var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
-var jasminePath = fromRoot("node_modules/jasmine-focused/bin/jasmine-focused");
+var jasmineConfigPath = fromRoot("built/tests/jasmine.json");
 var sourceFiles = ["src/**/*.ts", "lib/**/*.ts"].map(fromRoot);
 var sources = new jake.FileList();
 sources.include(sourceFiles);
@@ -69,7 +68,7 @@ function wrapLibs() {
         wrapped: path.relative('.', path.resolve(fromRoot("lib/wrapped"), path.relative(fromRoot("lib"), f)))
     }); })
         .sort();
-    wrapped.forEach(function (w) { return wrapFile(w.raw, w.wrapped, "(function(__root__,module,exports,global,define,require) {", " if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;" +
+    wrapped.forEach(function (w) { return wrapFile(w.raw, w.wrapped, "(function(__root__,module,exports,global,define,require) {\n", "\nif (typeof ts !== 'undefined') __root__.ts = ts;\n" +
         "})( typeof global === 'undefined' ? this : global );"); });
     return wrapped.map(function (w) { return w.wrapped; });
 }
@@ -116,12 +115,10 @@ function compileTs(outFile, sources, prefixes, disableTypings, mergeOutput, prer
     }, { async: true });
 }
 function runJasmine() {
-    var ex = jake.createExec(["node " + jasminePath + " " + path.dirname(testsModule)]);
-    ex.addListener("stdout", function (o) { return process.stdout.write(o); });
-    ex.addListener("stderr", function (e) { return process.stderr.write(e); });
-    ex.addListener("cmdEnd", complete);
-    ex.addListener("error", complete);
-    ex.run();
+    var jasmine = new Jasmine();
+    jasmine.loadConfigFile(jasmineConfigPath);
+    jasmine.onComplete(complete);
+    jasmine.execute();
 }
 function prepend(prefixFiles, destinationFile) {
     if (!fs.existsSync(destinationFile)) {

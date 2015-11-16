@@ -1,35 +1,37 @@
 /// <reference path="../lib/node/node.d.ts" />
 /// <reference path="../lib/jake/jake.d.ts" />
+/// <reference path="../lib/jasmine/jasmine-node.d.ts" />
 
 import path = require( "path" );
 import fs = require( "fs" );
+import Jasmine = require( "jasmine" );
 
-var rootDir = path.resolve( path.dirname( require.resolve( "./jakefile.js" ) ), ".." );
-var fromRoot = ( p: string ) => path.resolve( rootDir, p );
-var outDir = process.env.outDir || fromRoot( "built" );
-var typescriptPath = process.env.typescriptPath || process.env.tsPath || fromRoot( "node_modules/typescript/bin/tsc" );
-var typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
-var jasminePath = fromRoot( "node_modules/jasmine-focused/bin/jasmine-focused" );
+let rootDir = path.resolve( path.dirname( require.resolve( "./jakefile.js" ) ), ".." );
+let fromRoot = ( p: string ) => path.resolve( rootDir, p );
+let outDir = process.env.outDir || fromRoot( "built" );
+let typescriptPath = process.env.typescriptPath || process.env.tsPath || fromRoot( "node_modules/typescript/bin/tsc" );
+let typescriptHost = process.env.host || process.env.TYPESCRIPT_HOST || "node";
+let jasmineConfigPath = fromRoot( "built/tests/jasmine.json" );
 
-var sourceFiles = ["src/**/*.ts", "lib/**/*.ts"].map( fromRoot );
-var sources = new jake.FileList();
+let sourceFiles = ["src/**/*.ts", "lib/**/*.ts"].map( fromRoot );
+let sources = new jake.FileList();
 sources.include( sourceFiles );
 
-var tests = new jake.FileList();
+let tests = new jake.FileList();
 tests.include( sourceFiles );
 tests.include( ["tests/**/*.ts"].map( fromRoot ) );
 tests.exclude( ["tests/integration/src/**/*.ts"].map( fromRoot ) );
 
-var nodeModule = toOutDir( 'tst-node.js' );
-var nodeModuleTypings = toOutDir( 'tst-node.d.ts' );
-var freeModule = toOutDir( 'tst.js' );
-var freeModuleTypings = toOutDir( 'tst.d.ts' );
-var executableModule = toOutDir( 'tstc.js' );
-var typeScriptBaseTypings = toOutDir( 'lib.d.ts' );
-var outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule, typeScriptBaseTypings];
-var testsModule = toOutDir( 'tests/tstSpec.js' );
+let nodeModule = toOutDir( 'tst-node.js' );
+let nodeModuleTypings = toOutDir( 'tst-node.d.ts' );
+let freeModule = toOutDir( 'tst.js' );
+let freeModuleTypings = toOutDir( 'tst.d.ts' );
+let executableModule = toOutDir( 'tstc.js' );
+let typeScriptBaseTypings = toOutDir( 'lib.d.ts' );
+let outputs = [nodeModule, nodeModuleTypings, freeModule, freeModuleTypings, executableModule, typeScriptBaseTypings];
+let testsModule = toOutDir( 'tests/tstSpec.js' );
 
-var lib = wrapLibs();
+let lib = wrapLibs();
 
 desc( "Build" ); task( 'default', outputs );
 desc( "Clean" ); task( 'clean', [], () => outputs.concat( lib ).forEach( f => fs.existsSync( f ) && fs.unlink( f ) ) );
@@ -50,10 +52,10 @@ file( typeScriptBaseTypings, [fromRoot('node/lib.d.ts')], () => jake.cpR( fromRo
 
 file( nodeModuleTypings, [freeModuleTypings], () => {
 	console.log( "Building " + nodeModuleTypings );
-	var enc = { encoding: 'utf8' };
+	let enc = { encoding: 'utf8' };
 	jake.mkdirP( path.dirname( nodeModuleTypings ) );
 
-	var content: string = <any>fs.readFileSync( freeModuleTypings, enc );
+	let content: string = <any>fs.readFileSync( freeModuleTypings, enc );
 	content = content
 		.replace( 'declare module erecruit.TsT', 'declare module "tst"' )
 		.replace( /}\s*declare module erecruit\.TsT([^\s\{])*\s*\{/g, '' )
@@ -62,19 +64,19 @@ file( nodeModuleTypings, [freeModuleTypings], () => {
 });
 
 function wrapLibs() {
-	var raw = new jake.FileList();
+	let raw = new jake.FileList();
 	raw.include( fromRoot( "lib/**/*.js" ) );
 	if ( fs.existsSync( fromRoot( "lib/wrapped" ) ) ) raw.exclude( fromRoot( "lib/wrapped/**/*" ) );
 
-	var wrapped = raw.toArray()
+	let wrapped = raw.toArray()
 		.map( ( f ) => ( {
 			raw: f,
 			wrapped: path.relative( '.', path.resolve( fromRoot( "lib/wrapped" ), path.relative( fromRoot( "lib" ), f ) ) )
 		}) )
 		.sort();
 	wrapped.forEach( w => wrapFile( w.raw, w.wrapped,
-		"(function(__root__,module,exports,global,define,require) {",
-		" if (typeof TypeScript !== 'undefined') __root__.TypeScript = TypeScript;" +
+		"(function(__root__,module,exports,global,define,require) {\n",
+		"\nif (typeof ts !== 'undefined') __root__.ts = ts;\n" +
 		"})( typeof global === 'undefined' ? this : global );" ) );
 
 	return wrapped.map( w => w.wrapped );
@@ -83,7 +85,7 @@ function wrapLibs() {
 function wrapFile( sourceFile: string, outFile: string, prefix: string, suffix: string ) {
 	file( outFile, [sourceFile], () => {
 		console.log( "Building " + outFile );
-		var enc = { encoding: 'utf8' };
+		let enc = { encoding: 'utf8' };
 		jake.mkdirP( path.dirname( outFile ) );
 		fs.writeFileSync( outFile, prefix, enc );
 		fs.appendFileSync( outFile, fs.readFileSync( sourceFile, enc ), enc );
@@ -97,13 +99,13 @@ function compileTs( outFile: string, sources: string[], prefixes: string[], disa
 		jake.mkdirP( path.dirname( outFile ) );
 		if ( !mergeOutput ) jake.mkdirP( "temp.tmp" );
 
-		var cmd = typescriptHost + " " + typescriptPath +
+		let cmd = typescriptHost + " " + typescriptPath +
 			" --removeComments --noImplicitAny --module commonjs " +
 			( disableTypings ? "" : "-declaration " ) +
 			sources.join( " " ) +
 			( mergeOutput ? ( " -out " + outFile ) : ( " -outDir temp.tmp" ) );
 
-		var ex = jake.createExec( [cmd] );
+		let ex = jake.createExec( [cmd] );
 		ex.addListener( "stdout", (o: any) => process.stdout.write( o ) );
 		ex.addListener( "stderr", (e: any) => process.stderr.write( e ) );
 		ex.addListener( "cmdEnd", () => {
@@ -124,12 +126,10 @@ function compileTs( outFile: string, sources: string[], prefixes: string[], disa
 }
 
 function runJasmine() {
-	var ex = jake.createExec( ["node " + jasminePath + " " + path.dirname( testsModule )] );
-	ex.addListener( "stdout", ( o: any ) => process.stdout.write( o ) );
-	ex.addListener( "stderr", ( e: any ) => process.stderr.write( e ) );
-	ex.addListener( "cmdEnd", complete );
-	ex.addListener( "error", complete );
-	ex.run();	
+	var jasmine = new Jasmine();
+	jasmine.loadConfigFile( jasmineConfigPath );
+	jasmine.onComplete( complete );
+	jasmine.execute();
 }
 
 function prepend( prefixFiles: string[], destinationFile: string ) {
@@ -137,8 +137,8 @@ function prepend( prefixFiles: string[], destinationFile: string ) {
 		fail( destinationFile + " failed to be created!" );
 	}
 
-	var enc = { encoding: 'utf8' };
-	var destinationContent = fs.readFileSync( destinationFile, enc );
+	let enc = { encoding: 'utf8' };
+	let destinationContent = fs.readFileSync( destinationFile, enc );
 
 	fs.writeFileSync( destinationFile, '', enc);
 	prefixFiles
@@ -166,15 +166,15 @@ function setVersion( versionValue: string ) {
 
 	function replace( file: string, regex: RegExp ) {
 		file = fromRoot( file );
-		var enc = { encoding: 'utf8' };
-		var contents: string = <any>fs.readFileSync( file, enc );
-		var newContents = contents.replace( regex, ( _, prefix, __, suffix ) => prefix + versionValue + suffix );
+		let enc = { encoding: 'utf8' };
+		let contents: string = <any>fs.readFileSync( file, enc );
+		let newContents = contents.replace( regex, ( _, prefix, __, suffix ) => prefix + versionValue + suffix );
 		fs.writeFileSync( file, newContents, enc );
 	}
 }
 
 function updateLkg() {
-	var lkg = fromRoot( 'bin' );
+	let lkg = fromRoot( 'bin' );
 	jake.rmRf( lkg );
 	jake.mkdirP( lkg );
 
@@ -183,13 +183,13 @@ function updateLkg() {
 	copyIfThere( 'setup/bin/Release', 'setup' );
 
 	function copyIfThere( where: string, copyTo: string ) {
-		var from = fromRoot( 'dotNet/' + where );
+		let from = fromRoot( 'dotNet/' + where );
 
 		if ( fs.existsSync( from ) ) {
-			var to = path.relative( '.', path.resolve( lkg, copyTo ) );
+			let to = path.relative( '.', path.resolve( lkg, copyTo ) );
 			jake.mkdirP( to );
 
-			var list = new jake.FileList();
+			let list = new jake.FileList();
 			list.include( ["*.dll", "*.exe", "*.vsixmanifest", "*.msi"].map( f => path.resolve( from, f ) ) );
 			list.exclude( ["*vshost*"].map( f => path.resolve( from, f ) ) );
 			list.toArray().forEach( f => jake.cpR( path.relative( '.', f ), to ) );
