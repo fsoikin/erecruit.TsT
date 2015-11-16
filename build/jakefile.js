@@ -1,6 +1,7 @@
 var path = require("path");
 var fs = require("fs");
 var Jasmine = require("jasmine");
+exports.a = 54;
 var rootDir = path.resolve(path.dirname(require.resolve("./jakefile.js")), "..");
 var fromRoot = function (p) { return path.resolve(rootDir, p); };
 var outDir = process.env.outDir || fromRoot("built");
@@ -12,8 +13,8 @@ var sources = new jake.FileList();
 sources.include(sourceFiles);
 var tests = new jake.FileList();
 tests.include(sourceFiles);
-tests.include(["tests/**/*.ts"].map(fromRoot));
-tests.exclude(["tests/integration/src/**/*.ts"].map(fromRoot));
+tests.include(fromRoot("tests/**/*.ts"));
+tests.exclude(fromRoot("tests/integration/src/**/*.ts"));
 var nodeModule = toOutDir('tst-node.js');
 var nodeModuleTypings = toOutDir('tst-node.d.ts');
 var freeModule = toOutDir('tst.js');

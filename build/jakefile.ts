@@ -6,6 +6,8 @@ import path = require( "path" );
 import fs = require( "fs" );
 import Jasmine = require( "jasmine" );
 
+export var a = 54;
+
 let rootDir = path.resolve( path.dirname( require.resolve( "./jakefile.js" ) ), ".." );
 let fromRoot = ( p: string ) => path.resolve( rootDir, p );
 let outDir = process.env.outDir || fromRoot( "built" );
@@ -19,8 +21,8 @@ sources.include( sourceFiles );
 
 let tests = new jake.FileList();
 tests.include( sourceFiles );
-tests.include( ["tests/**/*.ts"].map( fromRoot ) );
-tests.exclude( ["tests/integration/src/**/*.ts"].map( fromRoot ) );
+tests.include( fromRoot( "tests/**/*.ts" ) );
+tests.exclude( fromRoot( "tests/integration/src/**/*.ts" ) );
 
 let nodeModule = toOutDir( 'tst-node.js' );
 let nodeModuleTypings = toOutDir( 'tst-node.d.ts' );
