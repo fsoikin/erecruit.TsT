@@ -3,399 +3,438 @@
 /// <reference path="interfaces.ts" />
 /// <reference path="utils.ts" />
 
-import ts = TypeScript;
-import PEKind = ts.PullElementKind;
-import IEnumerable = linqjs.IEnumerable;
+type IEnumerable<T> = linqjs.IEnumerable<T>;
  
 module erecruit.TsT {
 	export interface ExtractorOptions {
 		UseCaseSensitiveFileResolution?: boolean;
 	}
 
-	export class Extractor {
-		constructor( private _config: CachedConfig, private _options: ExtractorOptions = {}) {
-			ensureArray( _config.Host.GetIncludedTypingFiles() ).forEach( f => this.addFile( f ) );
-		}
+	export interface Extractor {
+		GetDocument( fileName: string ): Document;
+	}
 
-		LoadDocuments( docs: string[] ) {
-			( docs || [] ).forEach( fileName => {
-				fileName = this.normalizePath( fileName ); // Have to normalize file path to avoid duplicates
-				log( () => "LoadDocuments: " + fileName );
+	export function createExtractor( config: CachedConfig, fileNames: string[], options: ExtractorOptions = {}) {
 
-				if ( !this._compiler.getDocument( fileName ) ) {
-					if ( !this.addFile( fileName ) ) {
-						throw "Cannot read file " + fileName;
-					}
+		let intrinsicsFileName = "87F58C4CD90A42FA86608E284696D4D3.ts";
+		let intrinsicsFile = ts.ScriptSnapshot.fromString( getIntrinsicsText() );
 
-					var resolved = ts.ReferenceResolver.resolve( [fileName], this._tsHost, this._options.UseCaseSensitiveFileResolution );
-					Enumerable.from( resolved && resolved.resolvedFiles )
-						.where( f => !this._compiler.getDocument( f.path ) )
-						.forEach( f => this.addFile( f.path ) );
-				}
-			});
-		}
+		let allFileNames = ensureArray( config.Host.GetIncludedTypingFiles() ).concat( fileNames ).concat( [intrinsicsFileName] );
+		let snapshots: { [fileName: string]: ts.IScriptSnapshot } = {};
 
-		private addFile( f: string ) {
-			f = this.normalizePath( f );
-			log( () => "addFile: " + f );
-			var snapshot = this._tsHost.getScriptSnapshot( f );
-			if ( snapshot ) this._compiler.addFile( f, snapshot, null, 0, false, [] );
-			return !!snapshot;
-		}
+		let langService = ts.createLanguageService( {
+			getScriptFileNames: () => allFileNames,
+      getScriptVersion: fileName => "",
+			getScriptSnapshot,
 
-		GetDocument( fileName: string ): Document {
-			fileName = this.normalizePath( fileName );
-			this.LoadDocuments( [fileName] );
+			getCurrentDirectory: () => ".",
+      getDefaultLibFileName: options => "",
+      getCompilationSettings: () => ( {})
+		});
 
-			var mod = this._compiler.topLevelDeclaration( fileName );
+		let program = langService.getProgram();
+		let tc = program.getTypeChecker();
+		let intrinsics = getIntrinsics();
+
+		let typeCache: { [typeScriptTypeID: number]: Type } = {};
+		let docCache: { [path: string]: Document } = {};
+
+		return { GetDocument };
+
+		function GetDocument( fileName: string ): Document {
+
+			let mod = program.getSourceFile( fileName );
 			if ( !mod ) return { Path: fileName, Classes: [], Types: [] };
 
-			var allModuleDecls = Enumerable
-				.from( mod.getChildDecls() )
-				.where( d => d.kind === PEKind.DynamicModule || d.kind === PEKind.Container )
-				.selectMany( mod => mod.getChildDecls() );
+			let allModuleDecls = Enumerable.from( mod.statements ).where( s => !!( s.flags & ts.NodeFlags.Export ) );
+			let document = getCachedDoc( fileName );
 
-			function flatten( ds: IEnumerable<ts.PullDecl> ): IEnumerable<ts.PullDecl> {
-				return ds.where( d => d.kind !== PEKind.Container ).concat(
-					ds.where( d => d.kind === PEKind.Container )
-						.selectMany( d => flatten( Enumerable.from( d.getChildDecls() ) ) ) );
+			document.Classes = allModuleDecls.selectMany( classesFromDecl ).where( t => !!t ).distinct().toArray();
+			document.Types = allModuleDecls.select( typeFromDecl ).where( t => !!t ).distinct().toArray();
+
+			return document;
+		}
+
+		function getScriptSnapshot( fileName: string ) {
+			if ( fileName == intrinsicsFileName ) return intrinsicsFile;
+
+			let cached = snapshots[fileName];
+			if ( cached !== undefined ) return cached;
+
+			debug(() => "getScriptSnapshot: fetching: " + fileName );
+			let content = config.Host.FetchFile( fileName );
+			return snapshots[fileName] =
+				content || content === "" ? ts.ScriptSnapshot.fromString( content ) : null;
+		}
+
+		function getCachedDoc( path: string ) {
+			return docCache[path] || ( docCache[path] = { Path: path, Types: null, Classes: null });
+		}
+
+		function getCachedDocFromSymbol( symbol: ts.Symbol ) {
+			if ( !symbol ) return null;
+
+			let file = Enumerable
+				.from( symbol.getDeclarations() )
+				.selectMany( getAllParentsAndSelf )
+				.where( d => d.kind == ts.SyntaxKind.SourceFile )
+				.select( file => ( file as ts.SourceFile ).fileName )
+				.firstOrDefault();
+
+			return file && getCachedDoc( file );
+		}
+
+		function classesFromDecl( decl: ts.Statement ) {
+			switch ( decl.kind ) {
+				case ts.SyntaxKind.ClassDeclaration: return classesFromClassDecl( decl as ts.ClassDeclaration );
+				case ts.SyntaxKind.VariableStatement: return classesFromVariable( decl as ts.VariableStatement );
 			}
-			allModuleDecls = flatten( allModuleDecls );
+			return null;
+		}
+		
+		function classesFromClassDecl( cl: ts.ClassDeclaration ) {
+			return classesFromIdentifier( cl && cl.name );
+		}
 
-			var result = this.GetCachedDoc( fileName );
+		function classesFromVariable( vr: ts.VariableStatement ) {
+			let decls = vr && vr.declarationList.declarations;
+			let name = decls && decls.map( d => d.name ).filter( n => !!n )[0];
 
-			result.Classes = allModuleDecls
-				.where( d => d.kind === PEKind.Variable )
-				.select( this.SymbolFromDecl )
-				.select( variable => this.GetClass( variable ) )
-				.where( c => c.Constructors.length > 0 )
-				.toArray();
+			if ( name && name.kind == ts.SyntaxKind.Identifier )
+				return classesFromIdentifier( <ts.Identifier> name );
+			else
+				return null;
+		}
 
-			result.Types = allModuleDecls
-				.where( d => d.kind === PEKind.Interface || d.kind === PEKind.Enum || d.kind === PEKind.Class )
-				.select( this.SymbolFromDecl )
-				.select( x => this.GetType( <ts.PullTypeSymbol>x ) )
-				.toArray();
+		function classesFromIdentifier( name: ts.Identifier ) {
+			if ( !name || name.kind != ts.SyntaxKind.Identifier ) return null;
 
-			log( () => "GetDocument: result: " + result.Classes.length + " classes, " + result.Types.length + " types." );
-			debug( () => "GetDocument: classes: " + result.Classes.map( c => c.Name ).join() );
-			debug( () => "GetDocument: types: " + result.Types.map( t => objName( t ) ).join() );
+			let symbol = name && tc.getSymbolAtLocation( name );
+			let type = symbol && tc.getTypeOfSymbolAtLocation( symbol, name );
+			let comments = getComments( symbol );
+			let firstDecl = getFirstDeclaration( symbol );
+			let internalModule = getInternalModule( firstDecl );
+			let externalModule = getExternalModule( firstDecl );
+
+			return Enumerable
+				.from( type && type.getConstructSignatures() )
+				.groupBy( ctor => ctor.getReturnType(), ctor => ctor, ( classType, ctors ) => ( { classType, ctors }) )
+				.select( x => <Class> {
+						Name: name.getText(),
+						Comment: comments,
+						Directives: parseDirectives( comments ),
+						Document: getCachedDocFromSymbol( symbol ),
+						InternalModule: internalModule,
+						ExternalModule: externalModule,
+						Kind: ModuleElementKind.Class,
+						PrimaryInterface: translateType( x.classType ),
+						BaseClass: () => translateBaseClass( x.classType ),
+						Implements: translateInterfacesOf( x.classType ).distinct().toArray(),
+
+						GenericParameters: isGenericDefinition( x.classType )
+							? getGenericTypeParameters( x.classType ).map( translateType )
+							: null,
+
+						Constructors: x.ctors.select( translateCallSignature ).toArray()
+					});
+		}
+
+		type ClassOrIntfOrEnum = ts.ClassDeclaration | ts.InterfaceDeclaration | ts.EnumDeclaration;
+
+		function typeFromDecl( decl: ts.Statement ) {
+			switch ( decl.kind ) {
+				case ts.SyntaxKind.ClassDeclaration: 
+				case ts.SyntaxKind.InterfaceDeclaration:
+				case ts.SyntaxKind.EnumDeclaration:
+					return typeFromIdentifier( ( decl as ClassOrIntfOrEnum ).name );
+			}
+			return null;
+		}
+
+		function typeFromIdentifier( name: ts.Identifier ) {
+			if ( !name || name.kind != ts.SyntaxKind.Identifier ) return null;
+			let symbol = name && tc.getSymbolAtLocation( name );
+			let type = symbol && tc.getDeclaredTypeOfSymbol( symbol );
+			
+			return translateType( type );
+		}
+
+		function translateType( type: ts.Type ) {
+			if ( !type ) return null;
+
+			let tid = getTypeId( type );
+			let result = typeCache[tid];
+			if ( result ) return result;
+
+			debug(() => `Translating type '${getTypeName( type )} #${tid}'.` );
+			let symbol = type.getSymbol();
+			let firstDecl = getFirstDeclaration( symbol );
+			let comments = getTypeComments( type );
+
+			// This call will cause the typechecker to resolve properties, as well as a bunch of other information
+			// about the type (such as generic constraints), but we don't actually need its result right now.
+			type.getProperties(); 
+
+			// First we calculate all non-recursive stuff in the type and put it into cache,
+			// so that if we come across this same type while traversing the graph further,
+			// we can peek this same instance from cache and not get caught in an infinite loop.
+			typeCache[tid] = result = {
+				Document: getCachedDocFromSymbol( symbol ),
+				Kind: ModuleElementKind.Type,
+				ExternalModule: getExternalModule( firstDecl ),
+				InternalModule: getInternalModule( firstDecl ),
+				Comment: comments,
+				Directives: parseDirectives( comments ),
+			};
+
+			if ( isArrayType( type ) ) result.Array = memoize(() => translateType( getArrayElementType( type ) ) );
+			else if ( isPrimitiveType( type ) ) result.PrimitiveType = translatePrimitiveType( type );
+			else if ( isEnumType( type ) ) result.Enum = memoize(() => translateEnum( type ) );
+			else if ( isTypeParameter( type ) ) result.GenericParameter = memoize(() => translateGenericParameter( type as ts.TypeParameter ) );
+			else if ( isGenericInstantiation( type ) ) result.GenericInstantiation = memoize(() => translateGenericInstantiation( type as ts.TypeReference ) );
+			else result.Interface = memoize( () => translateInterface( type ) );
 
 			return result;
 		}
 
-		private GetClass( ctor: ts.PullSymbol ): Class {
-			var ctorType = ctor.type;
-			var sigs = Enumerable
-				.from( ctor.getDeclarations() )
-				.selectMany( d => d.getChildDecls() )
-				.where( d => d.kind === PEKind.ConstructorMethod )
-				.select( this.SymbolFromDecl )
-				.selectMany( s => s.type.getConstructSignatures() )
-				.concat( Enumerable
-					.from( ctorType.getHasDefaultConstructor() ? [ctorType.getConstructorMethod()] : [] )
-					.selectMany( c => c.type.getConstructSignatures() ) )
-				.concat( Enumerable.from( ctorType
-					.getAllMembers( PEKind.Property, ts.GetAllMembersVisiblity.externallyVisible ) )
-					.where( m => m.name === "new" )
-					.selectMany( m => m.type.getCallSignatures() ) )
-				.distinct();
 
-			var comments = ctor.docComments() || ctorType.docComments();
-
-			return <Class> {
-				Name: ctor.name,
-				Comment: comments,
-				Directives: parseDirectives( comments ),
-				Document: this.GetCachedDocFromSymbol( ctor ),
-				InternalModule: this.GetInternalModule( ctor.getDeclarations()[0] ),
-				ExternalModule: this.GetExternalModule( ctor.getDeclarations()[0] ),
-				Kind: ModuleElementKind.Class,
-				PrimaryInterface: this.GetType( ctorType ),
-				BaseClass: () => this.GetBaseClass( ctorType ),
-				Implements: Enumerable.from( this.GetImplemented( ctorType, /* includeExtended */ false ) ).distinct().toArray(),
-				GenericParameters: ctor.isType() ? ctorType.getTypeParameters().map( x => this.GetType( x ) ) : null,
-				Constructors: sigs.select( x => this.GetCallSignature( x ) ).toArray()
-			};
-		}
-
-		private GetCachedDoc( path: string ) {
-			return this._docCache[path] || ( this._docCache[path] = { Path: path, Types: null, Classes: null });
-		}
-
-		private GetCachedDocFromDecl( d: ts.PullDecl ) {
-			return this.GetCachedDoc( ( d && d.getParentPath()[0].name ) || "" );
-		}
-
-		private GetCachedDocFromSymbol( s: ts.PullSymbol ) {
-			return this.GetCachedDocFromDecl( s && s.getDeclarations()[0] );
-		}
-
-		private GetInternalModule( d: ts.PullDecl ) {
-			return d && Enumerable.from( d.getParentPath() )
-				.where( p => p.kind === PEKind.Container )
-				.select( p => p.name )
-				.toArray()
-				.join(".");
-		}
-
-		private GetExternalModule( d: ts.PullDecl ) {
-			return d && Enumerable.from( d.getParentPath() )
-				.where( p => p.kind === PEKind.DynamicModule )
-				.select( p => p.name )
-				.firstOrDefault();
-		}
-
-		private GetType( type: ts.PullTypeSymbol ) {
-			if ( !type ) return null;
-			var cache = this._typeCache[TypeScript.PullTypeResolver.globalTypeCheckPhase] || ( this._typeCache[TypeScript.PullTypeResolver.globalTypeCheckPhase] = {});
-
-			var ccached = cache[type.pullSymbolID];
-			if ( ccached ) {
-				if ( ccached.symbol.name !== type.name ) throw "Duplicate pullSymbolID: " + type.name + " !== " + ccached.symbol.name;
-				return ccached.type;
+		function translateEnum( type: ts.Type ): Enum {
+			let symbol = type.getSymbol();
+			let decl = symbol && symbol.valueDeclaration;
+			let members = decl && decl.kind == ts.SyntaxKind.EnumDeclaration && ( decl as ts.EnumDeclaration ).members;
+			if ( !members ) {
+				debug( () => `Unable to resolve members of enum '${getTypeName( type )}'` );
+				return null; 
 			}
 
-			var cached: Type = {
-				Document: this.GetCachedDocFromSymbol( type ),
-				Kind: ModuleElementKind.Type,
-				ExternalModule: this.GetExternalModule( type.getDeclarations()[0] ),
-				InternalModule: this.GetInternalModule( type.getDeclarations()[0] ),
-				Comment: type.docComments(),
-				Directives: parseDirectives( type.docComments() ),
-			};
-			cache[type.pullSymbolID] = { type: cached, symbol: type };
-
-			this.EnsureResolved( type );
-			if ( type.getElementType() ) cached.Array = memoize( () => this.GetType( type.getElementType() ) );
-			else if ( type.isPrimitive() ) cached.PrimitiveType = this.GetPrimitiveType( type );
-			else if ( type.isEnum() ) cached.Enum = memoize( () => this.GetEnum( type ) );
-			else if ( type.isTypeParameter() ) cached.GenericParameter = memoize( () => this.GetGenericParameter( type ) );
-			else if ( this.IsGenericInstantiation( type ) ) {
-				var refType = <ts.PullTypeReferenceSymbol>type;
-				// Sometimes, for some reason, nested arrays don't receive an 'element type',
-				// but instead are parsed as a generic instantiation of Array<T>
-				if ( refType.referencedTypeSymbol.name === "Array" && refType.getTypeParameters().length === 1 ) {
-					cached.Array = memoize( () => this.GetType( refType.getTypeArguments()[0] ) );
-				}
-				else {
-					cached.GenericInstantiation = memoize( () => this.GetGenericInstantiation( refType ) );
-				}
-			}
-			else cached.Interface = memoize( () => this.GetInterface( type ) );
-
-			if ( type.name === "CSSStyleDeclaration" ) {
-				debug( () => (<any>new Error()).stack );
-			}
-			debug( () => "GetType: name = " + type.name + ", pullSymbolID=" + type.pullSymbolID + ", result = " + objName( cached ) );
-			return cached;
-		}
-
-		private IsGenericInstantiation( type: ts.PullTypeSymbol ) {
-			return ( <ts.PullTypeReferenceSymbol> type ).referencedTypeSymbol && type.getTypeParameters() && type.getTypeParameters().length;
-		}
-
-		private GetGenericInstantiation( type: ts.PullTypeReferenceSymbol ): GenericInstantiation {
-			return {
-				Definition: this.GetType( type.referencedTypeSymbol ),
-				Arguments: type.referencedTypeSymbol.getTypeParameters()
-					.map( p => this.GetType( type.getTypeParameterArgumentMap()[p.pullSymbolID] ) )
+			return <Enum>{
+				Name: decl.name.getText(),
+				Values: members.map( m => ( { Name: m.name.getText(), Value: tc.getConstantValue( m ) }) )
 			};
 		}
 
-		private GetCallSignature( s: ts.PullSignatureSymbol ) {
-			this.EnsureResolved( s );
-			return {
-				GenericParameters: s.getTypeParameters().length ? s.getTypeParameters().map( t => this.GetType( t.type ) ) : null,
-				Parameters: s.parameters.map( p => <Identifier>{
-					Name: p.name, Type: this.GetType( p.type ),
-					Comment: p.docComments(),
-					Directives: parseDirectives( p.docComments() )
-				}),
-				ReturnType: this.GetType( s.returnType ),
-				Comment: s.docComments(),
-				Directives: parseDirectives( s.docComments() )
-			};
-		}
-
-		private GetPrimitiveType( type: ts.PullTypeSymbol ): PrimitiveType {
-			return type.name === "string" ? PrimitiveType.String :
-				type.name === "boolean" ? PrimitiveType.Boolean :
-				type.name === "number" ? PrimitiveType.Number
+		function translatePrimitiveType( type: ts.Type ): PrimitiveType {
+			return type.flags & ts.TypeFlags.StringLike ? PrimitiveType.String :
+				type.flags & ts.TypeFlags.Boolean ? PrimitiveType.Boolean :
+				type.flags & ts.TypeFlags.Number ? PrimitiveType.Number
 				: PrimitiveType.Any;
 		}
 
-		private GetImplemented( type: ts.PullTypeSymbol, includeExtended: boolean = true ) {
-			return Enumerable
-				.from( type.getImplementedTypes() )
-				.concat( includeExtended ? type.getExtendedTypes() : null )
-				.select( x => this.GetType( x ) )
-				.where( t => !!t.Interface || !!t.GenericInstantiation )
-				.toArray();
-		}
-
-		private GetBaseClass( type: ts.PullTypeSymbol ) {
-			return Enumerable
-				.from( type.getExtendedTypes() )
-				.select( x => this.GetClass( x ) )
-				.firstOrDefault();
-		}
-
-		private GetInterface( type: ts.PullTypeSymbol ) {
+		function translateCallSignature( s: ts.Signature ): CallSignature {
+			var typeParams = s.getTypeParameters();
+			var sigComments = getComments( s );
 			return {
-				Name: type.name,
-				Extends: this.GetImplemented( type ),
-				GenericParameters: Enumerable.from( type.getTypeParameters() ).select( t => this.GetType( t ) ).toArray(),
-				Properties: type.getMembers()
-					.filter( m => m.isProperty() && m.isExternallyVisible() )
-					.map( m => {
-						this.EnsureResolved( m );
-						debug( () => "Property: " + type.name + "." + m.name );
-						return <Identifier>{ Name: m.name, Type: this.GetType( m.type ), Comment: m.docComments(), Directives: parseDirectives( m.docComments() ) };
-					}),
-				Methods: Enumerable.from( type.getMembers() )
-					.where( m => m.isMethod() && m.isExternallyVisible() )
+				GenericParameters: typeParams && typeParams.length ? typeParams.map( translateType ) : null,
+				Parameters: s.getParameters().map( p => {
+					var comments = getComments( p );
+					return <Identifier>{
+						Name: p.name, Type: translateType( tc.getTypeOfSymbolAtLocation( p, p.valueDeclaration ) ),
+						Comment: comments, Directives: parseDirectives( comments )
+					};
+				}),
+				ReturnType: translateType( s.getReturnType() ),
+				Comment: sigComments,
+				Directives: parseDirectives( sigComments )
+			};
+		}
+
+		function translateInterface( type: ts.Type ): Interface {
+			var intf = type as ts.InterfaceTypeWithDeclaredMembers;
+			
+			return {
+				Name: getTypeName( intf ),
+				Extends: translateInterfacesOf( type ).toArray(),
+				GenericParameters: getGenericTypeParameters( intf ).map( translateType ),
+
+				Properties: Enumerable
+					.from( intf.declaredProperties )
+					.where( p => !!( p.flags & ts.SymbolFlags.Property ) )
+					.select( p => {
+						var comments = getComments( p );
+						return {
+							Name: p.name,
+							Type: translateType( tc.getTypeOfSymbolAtLocation( p, p.valueDeclaration ) ),
+							Comment: comments,
+							Directives: parseDirectives( comments )
+						};
+					})
+					.toArray(),
+
+				Methods: Enumerable
+					.from( intf.declaredProperties )
+					.where( m => !!( m.flags & ts.SymbolFlags.Method ) )
 					.groupBy( m => m.name, m => m, ( name, ms ) => <Method>{
 						Name: name,
-						Signatures: ms.selectMany( m =>
-							{
-								this.EnsureResolved( m );
-								return Enumerable.from( m.type.getCallSignatures() ).select( s => this.GetCallSignature( s ) );
-							}).toArray(),
+						Signatures: ms
+							.selectMany( m => Enumerable
+								.from( tc.getTypeOfSymbolAtLocation( m, m.valueDeclaration ).getCallSignatures() )
+								.select( translateCallSignature ) )
+							.toArray(),
 					})
 					.toArray(),
 			};
 		}
 
-		private GetEnum( type: ts.PullTypeSymbol ): Enum {
-			var doc = this.GetDocumentForDecl( type.getDeclarations()[0] );
-			var values: { [name: string]: number } = {};
-			Enumerable.from( type.getDeclarations() )
-				.selectMany( d => d.getChildDecls() )
-				.where( d => d.kind === PEKind.EnumMember )
-				.forEach( decl => {
-					var value: any = ( <ts.PullEnumElementDecl>decl ).constantValue;
-					if ( typeof value !== "number" ) {
-						var expr = doc && <ts.EnumElement>doc._getASTForDecl( decl );
-						var evaled = expr && expr.equalsValueClause && evalExpr( expr.equalsValueClause.value );
-						if ( evaled ) value = evaled.errorMessage || evaled.result;
-					}
-					values[decl.name] = value;
-				});
+		function translateGenericParameter( type: ts.TypeParameter ): GenericParameter {
 
-			return <Enum>{
-				Name: type.name,
-				Values: Enumerable.from( values ).select( ( x ) => ( { Name: x.key, Value: x.value }) ).toArray()
+			debug(() => `Translating generic parameter ${getTypeName( type )} #${getTypeId( type )} with constraint ${getTypeName( type.constraint )} #${getTypeId( type.constraint )}.` );
+			return {
+				Name: getTypeName( type ),
+				Constraint: !type.constraint || isEmptyGenericConstraint( type.constraint ) ? null : translateType( type.constraint )
 			};
+		}
 
-			function evalExpr( e: ts.AST ): { errorMessage?: string; result?: number } {
-				if ( e.kind() === ts.SyntaxKind.IdentifierName ) {
-					return { result: values[( <ts.Identifier>e ).text()] };
-				}
+		function translateGenericInstantiation( type: ts.TypeReference ): GenericInstantiation {
+			return {
+				Definition: translateType( type.target ),
+				Arguments: ( type.typeArguments || [] ).map( translateType )
+			};
+		}
 
-				if ( e instanceof ts.BinaryExpression ) {
-					var b = <ts.BinaryExpression>e;
-					var bop = binaryOp( e.kind() );
-					var left = evalExpr( b.left );
-					var right = evalExpr( b.right );
-					if ( left.errorMessage ) return left;
-					if ( !bop ) return err();
-					if ( right.errorMessage ) return right;
-					return { result: bop( left.result, right.result ) };
-				}
+		function translateBaseClass( type: ts.Type ): Class {
+			return Enumerable
+				.from( type.getBaseTypes() )
+				.where( t => !!( t.flags & ts.TypeFlags.Class ) )
+				.selectMany( t => classesFromClassDecl( t.symbol.valueDeclaration as ts.ClassDeclaration ) ) // TODO: this won't handle class expression
+				.firstOrDefault();
+		}
 
-				if ( e instanceof ts.PrefixUnaryExpression ) {
-					var uop = unaryOp( e.kind() );
-					var arg = evalExpr( ( <ts.PrefixUnaryExpression>e ).operand );
-					if ( !uop ) return err();
-					if ( arg.errorMessage ) return arg;
-					return { result: uop( arg.result ) };
-				}
+		/** Given a type, returns interfaces that the type implements (but no classes that it extends!) */
+		function translateInterfacesOf( type: ts.Type ): IEnumerable<Type> {
 
-				function err() {
-					return { errorMessage: ts.SyntaxKind[e.kind()] + " is not supported." };
-				}
+			// The language service doesn't have a way to just get all implemented interfaces from a type,
+			// so we have to go through the symbol and its heritage classes to tease out the interfaces.
+			let symbol = type && type.getSymbol();
+			return Enumerable
+				.from( symbol && symbol.getDeclarations() ) // Traverse all declarations of this type.
+				.cast<ts.ClassLikeDeclaration | ts.InterfaceDeclaration>()
+				.selectMany( decl => decl && decl.heritageClauses ) // For every declaration, pull heritage clauses.
+				.selectMany( clause => clause.types ) // From every clause, take list of syntax nodes representing types.
+				.select( tc.getTypeAtLocation )  // From every syntax node, get the logical Type.
+				.where( t => t && !( t.flags & ts.TypeFlags.Class ) ) // Only take interfaces, not classes.
+				.select( translateType );
+		}
+
+		function getInternalModule( decl: ts.Declaration ) {
+			return getAllParentsAndSelf( decl )
+				.where( d => d.kind === ts.SyntaxKind.ModuleDeclaration )
+				.select( d => ( d as ts.ModuleDeclaration ).name )
+				.where( n => n.kind === ts.SyntaxKind.Identifier )
+				.select( n => n.getText() )
+				.toArray()
+				.join(".");
+		}
+
+		function getExternalModule( decl: ts.Declaration ) {
+			let explicitModuleName = getAllParentsAndSelf( decl )
+				.where( p => p.kind === ts.SyntaxKind.ModuleDeclaration )
+				.select( d => ( d as ts.ModuleDeclaration ).name )
+				.where( n => n && n.kind === ts.SyntaxKind.StringLiteral )
+				.select( n => n.getText() )
+				.firstOrDefault();
+
+			let sourceFile = decl && decl.getSourceFile();
+			let sourceFileName = sourceFile && ( sourceFile.moduleName || `"${sourceFile.fileName}"` );
+
+			return explicitModuleName || sourceFileName;
+		}
+
+		function getAllParentsAndSelf( n: ts.Node ) {
+			return Enumerable.unfold( n, n => n.parent ).takeWhile( n => !!n );
+		}
+
+		function getTypeId( t: ts.Type ): number { return t && ( t as any ).id; } // HACK
+
+		function getTypeName( t: ts.Type ): string {
+			let symbol = t && t.getSymbol();
+			let name = symbol && symbol.name;
+			return name || "<unknown>";
+		};
+
+		function isAny( t: ts.Type ): boolean { return !!( t.flags & ts.TypeFlags.Any ); }
+		function isEmptyGenericConstraint( t: ts.Type ): boolean { return t == intrinsics.emptyGenericConstraintType; }
+		function isAnonymous( t: ts.Type ): boolean { return !!( t.flags & ts.TypeFlags.Anonymous ); }
+
+		function getFirstDeclaration( s: ts.Symbol ) {
+			return s && ( s.getDeclarations() || [] )[0];
+		}
+
+		function getTypeComments( t: ts.Type ) {
+			return getComments( t.getSymbol() );
+		}
+
+		function getComments( obj: { getDocumentationComment(): ts.SymbolDisplayPart[] } ) {
+			return ( ( obj && obj.getDocumentationComment() ) || [] ).map( d => d.text ).join('\r\n');
+		}
+
+		function isArrayType( t: ts.Type ) {
+			return ( t.flags & ts.TypeFlags.Reference ) && ( t as ts.GenericType ).target == intrinsics.arrayType;
+		}
+
+		function getArrayElementType( t: ts.Type ) {
+			if ( !( t.flags & ts.TypeFlags.Reference ) ) return intrinsics.anyType;
+
+			let g = t as ts.GenericType;
+			if ( g.target != intrinsics.arrayType ) return intrinsics.anyType;
+
+			return g.typeArguments[0];
+		}
+
+		function isPrimitiveType( t: ts.Type ): boolean {
+			return !!( t.flags & ( ts.TypeFlags.StringLike | ts.TypeFlags.Number | ts.TypeFlags.Boolean | ts.TypeFlags.Boolean ) );
+		}
+
+		function isEnumType( t: ts.Type ): boolean {
+			return !!( t.flags & ts.TypeFlags.Enum );
+		}
+
+		function isInterfaceType( t: ts.Type ): boolean {
+			return !!( t.flags & ts.TypeFlags.Interface );
+		}
+
+		function isTypeParameter( t: ts.Type ): boolean {
+			return !!( t.flags & ts.TypeFlags.TypeParameter );
+		}
+
+		function isGenericInstantiation( t: ts.Type ) {
+			return ( t.flags & ts.TypeFlags.Reference ) && ( t as ts.TypeReference ).target !== t;
+		}
+
+		function isGenericDefinition( t: ts.Type ) {
+			return ( t.flags & ts.TypeFlags.Reference ) && ( t as ts.TypeReference ).target === t;
+		}
+
+		function getGenericTypeParameters( t: ts.Type ) {
+			if ( t.flags & ( ts.TypeFlags.Class | ts.TypeFlags.Interface ) ) {
+				return ( t as ts.InterfaceType ).typeParameters || [];
+			}
+			else {
+				return [];
 			}
 		}
 
-		private GetDocumentForDecl( d: ts.PullDecl ): ts.Document {
-			var script = d && d.getParentPath()[0];
-			var fileName = script && script.kind === PEKind.Script && ( <ts.RootPullDecl>script ).fileName();
-			return fileName && this._compiler.getDocument( fileName );
+		function getIntrinsicsText() {
+			return "\
+				var array: number[];\
+				var _any: any;\
+				var empty: {};\
+			";
 		}
 
-		private GetGenericParameter( type: ts.PullTypeSymbol ): GenericParameter {
-			var g = <ts.PullTypeParameterSymbol> type;
-			return { Name: type.name, Constraint: this.GetType( g.getConstraint() ) };
-		}
+		function getIntrinsics() {
+			let file = program.getSourceFile( intrinsicsFileName );
+			let varTypes = file.statements
+				.filter( s => s.kind == ts.SyntaxKind.VariableStatement )
+				.map( s => ( s as ts.VariableStatement ).declarationList.declarations[0].type )
+				.map( tc.getTypeAtLocation )
+				.filter( t => !!t );
 
-		private EnsureResolved( s: ts.PullSymbol ) {
-			var decls: any[] = ( <any>s )._declarations; // HACK: the _declarations property is not exposed as public, but _getResolver fails with an assert when called while _declarations is null or empty. TODO: check if this is still the case in TS 1.0.1
-			if ( decls && decls.length ) s._resolveDeclaredSymbol();
-		}
-
-		private SymbolFromDecl = ( s: ts.PullDecl ) => {
-			var r = this._compiler.getSymbolOfDeclaration( s );
-			this.EnsureResolved( r );
-			return r;
-		};
-
-		private _compiler = new ts.TypeScriptCompiler();
-		private _typeCache: { [globalTypeCheckPhase: number]: { [pullSymbolId: number]: { type: Type; symbol: ts.PullTypeSymbol } } } = {};
-		private _docCache: { [path: string]: Document } = {};
-		private _snapshots: { [fileName: string]: ts.IScriptSnapshot } = {};
-
-		private normalizePath( path: string ): string {
-			return TypeScript.switchToForwardSlashes( path || "" );
-		}
-
-		private _tsHost: ts.IReferenceResolverHost = {
-			getScriptSnapshot: fileName => {
-				fileName = this.realPath( fileName );
-				var cached = this._snapshots[fileName];
-				if ( cached !== undefined ) return cached;
-
-				debug( () => "getScriptSnapshot: fetching: " + fileName );
-				var content = this._config.Host.FetchFile( fileName );
-				return this._snapshots[fileName] =
-					content || content === "" ? ts.ScriptSnapshot.fromString( content ) : null;
-			},
-			resolveRelativePath: ( path, directory ) => this.rootRelPath( this._config.Host.ResolveRelativePath( path, this.realPath( directory ) ) ),
-			fileExists: path => !!this._tsHost.getScriptSnapshot( path ),
-			directoryExists: path => this._config.Host.DirectoryExists( this.realPath( path ) ),
-			getParentDirectory: path => {
-				debug( () => "getParentDirectory: " + path );
-				var result = this._config.Host.GetParentDirectory( this.realPath( path ) );
-				return result ? this.rootRelPath( result ) : result;
-			}
-		};
-
-		private rootRelPath( realPath: string ) {
-			return this._config.Host.MakeRelativePath( this._config.Original.RootDir, realPath );
-		}
-
-		private realPath( pathRelativeToRoot: string ) {
-			return this._config.Host.ResolveRelativePath( pathRelativeToRoot, this._config.Original.RootDir );
-		}
-	}
-
-	function binaryOp( op: ts.SyntaxKind ): (x: number, y: number) => number {
-		switch ( op ) {
-			case ts.SyntaxKind.BitwiseOrExpression: return ( x, y ) => x | y;
-			case ts.SyntaxKind.BitwiseAndExpression: return ( x, y ) => x & y;
-			case ts.SyntaxKind.BitwiseExclusiveOrExpression: return ( x, y ) => x ^ y;
-			case ts.SyntaxKind.AddExpression: return ( x, y ) => x + y;
-			case ts.SyntaxKind.SubtractExpression: return ( x, y ) => x - y;
-			case ts.SyntaxKind.LeftShiftExpression: return ( x, y ) => x << y;
-			case ts.SyntaxKind.UnsignedRightShiftExpression:
-			case ts.SyntaxKind.SignedRightShiftExpression: return ( x, y ) => x >> y;
-		}
-	}
-
-	function unaryOp( op: ts.SyntaxKind ): ( x: number ) => number {
-		switch ( op ) {
-			case ts.SyntaxKind.BitwiseNotExpression: return x => ~x;
-			case ts.SyntaxKind.NegateExpression: return x => -x;
+			return {
+				arrayType: ( varTypes[0] as ts.GenericType ).target,
+				emptyGenericConstraintType: ( ( varTypes[0] as ts.GenericType ).target.typeArguments[0] as ts.TypeParameter ).constraint,
+				anyType: varTypes[1],
+				emptyType: varTypes[2],
+			};
 		}
 	}
 
@@ -405,8 +444,11 @@ module erecruit.TsT {
 		return () => evaluated ? result : ( evaluated = true, result = f() );
 	}
 
+	/** Regex used to parse "directives" out of comments. */
 	var directiveRegex = /[\r\n]{0,1}\s*@([^\s]+)\s+([^\s]{0,1}[^\r\n]*)/g;
 
+	/** Given the "documentation comments" string, parses out "directives", which have the form of @Dir Value.
+	  * The result is a dictionary of the form ["Dir"] = "Value". */
 	function parseDirectives( comments: string ): { [name: string]: string } {
 		if ( !comments ) return {};
 

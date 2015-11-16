@@ -17,11 +17,8 @@ module erecruit.TsT {
 
 	export function Emit( cfg: Config, files: string[], host: ITsTHost ): FileContent[] {
 		var config = cacheConfig( host, cfg );
-		var e = new Extractor( config );
+		var e = createExtractor( config, ensureArray( files ) );
 		log( () => "Emit: config = " + JSON.stringify( cfg ) );
-
-		files = ensureArray( files );
-		e.LoadDocuments( files );
 
 		return Enumerable.from( files )
 			.selectMany(
