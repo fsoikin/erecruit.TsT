@@ -239,15 +239,15 @@ module erecruit.TsT {
 		}
 
 		function translateInterface( type: ts.Type ): Interface {
-			var intf = type as ts.InterfaceTypeWithDeclaredMembers;
+			let intf = type as ts.InterfaceTypeWithDeclaredMembers;
+			let members = Enumerable.from( intf.declaredProperties ).where( isPublicProperty );
 			
 			return {
 				Name: getTypeName( intf ),
 				Extends: translateInterfacesOf( type ).toArray(),
 				GenericParameters: getGenericTypeParameters( intf ).map( translateType ),
 
-				Properties: Enumerable
-					.from( intf.declaredProperties )
+				Properties: members
 					.where( p => !!( p.flags & ts.SymbolFlags.Property ) )
 					.select( p => {
 						var comments = getComments( p );
@@ -260,8 +260,7 @@ module erecruit.TsT {
 					})
 					.toArray(),
 
-				Methods: Enumerable
-					.from( intf.declaredProperties )
+				Methods: members
 					.where( m => !!( m.flags & ts.SymbolFlags.Method ) )
 					.groupBy( m => m.name, m => m, ( name, ms ) => <Method>{
 						Name: name,
@@ -341,6 +340,10 @@ module erecruit.TsT {
 
 		function getAllParentsAndSelf( n: ts.Node ) {
 			return Enumerable.unfold( n, n => n.parent ).takeWhile( n => !!n );
+		}
+
+		function isPublicProperty( m: ts.Symbol ) {
+			return m && m.valueDeclaration && !( m.valueDeclaration.flags & ( ts.NodeFlags.Private | ts.NodeFlags.Protected ) );
 		}
 
 		function getTypeId( t: ts.Type ): number { return t && ( t as any ).id; } // HACK
