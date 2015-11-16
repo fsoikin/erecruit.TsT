@@ -46,13 +46,39 @@ module erecruit.TsT {
 			let mod = program.getSourceFile( fileName );
 			if ( !mod ) return { Path: fileName, Classes: [], Types: [] };
 
-			let allModuleDecls = Enumerable.from( mod.statements ).where( s => !!( s.flags & ts.NodeFlags.Export ) );
+			let topLevelExports = getExportStatements( Enumerable.from( mod.statements ) );
 			let document = getCachedDoc( fileName );
 
-			document.Classes = allModuleDecls.selectMany( classesFromDecl ).where( t => !!t ).distinct().toArray();
-			document.Types = allModuleDecls.select( typeFromDecl ).where( t => !!t ).distinct().toArray();
+			document.Classes = topLevelExports.selectMany( classesFromDecl ).where( t => !!t ).distinct().toArray();
+			document.Types = topLevelExports.select( typeFromDecl ).where( t => !!t ).distinct().toArray();
 
+			debug(() => `Document '${fileName}': ${document.Classes.length} classes, ${document.Types.length} types.` );
 			return document;
+		}
+
+		function getExportStatements( roots: IEnumerable<ts.Statement> ): IEnumerable<ts.Statement> {
+
+			let localExports = roots.where( s => !!( s.flags & ts.NodeFlags.Export ) )
+
+			let exportsFromNestedModules = roots
+				.select( unwrapModuleBlock )
+				.selectMany( block => {
+					let statements = block && block.statements;
+					return getExportStatements( Enumerable.from( statements ) );
+				} );
+
+			return localExports.concat( exportsFromNestedModules );
+		}
+
+		/** If the given node is a ModuleDeclaration, unwraps it until a ModuleBlock is found inside. */
+		function unwrapModuleBlock( m: ts.Node ): ts.ModuleBlock {
+			if ( m.kind == ts.SyntaxKind.ModuleDeclaration ) {
+				return unwrapModuleBlock(( m as ts.ModuleDeclaration ).body );
+			}
+			else if ( m.kind == ts.SyntaxKind.ModuleBlock ) {
+				return m as ts.ModuleBlock;
+			}
+			return null;
 		}
 
 		function getScriptSnapshot( fileName: string ) {
@@ -320,8 +346,8 @@ module erecruit.TsT {
 				.select( d => ( d as ts.ModuleDeclaration ).name )
 				.where( n => n.kind === ts.SyntaxKind.Identifier )
 				.select( n => n.getText() )
-				.toArray()
-				.join(".");
+				.reverse()
+				.toJoinedString(".");
 		}
 
 		function getExternalModule( decl: ts.Declaration ) {

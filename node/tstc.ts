@@ -67,7 +67,7 @@ See:      https://github.com/erecruit/TsT\r\n\
 Options: \r\n\
 	-c, --config    Path to config file, .tstconfig.\r\n\
 	-v, --verbose   Display diagnostic output.\r\n\
-	-d, --debug			Display debug output.\
+	-d, --debug     Display debug output.\
 	" );
 	}
 }

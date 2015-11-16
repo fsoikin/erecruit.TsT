@@ -16,7 +16,7 @@ namespace erecruit.JS {
 namespace erecruit.JS {
 		public class Declaration {
 				public string Comment { get; set; }
-				public object Directives { get; set; }
+				public __type Directives { get; set; }
 		}
 
 }
@@ -33,7 +33,7 @@ namespace erecruit.JS {
 		public class Class {
 				public string Name { get; set; }
 				public Type PrimaryInterface { get; set; }
-				public object BaseClass { get; set; }
+				public __type BaseClass { get; set; }
 				public Type[] Implements { get; set; }
 				public Type[] GenericParameters { get; set; }
 				public CallSignature[] Constructors { get; set; }
@@ -43,11 +43,11 @@ namespace erecruit.JS {
 namespace erecruit.JS {
 		public class Type {
 				public PrimitiveType PrimitiveType { get; set; }
-				public object Enum { get; set; }
-				public object Interface { get; set; }
-				public object GenericParameter { get; set; }
-				public object GenericInstantiation { get; set; }
-				public object Array { get; set; }
+				public __type Enum { get; set; }
+				public __type Interface { get; set; }
+				public __type GenericParameter { get; set; }
+				public __type GenericInstantiation { get; set; }
+				public __type Array { get; set; }
 		}
 
 }
@@ -77,7 +77,7 @@ namespace erecruit.JS {
 namespace erecruit.JS {
 		public class Enum {
 				public string Name { get; set; }
-				public object[] Values { get; set; }
+				public __type[] Values { get; set; }
 		}
 
 }

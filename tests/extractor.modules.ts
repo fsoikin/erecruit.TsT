@@ -25,6 +25,30 @@ module erecruit.TsT.Tests.Extr {
 			expect( types[0].InternalModule ).toBeFalsy();
 		});
 
+		it( "should return InternalModule for types within a module", () => {
+			file = "module M { export interface I { } }";
+			var types = e().GetDocument( fileName ).Types;
+			expect( types.length ).toEqual( 1 );
+			expect( types[0].InternalModule ).toEqual( "M" );
+		});
+
+		it( "should return InternalModule for types within nested modules", () => {
+			file = `module M { 
+				export interface I { } 
+				module X {
+					module Y.Z {
+						export interface J { }
+					}
+				}
+			}`;
+			var types = e().GetDocument( fileName ).Types;
+			expect( types.length ).toEqual( 2 );
+			expect( types[0].InternalModule ).toEqual( "M" );
+			expect( types[0].Interface().Name ).toEqual( "I" );
+			expect( types[1].InternalModule ).toEqual( "M.X.Y.Z" );
+			expect( types[1].Interface().Name ).toEqual( "J" );
+		});
+
 		it( "should, for regular .ts files, return ExternalModule as quoted file name", () => {
 			file = "export interface I { }";
 			var types = e().GetDocument( fileName ).Types;

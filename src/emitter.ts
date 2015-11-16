@@ -1,5 +1,4 @@
 /// <reference path="../lib/nunjucks/nunjucks.d.ts" />
-/// <reference path="../lib/rx/rx.d.ts" />
 /// <reference path="../lib/linq/linq.d.ts" />
 /// <reference path="interfaces.ts" />
 /// <reference path="extractor.ts" />

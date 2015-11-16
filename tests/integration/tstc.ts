@@ -1,8 +1,5 @@
 /// <reference path="../../lib/node/node.d.ts" />
 
-import fs = require( "fs" );
-import path = require( "path" );
-
 module erecruit.TsT.Tests.Integration {
 
 	describe( "tstc", () => {
@@ -32,7 +29,7 @@ module erecruit.TsT.Tests.Integration {
 			name: "its own code",
 			aFileInSourceDir: "examples/self/.tstconfig",
 			expectedResults: ["config", "emitter", "interfaces"].map( x => "../../dotNet/host/JS/" + x + ".cs" ),
-			tstcArgs: "-c .tstconfig ../../src/config.ts ../../src/emitter.ts ../../src/interfaces.ts"
+			tstcArgs: "-d -v -c .tstconfig ../../src/config.ts ../../src/emitter.ts ../../src/interfaces.ts"
 		});
 
 		function def( args: { name: string; aFileInSourceDir: string; expectedResults: string[]; tstcArgs: string }) {
@@ -51,7 +48,6 @@ module erecruit.TsT.Tests.Integration {
 					( err: any, stdout: string, stderr: string ) => {
 						expect( stderr ).toBeFalsy();
 						expect( expectedResults.map( fs.existsSync ) ).not.toContain( false );
-						expectedResults.filter( fs.existsSync ).map( fs.unlinkSync );
 						done();
 					});
 			});

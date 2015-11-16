@@ -104,7 +104,7 @@
   <Import Project="$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets')" />
   <PropertyGroup>
     <PreBuildEvent>
-      node $(ProjectDir)node_modules\typescript\bin\tsc.js $(ProjectDir)build\jakefile.ts --out $(ProjectDir)build\jakefile.js --module CommonJS
+      node $(ProjectDir)node_modules\typescript\bin\tsc $(ProjectDir)build\jakefile.ts --module CommonJS
       jake --jakefile $(ProjectDir)jakefile --directory $(ProjectDir)
     </PreBuildEvent>
   </PropertyGroup>
