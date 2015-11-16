@@ -143,7 +143,8 @@ The format of that structure for Type (can be found in src/interfaces.ts):
 		// Document.Path will be tsd/jQuery.d.ts, but ExternalModule will
 		// be "jQuery".
 		// Note the double quotes around the module name. This is not a typo,
-		// this is how TypeScript names external modules.
+		// this is how TypeScript names external modules. The quotes will exactly
+    // match the way they are in the source code - i.e. could be single or double.
 		ExternalModule: '"lib/path/to/file.ts"',
 
 		// Alternatively:
