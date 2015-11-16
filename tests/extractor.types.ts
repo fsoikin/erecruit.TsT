@@ -145,5 +145,14 @@ module erecruit.TsT.Tests.Extr {
 			expect( types ).toEqual( [c( { Name: 'I' })] );
 			expect( types[0].Properties ).toEqual( [c( { Name: 'X' })] );
 		});
+
+		it( "should return null name for anonymous types", () => {
+			file = "export interface I { X: { y: number } }";
+			let types = e().GetDocument( fileName ).Types;
+			let I = types[0];
+			let X = I.Interface().Properties[0];
+			let anonymous = X.Type;
+			expect( anonymous.Interface().Name ).toBeNull();
+		});
 	}
 }

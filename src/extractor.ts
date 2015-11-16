@@ -375,6 +375,8 @@ module erecruit.TsT {
 		function getTypeId( t: ts.Type ): number { return t && ( t as any ).id; } // HACK
 
 		function getTypeName( t: ts.Type ): string {
+			if ( t.flags & ts.TypeFlags.Anonymous ) return null;
+
 			let symbol = t && t.getSymbol();
 			let name = symbol && symbol.name;
 			return name || "<unknown>";
