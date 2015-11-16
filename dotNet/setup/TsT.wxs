@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="*" Name="erecruit TypeScript Translator" Language="1033" Version="0.7.5" Manufacturer="erecruit" UpgradeCode="734a7972-17cf-4ba8-8af7-8f9d3fe3853c">
+	<Product Id="*" Name="erecruit TypeScript Translator" Language="1033" Version="0.8.0" Manufacturer="erecruit" UpgradeCode="734a7972-17cf-4ba8-8af7-8f9d3fe3853c">
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
