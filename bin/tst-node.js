@@ -61821,12 +61821,20 @@ var erecruit;
             function GetDocument(fileName) {
                 TsT.debug(function () { return ("GetDocument: " + fileName); });
                 var mod = program.getSourceFile(fileName);
-                if (!mod)
-                    return { Path: fileName, Classes: [], Types: [] };
-                var topLevelExports = getExportStatements(Enumerable.from(mod.statements));
                 var document = getCachedDoc(fileName);
-                document.Classes = topLevelExports.selectMany(classesFromDecl).where(function (t) { return !!t; }).distinct().toArray();
-                document.Types = topLevelExports.select(typeFromDecl).where(function (t) { return !!t; }).distinct().toArray();
+                if (!mod) {
+                    TsT.debug(function () { return ("Language Service doesn't know '" + fileName + "', returning empty document."); });
+                    document.Classes = [];
+                    document.Types = [];
+                    return document;
+                }
+                var topLevelExports = getExportStatements(Enumerable.from(mod.statements));
+                if (!document.Classes) {
+                    document.Classes = topLevelExports.selectMany(classesFromDecl).where(function (t) { return !!t; }).distinct().toArray();
+                }
+                if (!document.Types) {
+                    document.Types = topLevelExports.select(typeFromDecl).where(function (t) { return !!t; }).distinct().toArray();
+                }
                 TsT.debug(function () { return ("Document '" + fileName + "': " + document.Classes.length + " classes, " + document.Types.length + " types."); });
                 return document;
             }
@@ -61855,13 +61863,15 @@ var erecruit;
                 var cached = snapshots[fileName];
                 if (cached !== undefined)
                     return cached;
-                TsT.debug(function () { return "getScriptSnapshot: fetching: " + fileName; });
+                TsT.debug(function () { return ("getScriptSnapshot: fetching: " + fileName); });
                 var content = config.Host.FetchFile(fileName);
+                if (!content)
+                    TsT.debug(function () { return ("getScriptSnapshot: couldn't fetch " + fileName); });
                 return snapshots[fileName] =
                     content || content === "" ? ts.ScriptSnapshot.fromString(content) : null;
             }
             function getCachedDoc(path) {
-                return docCache[path] || (docCache[path] = { Path: path, Types: null, Classes: null });
+                return docCache[path] || (docCache[path] = { Path: makeRelativeToRoot(path), Types: null, Classes: null });
             }
             function getCachedDocFromSymbol(symbol) {
                 if (!symbol)
@@ -62097,7 +62107,7 @@ var erecruit;
                     .select(function (n) { return n.getText(); })
                     .firstOrDefault();
                 var sourceFile = decl && decl.getSourceFile();
-                var sourceFileName = sourceFile && (sourceFile.moduleName || "\"" + sourceFile.fileName + "\"");
+                var sourceFileName = sourceFile && (sourceFile.moduleName || "\"" + makeRelativeToRoot(sourceFile.fileName) + "\"");
                 return explicitModuleName || sourceFileName;
             }
             function getAllParentsAndSelf(n) {
@@ -62185,6 +62195,9 @@ var erecruit;
                     anyType: varTypes[1],
                     emptyType: varTypes[2]
                 };
+            }
+            function makeRelativeToRoot(path) {
+                return config.Host.MakeRelativePath(config.Original.RootDir, path);
             }
         }
         TsT.createExtractor = createExtractor;
@@ -62343,23 +62356,20 @@ var erecruit;
     (function (TsT) {
         function Emit(cfg, files, host) {
             var config = TsT.cacheConfig(host, cfg);
-            files = TsT.ensureArray(files);
+            files = TsT.ensureArray(files).map(function (f) { return host.MakeRelativePath(".", f); });
             var extractor = TsT.createExtractor(config, files);
             TsT.log(function () { return "Emit: config = " + JSON.stringify(cfg); });
             return Enumerable.from(files)
                 .selectMany(function (f) {
                 return formatTemplate(f, extractor.GetDocument(f).Types, TsT.getFileConfigTypes(config, f), TsT.objName).concat(formatTemplate(f, extractor.GetDocument(f).Classes, TsT.getFileConfigClasses(config, f), TsT.objName));
             }, function (f, x) { return ({ outputFile: x.outputFileName, content: x.content, inputFile: f }); })
-                .doAction(function (x) { return TsT.log(function () { return "Finished generation: " + x.outputFile; }); })
+                .doAction(function (x) { return TsT.log(function () { return "Emit: Finished generation: " + x.outputFile; }); })
                 .groupBy(function (x) { return x.outputFile; }, function (x) { return x; }, function (file, content) { return {
-                OutputFile: config.Host.ResolveRelativePath(file, config.Original.RootDir),
+                OutputFile: host.ResolveRelativePath(file, cfg.RootDir),
                 Content: content.select(function (k) { return k.content; }).toArray().join('\r\n'),
-                SourceFiles: Enumerable
-                    .from(content)
-                    .select(function (k) { return config.Host.ResolveRelativePath(k.inputFile, config.Original.RootDir); })
-                    .distinct()
-                    .toArray()
+                SourceFiles: Enumerable.from(content).select(function (k) { return k.inputFile; }).distinct().toArray()
             }; })
+                .doAction(function (f) { return TsT.debug(function () { return ("Emit: returninig " + f.SourceFiles.join() + " -> " + f.OutputFile); }); })
                 .toArray();
             function formatTemplate(sourceFileName, objects, config, objectName) {
                 return Enumerable.from(config)
@@ -62372,6 +62382,7 @@ var erecruit;
                 }); });
             }
             function formatFileName(sourceFileName, template) {
+                sourceFileName = host.MakeRelativePath(cfg.RootDir, sourceFileName);
                 var dir = host.GetParentDirectory(sourceFileName);
                 if (dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\')
                     dir += '/';
@@ -62384,7 +62395,7 @@ var erecruit;
                     Name: nameParts.slice(0, nameParts.length - 1).join('.'),
                     Extension: nameParts[nameParts.length - 1]
                 };
-                TsT.log(function () { return "formatFileName: model = " + JSON.stringify(model); });
+                TsT.debug(function () { return "formatFileName: model = " + JSON.stringify(model); });
                 return template.render(model);
             }
         }
@@ -62395,7 +62406,7 @@ var erecruit;
 (function (erecruit) {
     var TsT;
     (function (TsT) {
-        TsT.Version = "0.8.2";
+        TsT.Version = "0.8.3";
     })(TsT = erecruit.TsT || (erecruit.TsT = {}));
 })(erecruit || (erecruit = {}));
 })( { TsT: module.exports } );
