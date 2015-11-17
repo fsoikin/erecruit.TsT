@@ -65,6 +65,14 @@ module erecruit.TsT.Tests.Extr {
 			it( "and tolerate empty values", () => {
 				t( "@dir   ", { dir: '' });
 			});
+
+			it( "in separate comment blocks", () => {
+				t( "@dir value */ \r\n /** @dir2 value2 ",
+					{
+						dir: 'value',
+						dir2: 'value2'
+					});
+			});
 		});
 	}
 

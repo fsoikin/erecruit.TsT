@@ -139,6 +139,16 @@ module erecruit.TsT.Tests.Extr {
 			] );
 		});
 
+		it( "should not flatten interface hierarchy when enumerating properties", () => {
+			file = `
+					export class I { X: string; Y: number; }
+					export interface J extends I { A: boolean }
+					export interface K extends J { B: any }`;
+			var types = <Interface[]><any[]>trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface );
+			expect( types.map( t => t.Name ) ).toEqual( ["I", "J", "K"] );
+			expect( types.map( t => t.Properties.length ) ).toEqual( [2, 1, 1] );
+		});
+
 		it( "should ignore private properties on interfaces", () => {
 			file = "export class I { X: string; private Y: number; }";
 			var types = <Interface[]><any[]>trimAndUnwrapAll( e().GetDocument( fileName ).Types ).map( t => t.Interface );
@@ -161,6 +171,16 @@ module erecruit.TsT.Tests.Extr {
 			let I = types[0].Interface();
 			let props = I.Properties;
 			expect( props.map( p => p.Type.PrimitiveType ) ).toEqual( [PrimitiveType.Any, PrimitiveType.String, PrimitiveType.Number, PrimitiveType.Boolean] );
+		});
+
+		it( "should correctly return properties for anonymous types", () => {
+			file = "export interface I { X: { y: number; z?: string } }";
+			let types = e().GetDocument( fileName ).Types;
+			let I = types[0];
+			let X = I.Interface().Properties[0];
+			let props = X.Type.Interface().Properties;
+			expect( props.map( p => p.Name ) ).toEqual( ["y", "z"] );
+			expect( props.map( p => p.Type.PrimitiveType ) ).toEqual( [PrimitiveType.Number, PrimitiveType.String] );
 		});
 	}
 }

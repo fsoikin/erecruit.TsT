@@ -74,17 +74,17 @@ module erecruit.TsT {
 
 		/** If the given node is a ModuleDeclaration, unwraps it until a ModuleBlock is found inside. */
 		function unwrapModuleBlock( m: ts.Node ): ts.ModuleBlock {
-			if ( m.kind == ts.SyntaxKind.ModuleDeclaration ) {
+			if ( m.kind === ts.SyntaxKind.ModuleDeclaration ) {
 				return unwrapModuleBlock(( m as ts.ModuleDeclaration ).body );
 			}
-			else if ( m.kind == ts.SyntaxKind.ModuleBlock ) {
+			else if ( m.kind === ts.SyntaxKind.ModuleBlock ) {
 				return m as ts.ModuleBlock;
 			}
 			return null;
 		}
 
 		function getScriptSnapshot( fileName: string ) {
-			if ( fileName == intrinsicsFileName ) return intrinsicsFile;
+			if ( fileName === intrinsicsFileName ) return intrinsicsFile;
 
 			let cached = snapshots[fileName];
 			if ( cached !== undefined ) return cached;
@@ -105,7 +105,7 @@ module erecruit.TsT {
 			let file = Enumerable
 				.from( symbol.getDeclarations() )
 				.selectMany( getAllParentsAndSelf )
-				.where( d => d.kind == ts.SyntaxKind.SourceFile )
+				.where( d => d.kind === ts.SyntaxKind.SourceFile )
 				.select( file => ( file as ts.SourceFile ).fileName )
 				.firstOrDefault();
 
@@ -128,7 +128,7 @@ module erecruit.TsT {
 			let decls = vr && vr.declarationList.declarations;
 			let name = decls && decls.map( d => d.name ).filter( n => !!n )[0];
 
-			if ( name && name.kind == ts.SyntaxKind.Identifier )
+			if ( name && name.kind === ts.SyntaxKind.Identifier )
 				return classesFromIdentifier( <ts.Identifier> name );
 			else
 				return null;
@@ -229,7 +229,7 @@ module erecruit.TsT {
 		function translateEnum( type: ts.Type ): Enum {
 			let symbol = type.getSymbol();
 			let decl = symbol && symbol.valueDeclaration;
-			let members = decl && decl.kind == ts.SyntaxKind.EnumDeclaration && ( decl as ts.EnumDeclaration ).members;
+			let members = decl && decl.kind === ts.SyntaxKind.EnumDeclaration && ( decl as ts.EnumDeclaration ).members;
 			if ( !members ) {
 				debug( () => `Unable to resolve members of enum '${getTypeName( type )}'` );
 				return null; 
@@ -268,14 +268,19 @@ module erecruit.TsT {
 
 		function translateInterface( type: ts.Type ): Interface {
 			let intf = type as ts.InterfaceTypeWithDeclaredMembers;
-			let members = Enumerable.from( intf.declaredProperties ).where( isPublicProperty );
+
+			// For some reason, for anonymous types declaredProperties is always empty,
+			// but for named interfaces getProperties() flattens inheritance hierarchy,
+			// so we have to have this fork here.
+			let members = isAnonymous( type ) ? intf.getProperties() : intf.declaredProperties;
+			let publicMembers = Enumerable.from( members ).where( isPublicProperty );
 			
 			return {
 				Name: getTypeName( intf ),
 				Extends: translateInterfacesOf( type ).toArray(),
 				GenericParameters: getGenericTypeParameters( intf ).map( translateType ),
 
-				Properties: members
+				Properties: publicMembers
 					.where( p => !!( p.flags & ts.SymbolFlags.Property ) )
 					.select( p => {
 						var comments = getComments( p );
@@ -288,7 +293,7 @@ module erecruit.TsT {
 					})
 					.toArray(),
 
-				Methods: members
+				Methods: publicMembers
 					.where( m => !!( m.flags & ts.SymbolFlags.Method ) )
 					.groupBy( m => m.name, m => m, ( name, ms ) => <Method>{
 						Name: name,
@@ -338,8 +343,22 @@ module erecruit.TsT {
 				.selectMany( decl => decl && decl.heritageClauses ) // For every declaration, pull heritage clauses.
 				.selectMany( clause => clause.types ) // From every clause, take list of syntax nodes representing types.
 				.select( tc.getTypeAtLocation )  // From every syntax node, get the logical Type.
-				.where( t => t && !( t.flags & ts.TypeFlags.Class ) ) // Only take interfaces, not classes.
+				.where( t => t && !isClass( t ) ) // Only take interfaces, not classes.
 				.select( translateType );
+		}
+
+		function isClass( t: ts.Type ): boolean {
+
+			if ( t.flags & ts.TypeFlags.Class ) return true;
+
+			if ( t.flags & ts.TypeFlags.Reference ) {
+				// When target === t, it means that the type is a _generic definition_ (as opposed to "generic instantiation"),
+				// in which case it must be not a class: if it was, it would have been caught by the previous 'if'.
+				let target = ( t as ts.TypeReference ).target;
+				return target !== t && isClass( target );
+			}
+
+			return false;
 		}
 
 		function getInternalModule( decl: ts.Declaration ) {
@@ -457,7 +476,7 @@ module erecruit.TsT {
 		function getIntrinsics() {
 			let file = program.getSourceFile( intrinsicsFileName );
 			let varTypes = file.statements
-				.filter( s => s.kind == ts.SyntaxKind.VariableStatement )
+				.filter( s => s.kind === ts.SyntaxKind.VariableStatement )
 				.map( s => ( s as ts.VariableStatement ).declarationList.declarations[0].type )
 				.map( tc.getTypeAtLocation )
 				.filter( t => !!t );

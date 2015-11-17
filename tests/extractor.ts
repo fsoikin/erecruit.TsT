@@ -92,7 +92,9 @@ module erecruit.TsT.Tests.Extr {
 		}
 		if ( type.GenericInstantiation ) {
 			type.GenericInstantiation = <any>type.GenericInstantiation();
-			(<any>type.GenericInstantiation).Definition = (<any>type.GenericInstantiation).Definition.Interface().Name;
+			let intf = ( <any>type.GenericInstantiation ).Definition.Interface;
+			if ( typeof intf === "function" ) intf = intf(); // This may have already been unwrapped
+			(<any>type.GenericInstantiation).Definition = intf.Name;
 			trimAndUnwrapAll( (<any>type.GenericInstantiation).Arguments, trimComments );
 		}
 		if ( type.Array ) type.Array = <any>trimAndUnwrap( type.Array(), trimComments );
@@ -118,6 +120,16 @@ module erecruit.TsT.Tests.Extr {
 			trimAndUnwrap( p.Type, trimComments );
 			if ( trimComments ) deleteComment( p );
 		});
+	}
+
+	export function getTypeName( t: Type ): string {
+		if ( t.Array ) return getTypeName( t.Array() ) + "[]";
+		if ( t.Enum ) return t.Enum().Name;
+		if ( t.GenericInstantiation ) return getTypeName( t.GenericInstantiation().Definition ) + "<" + t.GenericInstantiation().Arguments.map( getTypeName ).join( "," ) + ">";
+		if ( t.GenericParameter ) return t.GenericParameter().Name;
+		if ( t.Interface ) return t.Interface().Name;
+		if ( t.PrimitiveType ) return PrimitiveType[t.PrimitiveType];
+		return "?";
 	}
 
 	function deleteComment( x: any ) {
