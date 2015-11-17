@@ -1,6 +1,3 @@
-/// <reference path="../lib/node/node.d.ts" />
-/// <reference path="../lib/jake/jake.d.ts" />
-/// <reference path="../lib/jasmine/jasmine-node.d.ts" />
 var path = require("path");
 var fs = require("fs");
 var Jasmine = require("jasmine");
