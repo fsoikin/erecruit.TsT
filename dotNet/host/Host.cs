@@ -17,7 +17,7 @@ namespace erecruit.TsT
 				this._originPath = Path.GetFullPath( originPath ?? "." );
 			}
 
-			private void log( string msg ) { if ( _log != null ) _log( "Host(" + _originPath + "): " + msg ); }
+			private void log( string msg ) { if ( _log != null ) _log( $"Host({_originPath}): {msg}" ); }
 
 			public string FetchFile( string fileName ) {
 				if ( fileName != null && fileName.EndsWith( Lib_d_ts ) ) {
@@ -26,8 +26,10 @@ namespace erecruit.TsT
 				}
 
 				var fullPath = Path.Combine( _originPath, fileName );
-				log( "Fetching " + fileName + " from " + fullPath );
+				log( $"Fetching {fileName} from {fullPath}." );
 				if ( File.Exists( fullPath ) ) return File.ReadAllText( fullPath );
+
+				log( $"File {fullPath} doesn't exist. Returning null." );
 				return null;
 			}
 

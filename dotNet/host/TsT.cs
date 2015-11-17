@@ -40,7 +40,7 @@ namespace erecruit.TsT
 			}
 
 			var originDir = Path.GetFullPath( currentDir );
-			var host = new Host( originDir, s => log( s, ScriptEngine.OutputKind.Debug ) );
+			var host = new Host( originDir, s => log( s, o.Debug ) );
 			return from filesPerConfig in configs.ToObservable()
 
 						 let configPath = Path.GetFullPath( filesPerConfig.Key )
@@ -49,7 +49,8 @@ namespace erecruit.TsT
 
 						 from configContents in ReadContents( configPath )
 
-						 from result in Emit( configDir, configContents, filesPerConfig, host )
+						 let filesRelativeToHost = filesPerConfig.Select( f => host.ResolveRelativePath( f, "." ) )
+						 from result in Emit( configDir, configContents, filesRelativeToHost, host )
 						 from written in WriteContents( Path.Combine( originDir, result.OutputFile ), result.Content )
 
 						 select new GeneratedFile {
@@ -85,9 +86,8 @@ namespace erecruit.TsT
 						 let rootDir = (string)( config.RootDir = host.ResolveRelativePath( (config.RootDir as string) ?? "", configDir ) )
 						 let _2 = config.ConfigDir = host.MakeRelativePath( config.RootDir, configDir )
 						 let _3 = log( "TsT: Read config from " + configDir + ", ConfigDir=" + config.ConfigDir + ", RootDir=" + config.RootDir )
-						 let filesRelativeToRoot = files.Select( f => host.MakeRelativePath( rootDir, f ) )
 
-						 from result in _engine.Queue( () => _emit( config, filesRelativeToRoot.ToArray(), host ) )
+						 from result in _engine.Queue( () => _emit( config, files.ToArray(), host ) )
 						 let array = Enumerable.Range( 0, (int)result.length ).Select( x => result[x] )
 
 						 from r in array.ToObservable()
@@ -161,6 +161,7 @@ namespace erecruit.TsT
 		}
 
 		private Unit log( string msg, ScriptEngine.OutputKind kind = o.Log ) {
+			Debug.WriteLine( msg );
 			if ( kind == o.Debug && !_debugOutput ) return Unit.Default;
 			var p = Output; 
 			if ( p != null ) p( this, new ScriptEngine.OutputEventArgs( kind, msg ) );

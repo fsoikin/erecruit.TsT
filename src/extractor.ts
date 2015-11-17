@@ -46,13 +46,22 @@ module erecruit.TsT {
 			debug(() => `GetDocument: ${fileName}` );
 
 			let mod = program.getSourceFile( fileName );
-			if ( !mod ) return { Path: fileName, Classes: [], Types: [] };
+			let document = getCachedDoc(fileName);
+			if (!mod) {
+				debug(() => `Language Service doesn't know '${fileName}', returning empty document.`);
+				document.Classes = [];
+				document.Types = [];
+				return document;
+			}
 
 			let topLevelExports = getExportStatements( Enumerable.from( mod.statements ) );
-			let document = getCachedDoc( fileName );
 
-			document.Classes = topLevelExports.selectMany( classesFromDecl ).where( t => !!t ).distinct().toArray();
-			document.Types = topLevelExports.select( typeFromDecl ).where( t => !!t ).distinct().toArray();
+			if (!document.Classes) {
+				document.Classes = topLevelExports.selectMany(classesFromDecl).where(t => !!t).distinct().toArray();
+			}
+			if (!document.Types) {
+				document.Types = topLevelExports.select(typeFromDecl).where(t => !!t).distinct().toArray();
+			}
 
 			debug(() => `Document '${fileName}': ${document.Classes.length} classes, ${document.Types.length} types.` );
 			return document;
@@ -89,14 +98,16 @@ module erecruit.TsT {
 			let cached = snapshots[fileName];
 			if ( cached !== undefined ) return cached;
 
-			debug(() => "getScriptSnapshot: fetching: " + fileName );
-			let content = config.Host.FetchFile( fileName );
+			debug(() => `getScriptSnapshot: fetching: ${fileName}` );
+			let content = config.Host.FetchFile(fileName);
+			if (!content) debug(() => `getScriptSnapshot: couldn't fetch ${fileName}`);
+
 			return snapshots[fileName] =
 				content || content === "" ? ts.ScriptSnapshot.fromString( content ) : null;
 		}
 
 		function getCachedDoc( path: string ) {
-			return docCache[path] || ( docCache[path] = { Path: path, Types: null, Classes: null });
+			return docCache[path] || (docCache[path] = { Path: makeRelativeToRoot(path), Types: null, Classes: null });
 		}
 
 		function getCachedDocFromSymbol( symbol: ts.Symbol ) {
@@ -380,7 +391,7 @@ module erecruit.TsT {
 				.firstOrDefault();
 
 			let sourceFile = decl && decl.getSourceFile();
-			let sourceFileName = sourceFile && ( sourceFile.moduleName || `"${sourceFile.fileName}"` );
+			let sourceFileName = sourceFile && (sourceFile.moduleName || `"${makeRelativeToRoot(sourceFile.fileName)}"` );
 
 			return explicitModuleName || sourceFileName;
 		}
@@ -489,6 +500,10 @@ module erecruit.TsT {
 				anyType: varTypes[1],
 				emptyType: varTypes[2],
 			};
+		}
+
+		function makeRelativeToRoot(path: string) {
+			return config.Host.MakeRelativePath(config.Original.RootDir, path);
 		}
 	}
 

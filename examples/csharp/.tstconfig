@@ -6,9 +6,9 @@
 	Types: {
 		// For all types whose name matches the regex '.'
 		'.': {
-			// Dump all definitions into this file (path relative to where .tstconfig is located)
+			// Dump all definitions into this file (path relative to RootDir above)
 			// Variables are: {{Path}}, {{Name}}, {{Extension}}
-			FileName: "out/{{Path}}{{Name}}.cs",
+			FileName: "{{Path}}{{Name}}.cs",
 
 			// Use this template (The '@' symbol in front means 'load from file'. otherwise the string itself will be the template)
 			Template: "@./type.cs.tpl"
@@ -17,7 +17,7 @@
 
 	Classes: {
 		'.': {
-			FileName: "out/{{Path}}{{Name}}.cs",
+			FileName: "csharp/out/{{Path}}{{Name}}.cs",
 			Template: "@./class.cs.tpl"
 		}
 	}

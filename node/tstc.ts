@@ -31,10 +31,17 @@ function main() {
 	config.ConfigDir = path.relative( config.RootDir, configDir );
 
 	var rootDir = config.RootDir;
-	function p( pt: string ) { return path.resolve( rootDir, pt ); }
+	function p(pt: string) { return path.resolve(rootDir, pt); }
+
+	files = files.map(f => path.relative(rootDir, f));
 
 	var host: erecruit.TsT.ITsTHost = {
-		FetchFile: fileName => { fileName = p( fileName ); return fs.existsSync( fileName ) && fs.statSync( fileName ).isFile() ? readFile( fileName ) : null; },
+		FetchFile: fileName => {
+			fileName = p(fileName);
+			if (fs.existsSync(fileName) && fs.statSync(fileName).isFile()) return readFile(fileName);
+			console.debug( `Couldn't find file '${fileName}', returning null` );
+			return null;
+		},
 		DirectoryExists: path => { path = p( path ); return fs.existsSync( path ) && fs.statSync( path ).isDirectory() },
 		GetParentDirectory: name => { var d = path.dirname( name ); return d === name ? null : d; },
 		ResolveRelativePath: ( relPath, dir ) => path.relative( rootDir, path.resolve( p( dir ), relPath ) ),
@@ -43,10 +50,10 @@ function main() {
 	};
 
 	try {
-		erecruit.TsT.Emit( config, files.map( f => path.relative( rootDir, f ) ), host )
+		erecruit.TsT.Emit(config, files, host)
 			.forEach( c => {
-				var outPath = path.resolve( config.RootDir, config.ConfigDir, c.OutputFile );
-				consoleLog( c.SourceFiles.map( f => path.relative( '.', path.resolve( config.RootDir, f ) ) ).join( ', ' ) + " --> " + path.relative( '.', outPath ) );
+				var outPath = path.resolve( rootDir, c.OutputFile );
+				consoleLog( c.SourceFiles.map( f => path.relative( '.', path.resolve( rootDir, f ) ) ).join( ', ' ) + " --> " + path.relative( '.', outPath ) );
 				createDir( path.dirname( outPath ) );
 				fs.writeFileSync( outPath, c.Content, { encoding: 'utf8' });
 			});

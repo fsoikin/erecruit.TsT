@@ -9,7 +9,7 @@
 	Types: {
 		// For all types whose name matches the regex '.'
 		'.': {
-			// Dump all definitions into this file (path relative to where .tstconfig is located)
+			// Dump all definitions into this file (path relative to RootDir above)
 			// Variables are: {{Path}}, {{Name}}, {{Extension}}
 			FileName: "{{Path}}{{Name}}.cs",
 

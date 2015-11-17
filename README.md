@@ -75,7 +75,7 @@ The config file format is the following:
 						// When multiple types end up targeted to the same
 						// output file, their contents are simply concatenated.
 						// 
-						// This path is relative to where this config file is located.
+						// This path is relative to where RootDir.
 						// REQUIRED
 						FileName: '{{Path}}{{Name}}.cs',
 										
