@@ -14,13 +14,15 @@ namespace erecruit.TsT.Tests
 	{
 		[Fact]
 		public async Task Should_load_and_run_JS_code() {
-			var config = @"{ Types: { 
-					RootDir: '.',
+			var config = @"{ 
+				RootDir: '.',
+				Types: { 
 					'.': { 
-						FileName: '{Name}.cs', 
-						Template: '{Interface.Name}' 
-					} 
-				} }";
+						FileName: '{{Name}}.cs', 
+						Template: '{{Interface().Name}}' 
+					}
+				} 
+			}";
 
 			var result = await new erecruit.TsT.TsT().Emit( ".", config, new[] { _fileName }, new MockHost() ).ToList();
 			result.Select( x => x.OutputFile ).Should().BeEquivalentTo( "file.cs" );
@@ -34,7 +36,7 @@ namespace erecruit.TsT.Tests
 				await new erecruit.TsT.TsT().Emit( ".", "{}", new[] { _erroneousFileName }, new MockHost() ).ToList();
 				Assert.True( false, "Didn't throw" );
 			}
-			catch ( ApplicationException ) {
+			catch ( Exception ) {
 			}
 		}
 
