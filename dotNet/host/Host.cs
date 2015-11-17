@@ -56,7 +56,7 @@ namespace erecruit.TsT
 				return MakeRelativePath( _originPath, Path.GetDirectoryName( path ) );
 			}
 
-			const string Lib_d_ts = "{4D5A953B-87FF-40A2-B90B-C843F91B7D3C}";
+			const string Lib_d_ts = "4D5A953B87FF40A2B90BC843F91B7D3C.ts";
 			public string[] GetIncludedTypingFiles() {
 				return new[] { Lib_d_ts };
 			}

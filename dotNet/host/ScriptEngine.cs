@@ -6,6 +6,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
+using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
 
 namespace erecruit.TsT
@@ -77,6 +78,7 @@ namespace erecruit.TsT
 				.Do( _ => log( "Action #" + timestamp + " executed.", OutputKind.Debug ) )
 				.Take( 1 ).Select( _ => Unit.Default )
 				.Timeout( JavaScriptCallTimeout )
+				.Catch( ( ScriptEngineException e ) => Observable.Throw<Unit>( new Exception( e.Message + ": " + e.ErrorDetails, e ) ) )
 				.Replay( 1 );
 			listeningForWhenDone = whenDone.Connect();
 
