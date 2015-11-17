@@ -1,7 +1,6 @@
 /// <reference path="../lib/nunjucks/nunjucks.d.ts" />
 /// <reference path="../lib/linq/linq.d.ts" />
 /// <reference path="../lib/typescript/typescript.d.ts" />
-/// <reference path="../lib/rx/rx.d.ts" />
 declare module "tst" {
     interface ITsTHost {
         FetchFile(fileName: string): string;
@@ -129,56 +128,29 @@ declare module "tst" {
     function cacheConfig(host: ITsTHost, config: Config): CachedConfig;
 
     function ensureArray<T>(a: T[]): T[];
-    function objName(e: ModuleElement, safe?: boolean): any;
+    function objName(e: ModuleElement, safe?: boolean): string;
     function merge(...hashes: any[]): any;
     function log(msg: () => string): void;
     function debug(msg: () => string): void;
-
+}
+declare type IEnumerable<T> = linqjs.IEnumerable<T>;
+declare module erecruit.TsT {
     interface ExtractorOptions {
         UseCaseSensitiveFileResolution?: boolean;
     }
-    class Extractor {
-        private _config;
-        private _options;
-        constructor(_config: CachedConfig, _options?: ExtractorOptions);
-        public LoadDocuments(docs: string[]): void;
-        private addFile(f);
-        public GetDocument(fileName: string): Document;
-        private GetClass(ctor);
-        private GetCachedDoc(path);
-        private GetCachedDocFromDecl(d);
-        private GetCachedDocFromSymbol(s);
-        private GetInternalModule(d);
-        private GetExternalModule(d);
-        private GetType(type);
-        private IsGenericInstantiation(type);
-        private GetGenericInstantiation(type);
-        private GetCallSignature(s);
-        private GetPrimitiveType(type);
-        private GetImplemented(type, includeExtended?);
-        private GetBaseClass(type);
-        private GetInterface(type);
-        private GetEnum(type);
-        private GetDocumentForDecl(d);
-        private GetGenericParameter(type);
-        private EnsureResolved(s);
-        private SymbolFromDecl;
-        private _compiler;
-        private _typeCache;
-        private _docCache;
-        private _snapshots;
-        private normalizePath(path);
-        private _tsHost;
-        private rootRelPath(realPath);
-        private realPath(pathRelativeToRoot);
+    interface Extractor {
+        GetDocument(fileName: string): Document;
     }
+    function createExtractor(config: CachedConfig, fileNames: string[], options?: ExtractorOptions): {
+        GetDocument: (fileName: string) => Document;
+    };
 
     function markupFilters(config: CachedConfig): {
         [key: string]: Function;
     };
     class DummyTagExtension implements Nunjucks.IExtension {
-        public tags: string[];
-        public parse(parser: Nunjucks.Parser.IParser, nodes: Nunjucks.Parser.Nodes, lexer: Nunjucks.Parser.ILexer): Nunjucks.Parser.INode;
+        tags: string[];
+        parse(parser: Nunjucks.Parser.IParser, nodes: Nunjucks.Parser.Nodes, lexer: Nunjucks.Parser.ILexer): Nunjucks.Parser.INode;
     }
 
     function markupFilters(config: CachedConfig): {
