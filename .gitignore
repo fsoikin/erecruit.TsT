@@ -10,6 +10,7 @@
 obj
 node_modules
 /built
+/packages
 
 !bin/*.js
 !build/jakefile.js
