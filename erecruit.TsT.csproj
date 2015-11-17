@@ -57,7 +57,6 @@
     <None Include="examples\csharp\genericParams.tpl" />
     <Content Include="examples\csharp\class.cs.tpl" />
     <None Include="jakefile" />
-    <TypeScriptCompile Include="blah.ts" />
     <TypeScriptCompile Include="lib\jake\jake.d.ts" />
     <TypeScriptCompile Include="lib\jasmine\jasmine-node.d.ts" />
     <TypeScriptCompile Include="lib\jasmine\jasmine.d.ts" />
