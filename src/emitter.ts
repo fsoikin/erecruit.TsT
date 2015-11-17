@@ -15,15 +15,16 @@ module erecruit.TsT {
 	}
 
 	export function Emit( cfg: Config, files: string[], host: ITsTHost ): FileContent[] {
-		var config = cacheConfig( host, cfg );
-		var e = createExtractor( config, ensureArray( files ) );
+		let config = cacheConfig( host, cfg );
+		files = ensureArray( files );
+		let extractor = createExtractor( config, files );
 		log( () => "Emit: config = " + JSON.stringify( cfg ) );
 
 		return Enumerable.from( files )
 			.selectMany(
 				f =>
-					formatTemplate( f, e.GetDocument( f ).Types, getFileConfigTypes( config, f ), objName ).concat(
-					formatTemplate( f, e.GetDocument( f ).Classes, getFileConfigClasses( config, f ), objName ) ),
+					formatTemplate( f, extractor.GetDocument( f ).Types, getFileConfigTypes( config, f ), objName ).concat(
+					formatTemplate( f, extractor.GetDocument( f ).Classes, getFileConfigClasses( config, f ), objName ) ),
 				( f, x ) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )
 			.doAction( x => log( () => "Finished generation: " + x.outputFile ) )
 			.groupBy( x => x.outputFile, x => x,
