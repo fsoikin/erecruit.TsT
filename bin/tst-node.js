@@ -61819,6 +61819,7 @@ var erecruit;
             var docCache = {};
             return { GetDocument: GetDocument };
             function GetDocument(fileName) {
+                TsT.debug(function () { return ("GetDocument: " + fileName); });
                 var mod = program.getSourceFile(fileName);
                 if (!mod)
                     return { Path: fileName, Classes: [], Types: [] };
@@ -61840,16 +61841,16 @@ var erecruit;
                 return localExports.concat(exportsFromNestedModules);
             }
             function unwrapModuleBlock(m) {
-                if (m.kind == 216) {
+                if (m.kind === 216) {
                     return unwrapModuleBlock(m.body);
                 }
-                else if (m.kind == 217) {
+                else if (m.kind === 217) {
                     return m;
                 }
                 return null;
             }
             function getScriptSnapshot(fileName) {
-                if (fileName == intrinsicsFileName)
+                if (fileName === intrinsicsFileName)
                     return intrinsicsFile;
                 var cached = snapshots[fileName];
                 if (cached !== undefined)
@@ -61868,7 +61869,7 @@ var erecruit;
                 var file = Enumerable
                     .from(symbol.getDeclarations())
                     .selectMany(getAllParentsAndSelf)
-                    .where(function (d) { return d.kind == 246; })
+                    .where(function (d) { return d.kind === 246; })
                     .select(function (file) { return file.fileName; })
                     .firstOrDefault();
                 return file && getCachedDoc(file);
@@ -61886,7 +61887,7 @@ var erecruit;
             function classesFromVariable(vr) {
                 var decls = vr && vr.declarationList.declarations;
                 var name = decls && decls.map(function (d) { return d.name; }).filter(function (n) { return !!n; })[0];
-                if (name && name.kind == 67)
+                if (name && name.kind === 67)
                     return classesFromIdentifier(name);
                 else
                     return null;
@@ -61973,7 +61974,7 @@ var erecruit;
             function translateEnum(type) {
                 var symbol = type.getSymbol();
                 var decl = symbol && symbol.valueDeclaration;
-                var members = decl && decl.kind == 215 && decl.members;
+                var members = decl && decl.kind === 215 && decl.members;
                 if (!members) {
                     TsT.debug(function () { return ("Unable to resolve members of enum '" + getTypeName(type) + "'"); });
                     return null;
@@ -62008,12 +62009,13 @@ var erecruit;
             }
             function translateInterface(type) {
                 var intf = type;
-                var members = Enumerable.from(intf.declaredProperties).where(isPublicProperty);
+                var members = isAnonymous(type) ? intf.getProperties() : intf.declaredProperties;
+                var publicMembers = Enumerable.from(members).where(isPublicProperty);
                 return {
                     Name: getTypeName(intf),
                     Extends: translateInterfacesOf(type).toArray(),
                     GenericParameters: getGenericTypeParameters(intf).map(translateType),
-                    Properties: members
+                    Properties: publicMembers
                         .where(function (p) { return !!(p.flags & 4); })
                         .select(function (p) {
                         var comments = getComments(p);
@@ -62025,7 +62027,7 @@ var erecruit;
                         };
                     })
                         .toArray(),
-                    Methods: members
+                    Methods: publicMembers
                         .where(function (m) { return !!(m.flags & 8192); })
                         .groupBy(function (m) { return m.name; }, function (m) { return m; }, function (name, ms) { return {
                         Name: name,
@@ -62066,8 +62068,17 @@ var erecruit;
                     .selectMany(function (decl) { return decl && decl.heritageClauses; })
                     .selectMany(function (clause) { return clause.types; })
                     .select(tc.getTypeAtLocation)
-                    .where(function (t) { return t && !(t.flags & 1024); })
+                    .where(function (t) { return t && !isClass(t); })
                     .select(translateType);
+            }
+            function isClass(t) {
+                if (t.flags & 1024)
+                    return true;
+                if (t.flags & 4096) {
+                    var target = t.target;
+                    return target !== t && isClass(target);
+                }
+                return false;
             }
             function getInternalModule(decl) {
                 return getAllParentsAndSelf(decl)
@@ -62128,7 +62139,7 @@ var erecruit;
                 return g.typeArguments[0];
             }
             function isPrimitiveType(t) {
-                return !!(t.flags & (258 | 4 | 8 | 8));
+                return !!(t.flags & (258 | 4 | 8 | 1));
             }
             function isEnumType(t) {
                 return !!(t.flags & 128);
@@ -62155,15 +62166,15 @@ var erecruit;
             }
             function getIntrinsicsText() {
                 return "\
-				var array: number[];\
-				var _any: any;\
-				var empty: {};\
+				var _1: string[];\
+				var _2: any;\
+				var _3: {};\
 			";
             }
             function getIntrinsics() {
                 var file = program.getSourceFile(intrinsicsFileName);
                 var varTypes = file.statements
-                    .filter(function (s) { return s.kind == 191; })
+                    .filter(function (s) { return s.kind === 191; })
                     .map(function (s) { return s.declarationList.declarations[0].type; })
                     .map(tc.getTypeAtLocation)
                     .filter(function (t) { return !!t; });
@@ -62332,11 +62343,12 @@ var erecruit;
     (function (TsT) {
         function Emit(cfg, files, host) {
             var config = TsT.cacheConfig(host, cfg);
-            var e = TsT.createExtractor(config, TsT.ensureArray(files));
+            files = TsT.ensureArray(files);
+            var extractor = TsT.createExtractor(config, files);
             TsT.log(function () { return "Emit: config = " + JSON.stringify(cfg); });
             return Enumerable.from(files)
                 .selectMany(function (f) {
-                return formatTemplate(f, e.GetDocument(f).Types, TsT.getFileConfigTypes(config, f), TsT.objName).concat(formatTemplate(f, e.GetDocument(f).Classes, TsT.getFileConfigClasses(config, f), TsT.objName));
+                return formatTemplate(f, extractor.GetDocument(f).Types, TsT.getFileConfigTypes(config, f), TsT.objName).concat(formatTemplate(f, extractor.GetDocument(f).Classes, TsT.getFileConfigClasses(config, f), TsT.objName));
             }, function (f, x) { return ({ outputFile: x.outputFileName, content: x.content, inputFile: f }); })
                 .doAction(function (x) { return TsT.log(function () { return "Finished generation: " + x.outputFile; }); })
                 .groupBy(function (x) { return x.outputFile; }, function (x) { return x; }, function (file, content) { return {
@@ -62383,7 +62395,7 @@ var erecruit;
 (function (erecruit) {
     var TsT;
     (function (TsT) {
-        TsT.Version = "0.8.0";
+        TsT.Version = "0.8.2";
     })(TsT = erecruit.TsT || (erecruit.TsT = {}));
 })(erecruit || (erecruit = {}));
 })( { TsT: module.exports } );
