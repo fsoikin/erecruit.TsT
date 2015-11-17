@@ -12,8 +12,8 @@ namespace erecruit.vs
 {
 	[PackageRegistration( UseManagedResourcesOnly = true )]
 	[InstalledProductRegistration( "#110", "#112", "1.0", IconResourceID = 400 )]
-	[ProvideMenuResource( "Menus.ctmenu", 1 )]
 	[ProvideAutoLoad( UIContextGuids80.SolutionExists )]
+	[ProvideMenuResource("Menus.ctmenu", 1)]
 	[Guid( GuidList.guidvsPkgString )]
 	public sealed class TsTPackage : Package
 	{
