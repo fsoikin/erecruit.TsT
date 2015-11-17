@@ -43,6 +43,8 @@ module erecruit.TsT {
 
 		function GetDocument( fileName: string ): Document {
 
+			debug(() => `GetDocument: ${fileName}` );
+
 			let mod = program.getSourceFile( fileName );
 			if ( !mod ) return { Path: fileName, Classes: [], Types: [] };
 
@@ -383,7 +385,7 @@ module erecruit.TsT {
 		};
 
 		function isAny( t: ts.Type ): boolean { return !!( t.flags & ts.TypeFlags.Any ); }
-		function isEmptyGenericConstraint( t: ts.Type ): boolean { return t == intrinsics.emptyGenericConstraintType; }
+		function isEmptyGenericConstraint( t: ts.Type ): boolean { return t === intrinsics.emptyGenericConstraintType; }
 		function isAnonymous( t: ts.Type ): boolean { return !!( t.flags & ts.TypeFlags.Anonymous ); }
 
 		function getFirstDeclaration( s: ts.Symbol ) {
@@ -399,20 +401,20 @@ module erecruit.TsT {
 		}
 
 		function isArrayType( t: ts.Type ) {
-			return ( t.flags & ts.TypeFlags.Reference ) && ( t as ts.GenericType ).target == intrinsics.arrayType;
+			return ( t.flags & ts.TypeFlags.Reference ) && ( t as ts.GenericType ).target === intrinsics.arrayType;
 		}
 
 		function getArrayElementType( t: ts.Type ) {
 			if ( !( t.flags & ts.TypeFlags.Reference ) ) return intrinsics.anyType;
 
 			let g = t as ts.GenericType;
-			if ( g.target != intrinsics.arrayType ) return intrinsics.anyType;
+			if ( g.target !== intrinsics.arrayType ) return intrinsics.anyType;
 
 			return g.typeArguments[0];
 		}
 
 		function isPrimitiveType( t: ts.Type ): boolean {
-			return !!( t.flags & ( ts.TypeFlags.StringLike | ts.TypeFlags.Number | ts.TypeFlags.Boolean | ts.TypeFlags.Boolean ) );
+			return !!( t.flags & ( ts.TypeFlags.StringLike | ts.TypeFlags.Number | ts.TypeFlags.Boolean | ts.TypeFlags.Any ) );
 		}
 
 		function isEnumType( t: ts.Type ): boolean {
@@ -446,9 +448,9 @@ module erecruit.TsT {
 
 		function getIntrinsicsText() {
 			return "\
-				var array: number[];\
-				var _any: any;\
-				var empty: {};\
+				var _1: string[];\
+				var _2: any;\
+				var _3: {};\
 			";
 		}
 
@@ -460,9 +462,11 @@ module erecruit.TsT {
 				.map( tc.getTypeAtLocation )
 				.filter( t => !!t );
 
+			let arrayType = ( varTypes[0] as ts.GenericType ).target;
+
 			return {
-				arrayType: ( varTypes[0] as ts.GenericType ).target,
-				emptyGenericConstraintType: ( ( varTypes[0] as ts.GenericType ).target.typeArguments[0] as ts.TypeParameter ).constraint,
+				arrayType: arrayType,
+				emptyGenericConstraintType: arrayType && ( arrayType.typeArguments[0] as ts.TypeParameter ).constraint,
 				anyType: varTypes[1],
 				emptyType: varTypes[2],
 			};

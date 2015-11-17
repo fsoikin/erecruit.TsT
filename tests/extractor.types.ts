@@ -154,5 +154,13 @@ module erecruit.TsT.Tests.Extr {
 			let anonymous = X.Type;
 			expect( anonymous.Interface().Name ).toBeNull();
 		});
+
+		it( "should correctly detect primitive types, including 'any'", () => {
+			file = "export interface I { X: any; Y: string; Z: number; W: boolean; }";
+			let types = e().GetDocument( fileName ).Types;
+			let I = types[0].Interface();
+			let props = I.Properties;
+			expect( props.map( p => p.Type.PrimitiveType ) ).toEqual( [PrimitiveType.Any, PrimitiveType.String, PrimitiveType.Number, PrimitiveType.Boolean] );
+		});
 	}
 }
