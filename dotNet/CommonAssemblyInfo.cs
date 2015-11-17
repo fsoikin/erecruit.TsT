@@ -11,4 +11,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyVersion( Version.Value )]
 [assembly: AssemblyFileVersion( Version.Value )]
 
-static class Version { public const string Value = "0.8.2"; }
+static class Version { public const string Value = "0.8.3"; }
