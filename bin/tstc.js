@@ -62406,9 +62406,14 @@ var erecruit;
 (function (erecruit) {
     var TsT;
     (function (TsT) {
-        TsT.Version = "0.8.3";
+        TsT.Version = "0.8.4";
     })(TsT = erecruit.TsT || (erecruit.TsT = {}));
 })(erecruit || (erecruit = {}));
+/// <reference path="../lib/node/node.d.ts" />
+/// <reference path="../src/config.ts" />
+/// <reference path="../src/emitter.ts" />
+/// <reference path="../src/interfaces.ts" />
+/// <reference path="../src/version.ts" />
 var fs = require('fs');
 var path = require('path');
 var args = require("minimist")(process.argv.slice(2));

@@ -62406,7 +62406,7 @@ var erecruit;
 (function (erecruit) {
     var TsT;
     (function (TsT) {
-        TsT.Version = "0.8.3";
+        TsT.Version = "0.8.4";
     })(TsT = erecruit.TsT || (erecruit.TsT = {}));
 })(erecruit || (erecruit = {}));
 })( { TsT: module.exports } );
