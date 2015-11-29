@@ -25,14 +25,20 @@ namespace erecruit.vs
 		public const string MSBuildTargetsFileRelativePath = "erecruit\\TsT\\";
 		public const string MSBuildExtensionsPathVariable = "$(MSBuildExtensionsPath32)";
 
+		/// <summary>
+		/// Runs TsT on the given input files and adds resulting files to projects (if not already there),
+		/// "nested" under their source files.
+		/// </summary>
 		public static void Translate( IEnumerable<File> inputFiles ) {
 			if ( !EnsureConfig( inputFiles ) ) return;
 			EnsureMSBuildImport( inputFiles.Select( f => f.Item.ContainingProject ).Distinct() );
 
 			var dte = (DTE2)Package.GetGlobalService( typeof( SDTE ) );
 			var files = inputFiles.ToList();
+			var filesJoined = string.Join( ", ", files.Select( f => f.Path ) );
 			var items = files.ToLookup( x => x.Path, x => x.Item, StringComparer.InvariantCultureIgnoreCase );
-			var solutionDir = System.IO.Path.GetDirectoryName( dte.Solution.FullName );
+			var solutionDir = Path.GetDirectoryName( dte.Solution.FullName );
+			WriteToOutputWindow( $"Preparing to translate {filesJoined}" );
 
 			// TODO: should use a shared instance of TsT across multiple calls
 			Observable.Using( () => new TsT.TsT(), tst =>
@@ -46,8 +52,13 @@ namespace erecruit.vs
 			 from _ in IncludeInProjectIfNotThere( item, Path.GetFullPath( Path.Combine( solutionDir, g.OutputFile ) ) )
 			 select g
 			)
-			.Select( f => "Generated " + f.OutputFile )
-			.Catch( ( Exception ex ) => Observable.Return( ex.Message ) )
+			.Select( f => $"Generated {string.Join( ", ", f.SourceFiles )} -> {f.OutputFile}" )
+			.DefaultIfEmpty( $"TsT produced no files while translating {filesJoined}{Environment.NewLine}Check your TsT config." )
+			.Catch( ( Exception ex ) => {
+				dte.StatusBar.Text = ex.Message;
+				WriteToOutputWindow( ex.ToString() );
+				return Observable.Empty<string>();
+			})
 			.Subscribe( msg => {
 				dte.StatusBar.Text = msg;
 				WriteToOutputWindow( msg );
@@ -55,20 +66,28 @@ namespace erecruit.vs
 
 		}
 
-		static void WriteToOutputWindow( string msg ) {
+		/// <summary>
+		/// Writes a message to VS output window, creating it if it's not there yet.
+		/// </summary>
+		public static void WriteToOutputWindow( string msg ) {
 			var output = Package.GetGlobalService( typeof( SVsOutputWindow ) ) as IVsOutputWindow;
 			if ( output == null ) return;
 
-			var paneID = VSConstants.OutputWindowPaneGuid.BuildOutputPane_guid;
-			output.CreatePane( ref paneID, "Build", 1, 0 );
+			var paneID = GuidList.OutputPane;
+			output.CreatePane( ref paneID, "erecruit.TsT", 1, 0 );
 
 			IVsOutputWindowPane pane;
 			if ( ErrorHandler.Failed( output.GetPane( ref paneID, out pane ) ) || pane == null ) return;
 
-			pane.OutputString( string.Format( "{0:HH:mm:ss}: erecruit.TsT: {1}{2}", DateTime.Now, msg, Environment.NewLine ) );
+			pane.OutputString( $"{DateTime.Now:HH:mm:ss}: {msg}{Environment.NewLine}" );
 		}
 
 		static HashSet<string> _askedAboutImports = new HashSet<string>();
+
+		/// <summary>
+		/// Checks that all given projects have TsT.targets input in them.
+		/// If not, adds the the imports automatically, asking the user for confirmation first.
+		/// </summary>
 		static void EnsureMSBuildImport( IEnumerable<Project> projs ) {
 			var eligibleProjects = projs
 				.Where( proj => {
@@ -91,6 +110,10 @@ namespace erecruit.vs
 			}
 		}
 
+		/// <summary>
+		/// Checks if all projects that contain given input files have a TsT config in them.
+		/// If not, adds the default config automatically, asking the user for confirmation first.
+		/// </summary>
 		static bool EnsureConfig( IEnumerable<File> inputFiles ) {
 			var anyFilesWithoutConfig = inputFiles.Select( f => f.Path ).Select( TsT.TsT.AutoDiscoverConfigFile() ).Any( string.IsNullOrEmpty );
 			if ( !anyFilesWithoutConfig ) return true;
@@ -127,6 +150,7 @@ namespace erecruit.vs
 					System.IO.File.WriteAllBytes( configPath, Properties.Resources.DefaultConfig_Itself );
 					System.IO.File.WriteAllBytes( templatePath, Properties.Resources.DefaultConfig_TypeTemplate );
 
+					WriteToOutputWindow( $"Adding TsT config file at {configPath}" );
 					var config = targetFolder.items.AddFromFile( configPath );
 					var template = templatesFolder.ProjectItems.AddFromFile( templatePath );
 
@@ -134,6 +158,7 @@ namespace erecruit.vs
 				} )
 				.Catch( ( Exception ex ) => {
 					MessageBox.Show( ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error );
+					WriteToOutputWindow( ex.ToString() );
 					return Enumerable.Empty<ProjectItem>();
 				} )
 				.TakeLast( 1 )
@@ -142,6 +167,11 @@ namespace erecruit.vs
 			return true;
 		}
 
+		/// <summary>
+		/// Includes the given file in the project, "nested" under the given project item
+		/// (if the file is not already there), and sets the "TsTranslate" flag on the project
+		/// item to true.
+		/// </summary>
 		public static IEnumerable<int> IncludeInProjectIfNotThere( ProjectItem item, string file ) {
 			if ( item != null ) {
 				SetTranslateFlag( item, true );
@@ -153,6 +183,14 @@ namespace erecruit.vs
 			yield return 0;
 		}
 
+		/// <summary>
+		/// Converts given list of <see cref="ProjectItem"/>s to list of our <see cref="File"/> structures. 
+		/// </summary>
+		/// <remarks>
+		/// This is made a separate function, because such conversion is not trivial: each project item
+		/// may contain multiple actual files, and file names are not exposed as IEnumerable, but have to
+		/// be accessed by index.
+		/// </remarks>
 		public static IEnumerable<File> GetFiles( IEnumerable<ProjectItem> items ) {
 			foreach ( var item in items ) {
 				for ( short i = 1; i <= item.FileCount; i++ ) {
@@ -161,6 +199,9 @@ namespace erecruit.vs
 			}
 		}
 
+		/// <summary>
+		/// Sets the "TsTranslate" flag to either true or false on the given <see cref="ProjectItem"/>.
+		/// </summary>
 		public static void SetTranslateFlag( ProjectItem item, bool flag ) {
 			var ctx = PrepareFlagOperation( item );
 			if ( ctx.PropertyStorage == null ) return;
@@ -168,6 +209,9 @@ namespace erecruit.vs
 			ctx.PropertyStorage.SetItemAttribute( ctx.ItemID, TranslateFlagName, flag.ToString() );
 		}
 
+		/// <summary>
+		/// Retrieves the value of the "TsTranslate" flag on the given <see cref="ProjectItem"/>.
+		/// </summary>
 		public static bool GetTranslateFlag( ProjectItem item ) {
 			var ctx = PrepareFlagOperation( item );
 			if ( ctx.PropertyStorage == null ) return false;
@@ -177,6 +221,10 @@ namespace erecruit.vs
 			return string.Equals( result, true.ToString(), StringComparison.InvariantCultureIgnoreCase );
 		}
 
+		/// <summary>
+		/// Performs various magic unwraps and checks to prepare for setting/retrieving a
+		/// <see cref="ProjectItem"/>'s property.
+		/// </summary>
 		static FlagContext PrepareFlagOperation( ProjectItem item ) {
 			if ( item.FileCount == 0 ) return new FlagContext();
 
@@ -207,15 +255,30 @@ namespace erecruit.vs
 			public uint ItemID;
 		}
 
+		/// <summary>
+		/// Exposes <see cref="ProjectItem"/>s as enumerable given their container.
+		/// </summary>
+		/// <remarks>
+		/// This has to be a separate function, because the only way the API provides
+		/// to access them is by index, and that's very inconvenient to use with LINQ.
+		/// </remarks>
 		public static IEnumerable<ProjectItem> GetItems( ProjectItems items ) {
 			for ( short j = 1; j <= items.Count; j++ ) yield return items.Item( j );
 		}
 
+		/// <summary>
+		/// Gets a list of <see cref="ProjectItem"/>s currently selected in the IDE.
+		/// </summary>
 		public static IEnumerable<ProjectItem> GetSelectedItems() {
 			var dte = (DTE2)Package.GetGlobalService( typeof( SDTE ) );
 			for ( short j = 1; j <= dte.SelectedItems.Count; j++ ) yield return dte.SelectedItems.Item( j ).ProjectItem;
 		}
 
+		/// <summary>
+		/// Gets the list of files (which is different from <see cref="ProjectItem"/>s - see <see cref="GetFiles"/>)
+		/// currently selected in the IDE.
+		/// </summary>
+		/// <returns></returns>
 		public static IEnumerable<Core.File> GetSelectedFiles() { return Core.GetFiles( GetSelectedItems() ); }
 
 		public class File
