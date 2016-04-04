@@ -62406,6 +62406,6 @@ var erecruit;
 (function (erecruit) {
     var TsT;
     (function (TsT) {
-        TsT.Version = "0.8.4";
+        TsT.Version = "0.8.5";
     })(TsT = erecruit.TsT || (erecruit.TsT = {}));
 })(erecruit || (erecruit = {}));
