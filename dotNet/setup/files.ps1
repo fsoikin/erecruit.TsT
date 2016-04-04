@@ -15,11 +15,13 @@ function Main {
 	$binFiles = files $tmpDir "tstc\bin\$Configuration" 'c'
 	$vsixFiles12 = files $tmpDir "vs\bin\vsix" 'vs12'
 	$vsixFiles14 = files $tmpDir "vs\bin\vsix" 'vs14'
+	$vsixFiles15 = files $tmpDir "vs\bin\vsix" 'vs15'
 
 	cat "$myDir\files.template" | 
 		%{ $_ -replace "<!-- BINFILES -->", $binFiles } | 
 		%{ $_ -replace "<!-- VSIXFILES12 -->", $vsixFiles12 } | 
 		%{ $_ -replace "<!-- VSIXFILES14 -->", $vsixFiles14 } | 
+		%{ $_ -replace "<!-- VSIXFILES15 -->", $vsixFiles15 } | 
 		Set-Content "$myDir\files.wxs"
 }
 

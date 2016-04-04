@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="*" Name="erecruit TypeScript Translator" Language="1033" Version="0.8.4" Manufacturer="erecruit" UpgradeCode="734a7972-17cf-4ba8-8af7-8f9d3fe3853c">
+	<Product Id="*" Name="erecruit TypeScript Translator" Language="1033" Version="0.8.5" Manufacturer="erecruit" UpgradeCode="734a7972-17cf-4ba8-8af7-8f9d3fe3853c">
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
@@ -12,10 +12,12 @@
 
 		<CustomAction Id='RescanVSExtensions12' Directory='VSINSTALLDIR12' ExeCommand='[VSINSTALLDIR12]devenv.exe /setup' Return='asyncNoWait'/>
 		<CustomAction Id='RescanVSExtensions14' Directory='VSINSTALLDIR14' ExeCommand='[VSINSTALLDIR14]devenv.exe /setup' Return='asyncNoWait'/>
-		
+		<CustomAction Id='RescanVSExtensions15' Directory='VSINSTALLDIR15' ExeCommand='[VSINSTALLDIR15]devenv.exe /setup' Return='asyncNoWait'/>
+
 		<InstallExecuteSequence>
 			<Custom Action='RescanVSExtensions12' After='InstallFinalize' />
 			<Custom Action='RescanVSExtensions14' After='InstallFinalize' />
+			<Custom Action='RescanVSExtensions15' After='InstallFinalize' />
 		</InstallExecuteSequence>
 
 		<Property Id="VSINSTALLDIR12">
@@ -24,6 +26,10 @@
 
 		<Property Id="VSINSTALLDIR14">
 			<RegistrySearch Id="VSInstallRegistry14" Root="HKLM" Key="SOFTWARE\Microsoft\VisualStudio\14.0" Name="InstallDir" Type="directory" />
+		</Property>
+
+		<Property Id="VSINSTALLDIR15">
+			<RegistrySearch Id="VSInstallRegistry15" Root="HKLM" Key="SOFTWARE\Microsoft\VisualStudio\15.0" Name="InstallDir" Type="directory" />
 		</Property>
 
 		<ComponentGroup Id="Components">
@@ -61,6 +67,14 @@
 				<Directory Name="Extensions" Id="VSExtensionsDir14">
 					<Directory Name="erecruit" Id="VSExtensionsErecruitDir14">
 						<Directory Name="TsT" Id="VsixDir14" />
+					</Directory>
+				</Directory>
+			</Directory>
+
+			<Directory Id="VSINSTALLDIR15" Name="VS15">
+				<Directory Name="Extensions" Id="VSExtensionsDir15">
+					<Directory Name="erecruit" Id="VSExtensionsErecruitDir15">
+						<Directory Name="TsT" Id="VsixDir15" />
 					</Directory>
 				</Directory>
 			</Directory>

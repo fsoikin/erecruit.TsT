@@ -45,9 +45,9 @@ desc("Set version number in the various source/config files");
 task('version', [], setVersion);
 desc("Update LKG binaries");
 task('lkg', outputs, updateLkg);
-compileTs(freeModule, sources.toArray(), lib, false, true);
-compileTs(executableModule, [fromRoot('node/tstc.ts')], [freeModule], true, false, [typeScriptBaseTypings]);
-compileTs(testsModule, tests.toArray(), lib, true, true);
+compileTs(freeModule, sources.toArray(), lib, /* disableTypings */ false, /* mergeOutput */ true);
+compileTs(executableModule, [fromRoot('node/tstc.ts')], [freeModule], /* disableTypings */ true, /* mergeOutput */ false, /* prereqs */ [typeScriptBaseTypings]);
+compileTs(testsModule, tests.toArray(), lib, /* disableTypings */ true, /* mergeOutput */ true);
 wrapFile(freeModule, nodeModule, "(function(erecruit){", "})( { TsT: module.exports } );");
 file(typeScriptBaseTypings, [fromRoot('node/lib.d.ts')], function () { return jake.cpR(fromRoot('node/lib.d.ts'), typeScriptBaseTypings); });
 file(nodeModuleTypings, [freeModuleTypings], function () {
