@@ -39,7 +39,9 @@
 		<ItemGroup>
 			<TsTFiles Include="@(TypeScriptCompile)" Condition="'%(TypeScriptCompile.TsTranslate)' == 'True'"></TsTFiles>
 		</ItemGroup>
-		<Exec Command="&quot;$(TsTToolPath)\$(TsTToolExe)&quot; $(TsTArgs) @(TsTFiles, ' ')" />
+		<WriteLinesToFile File="$(MSBuildProjectFile).tstinputs" Lines="@(TsTFiles)" />
+		<Exec Command="&quot;$(TsTToolPath)\$(TsTToolExe)&quot; $(TsTArgs) @$(MSBuildProjectFile).tstinputs" />
+		<Delete Files="$(MSBuildProjectFile).tstinputs" />
 	</Target>
 
 	<Target Name="erecruitTsTranslate_Clean" DependsOnTargets="erecruitTsTranslate_CreateOutputs">
