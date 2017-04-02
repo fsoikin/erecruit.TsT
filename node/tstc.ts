@@ -4,9 +4,10 @@
 /// <reference path="../src/interfaces.ts" />
 /// <reference path="../src/version.ts" />
 
-import fs = require( 'fs' );
-import path = require( 'path' );
-var args = require( "minimist" )( process.argv.slice( 2 ) );
+import * as fs from 'fs'
+import * as path from 'path'
+import minimist from 'minimist'
+var args = minimist( process.argv.slice( 2 ) );
 
 // TODO: instead of this hack, I should have a log method in ITsTHost
 var consoleLog = console.log;

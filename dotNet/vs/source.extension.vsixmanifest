@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
 	<Metadata>
-		<Identity Id="f95d8dce-65f6-412e-8a3d-512cf66547d9" Version="0.8.5" Language="en-US" Publisher="erecruit" />
+		<Identity Id="f95d8dce-65f6-412e-8a3d-512cf66547d9" Version="0.8.6" Language="en-US" Publisher="erecruit" />
 		<DisplayName>erecruit.TsT</DisplayName>
 		<Description xml:space="preserve">erecruit TsT - TypeScript Translator.
 Extract type information from your TypeScript files and generate other code (for example, C# classes) from it.</Description>
@@ -16,6 +16,10 @@ Extract type information from your TypeScript files and generate other code (for
 		<InstallationTarget Version="[12.0,15.0]" Id="Microsoft.VisualStudio.Premium" />
 		<InstallationTarget Version="[12.0,15.0]" Id="Microsoft.VisualStudio.Ultimate" />
 	</Installation>
+	<Prerequisites>
+		<Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,16.0)" DisplayName="Visual Studio core editor" />
+		<Prerequisite Id="Microsoft.VisualStudio.Shell.12.0" Version="[12.0]" />
+	</Prerequisites>
 	<Dependencies>
 		<Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
 		<Dependency Id="Microsoft.VisualStudio.MPF.12.0" DisplayName="Visual Studio MPF 12.0" d:Source="Installed" Version="[12.0]" />

@@ -3,6 +3,10 @@ export interface Range<T> {
 	End: T;
 }
 
+export interface Range<T> {
+	Another: string;
+}
+
 export enum Colors {
 	Red, Green, Blue
 }
@@ -21,3 +25,5 @@ export class Cls {
 	constructor( b: string );
 	constructor( x: any ) { }
 }
+
+export var a = 0;
