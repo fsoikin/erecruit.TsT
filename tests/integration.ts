@@ -15,27 +15,38 @@ describe( "tstc", () => {
 	def( {
 		name: "C# example",
 		aFileInSourceDir: "examples/csharp/.tstconfig",
-		expectedResults: ["../module.cs"],
+		expectedResults: [ 
+			{ file: "../module.cs",
+			  expectedContent: ["public class Range<T>", "public T Start { get; set; }", "public enum Colors", "Red = 0"] 
+			} ],
 		tstcArgs: "-c .tstconfig ../module.ts"
 	});
 
 	def( {
 		name: "F# example",
 		aFileInSourceDir: "examples/fsharp/.tstconfig",
-		expectedResults: ["../module.fs"],
+		expectedResults: [ { 
+			file: "../module.fs", 
+			expectedContent: ["type Range<'T>", "Start: 'T", "type Colors =", "| Red = 0"] } ],
 		tstcArgs: "-c .tstconfig ../module.ts"
 	});
 
-	function def( args: { name: string; aFileInSourceDir: string; expectedResults: string[]; tstcArgs: string }) {
+	function def( args: { 
+		name: string; 
+		aFileInSourceDir: string; 
+		expectedResults: {file: string; expectedContent: string[]}[]; 
+		tstcArgs: string }) 
+	{
 	
 		// I'll be part of "/built/tests/integration.js" at runtime, so "." maps to "/built/tests"
 		var srcPath = path.dirname( require.resolve( "../../" + args.aFileInSourceDir ) );
-		var expectedResults = args.expectedResults.map(p => path.resolve(srcPath, p));
-		debug(() => expectedResults.join(","));
 
 		it( "should successfully compile " + args.name, ( done: Function ) => {
 
-			expectedResults.filter( fs.existsSync ).map( fs.unlinkSync );
+			args.expectedResults.forEach( f => {
+				const file = path.resolve(srcPath, f.file);
+				if ( fs.existsSync( file ) ) fs.unlinkSync( file );
+			} );
 
 			childproc.exec(
 				['node', require.resolve("../src/tstc.js"), "-d -v " + args.tstcArgs].join( ' ' ),
@@ -43,7 +54,14 @@ describe( "tstc", () => {
 				(err: any, stdout: string, stderr: string) => {
 					debug(() => stdout);
 					expect( stderr ).toBeFalsy();
-					expect( expectedResults.map( fs.existsSync ) ).not.toContain( false );
+					args.expectedResults.forEach( f => {
+						const file = path.resolve(srcPath, f.file);
+						expect( fs.existsSync( file ) ).toBeTruthy();
+
+						const content = fs.readFileSync( file, "utf8" );
+						f.expectedContent.forEach( c => expect(content).toContain(c) );
+					} );
+
 					done();
 				});
 		});
