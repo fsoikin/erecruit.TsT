@@ -1,33 +1,39 @@
 {
-	"name": "erecruit-tst",
-	"version": "0.8.6",
-	"description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
-	"main": "./bin/tst-node.js",
-	"bin": { "tstc": "./bin/tstc.js" },
-	"files": ["bin/lib.d.ts", "bin/tst-node.d.ts","bin/tst-node.js","bin/tst.d.ts","bin/tst.js","bin/tstc.js"],
-
-	"scripts": {
-		"prepublish": "jake"
-	},
-
-	"license": "MIT",
-	"keywords": [
-		"typescript",
-		"type",
-		"javascript"
-	],
-	"author": "Fyodor Soikin <fsoikin@erecruit.com> (http://erecruit.com)",
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/erecruit/tst.git"
-	},
-	"preferGlobal": true,
-	"dependencies": {
-		"minimist": "0.0.8"
-	},
-	"devDependencies": {
-		"typescript": "1.6.x",
-		"jake": "0.7.x",
-		"jasmine": "2.3.2"
-	}
+  "name": "erecruit-tst",
+  "version": "0.8.6",
+  "description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
+  "main": "./built/src/tstc.js",
+  "bin": {
+    "tstc": "./built/src/tstc.js"
+  },
+  "files": [],
+  "scripts": {
+    "build": "node node_modules/typescript/bin/tsc",
+    "test": "node node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=./tests/support/jasmine.json"
+  },
+  "license": "MIT",
+  "keywords": [
+    "typescript",
+    "type",
+    "javascript"
+  ],
+  "author": "Fyodor Soikin <fsoikin@erecruit.com> (http://erecruit.com)",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/erecruit/tst.git"
+  },
+  "preferGlobal": true,
+  "dependencies": {
+    "linq-es2015": "^2.4.16",
+    "minimist": "^1.2.0",
+    "nunjucks": "3.0.0",
+    "typescript": "^2.2.1"
+  },
+  "devDependencies": {
+    "@types/jasmine": "^2.5.43",
+    "@types/minimist": "^1.2.0",
+    "@types/nunjucks": "0.0.32",
+    "jake": "^8.0.15",
+    "jasmine": "^2.5.3"
+  }
 }

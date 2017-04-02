@@ -1,62 +1,39 @@
-/// <reference path="../lib/jasmine/jasmine.d.ts" />
-/// <reference path="../src/utils.ts" />
+/// <reference path="../typings/index.d.ts" />
+import * as path from "path"
+import * as fs from "fs"
+import * as Enumerable from 'linq-es2015'
+import { suppressOutput } from '../src/utils'
+import * as nunjucks from 'nunjucks'
 
-module erecruit.TsT.Tests {
-	export var path = require( "path" );
-	export var fs = require( "fs" );
-
-	interface It { ( name: string, define: () => void ): void; }
-	declare var GLOBAL: any;
-
-	var groupStack: string[] = [];
-	var fns = ["it", "fit", "xit"];
-	var real: any = Enumerable.from( fns ).toObject( x => x, x => GLOBAL[x] );
-	var override = () => fns.forEach( fn =>
-		GLOBAL[fn] = ( name: string, define: () => void ) => {
-			restore();
-			real[fn]( groupStack.join( ' ' ) + ' ' + name, define );
-			override();
-		} );
-	var restore = () => fns.forEach( fn => GLOBAL[fn] = real[fn] );
-
-	export function group( name: string, define: () => void ) {
-		groupStack.push( name );
+var groupStack: string[] = [];
+var fns = ["it", "fit", "xit"];
+var real = fns.reduce( (x, fn) => { x[fn] = global[fn]; return x; }, {} );
+var override = () => fns.forEach( fn =>
+	global[fn] = ( name: string, define: () => void ) => {
+		restore();
+		real[fn]( groupStack.join( ' ' ) + ' ' + name, define );
 		override();
-		try {
-			define();
-		}
-		finally {
-			restore();
-			groupStack.pop();
-		}
+	} );
+var restore = () => fns.forEach( fn => global[fn] = real[fn] );
+
+export function group( name: string, define: () => void ) {
+	groupStack.push( name );
+	override();
+	try {
+		define();
 	}
-
-	var globalIndent = 0;
-
-	//Object.prototype.jasmineToString = function ( value: string ) {
-	//	var prefixNewLine = false;
-	//	var suffixNewLine = false;
-
-	//	if ( value === '{ ' || value === '[ ' ) {
-	//		globalIndent++;
-	//		suffixNewLine = true;
-	//	}
-	//	else if ( value === ' }' || value === ' ]' ) {
-	//		globalIndent--;
-	//		prefixNewLine = true;
-	//	}
-
-	//	var prefix = prefixNewLine ? '\r\n' + new Array( globalIndent + 1 ).join( '\t' ) : '';
-	//	var suffix = suffixNewLine ? '\r\n' + new Array( globalIndent + 1 ).join( '\t' ) : '';
-	//	this.string += prefix + value + suffix;
-	//};
-
-	erecruit.TsT.log = erecruit.TsT.debug = () => { };
-	//erecruit.TsT.debug = erecruit.TsT.log;
-
-	export function renderTemplate( tpl: string, ctx: any, filters: { [key: string]: Function }) {
-		var env = new nunjucks.Environment( [] );
-		for ( var f in filters ) env.addFilter( f, filters[f] );
-		return env.renderString( tpl, ctx );
+	finally {
+		restore();
+		groupStack.pop();
 	}
+}
+
+var globalIndent = 0;
+
+suppressOutput();
+
+export function renderTemplate( tpl: string, ctx: any, filters: { [key: string]: (...args: any[]) => any }) {
+	var env = new nunjucks.Environment( [] );
+	for ( var f in filters ) env.addFilter( f, filters[f] );
+	return env.renderString( tpl, ctx );
 }

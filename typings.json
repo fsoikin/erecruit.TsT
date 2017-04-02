@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "nunjucks": "registry:dt/nunjucks#0.0.0+20160803221903"
+  },
+  "globalDependencies": {}
+}

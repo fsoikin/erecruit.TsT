@@ -6,18 +6,17 @@ export function markupFilters( config: CachedConfig ): { [key: string]: (...args
 	const typeName = typeNameFn( { 
 		config, 
 		primitiveTypeMap: [
-			{ type: PrimitiveType.Any, name: "object" },
+			{ type: PrimitiveType.Any, name: "obj" },
 			{ type: PrimitiveType.String, name: "string" },
 			{ type: PrimitiveType.Boolean, name: "bool" },
 			{ type: PrimitiveType.Number, name: "int" } ],
-		objType: "object",
+		objType: "obj",
 		makeArray: t => t + "[]"
 	} );
 
 	return {
-		cs_typeName: typeName,
-		cs_typeNamespace: typeNamespace,
-		cs_typeFullName: ( e: ModuleElement ) => typeName( e, true ),
-		cs_isEmptyNamespace: ( e: ModuleElement ) => typeNamespace( config, e ) ? <any>e : false
+		fs_typeName: typeName,
+		fs_typeNamespace: typeNamespace,
+		fs_typeFullName: ( e: ModuleElement ) => typeName( e, true ),
 	};
 }

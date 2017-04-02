@@ -1,82 +1,77 @@
-/// <reference path="../lib/nunjucks/nunjucks.d.ts" />
-/// <reference path="../lib/linq/linq.d.ts" />
-/// <reference path="interfaces.ts" />
-/// <reference path="extractor.ts" />
-/// <reference path="config.ts" />
-/// <reference path="utils.ts" />
-/// <reference path="filters/general.ts" />
-/// <reference path="filters/csharp.ts" />
+import { Template } from 'nunjucks'
+import { Config, CachedConfigPart, cacheConfig, getFileConfigTypes, getFileConfigClasses } from './config'
+import { ITsTHost } from './interfaces'
+import { linq, log, objName, debug } from './utils'
+import * as Enumerable from 'linq-es2015'
+import { createExtractor } from './extractor'
 
-module erecruit.TsT {
-	export interface FileContent {
-		OutputFile: string;
-		Content: string;
-		SourceFiles: string[];
+export interface FileContent {
+	OutputFile: string;
+	Content: string;
+	SourceFiles: string[];
+}
+
+/**
+ * Processes a bunch of input files and outputs resulting text according to given config.
+ * @param cfg Config to use.
+ * @param files List of files to process. The paths must be relative to the provided host.
+ * @param host Abstraction of the environment - mostly file IO operations.
+ */
+export function Emit( cfg: Config, files: string[], host: ITsTHost ): FileContent[] {
+	let config = cacheConfig(host, cfg);
+	files = (files || []).map(f => host.MakeRelativePath(".", f)); // This MakeRelative call will "normalize" file names - remove leading dots and whatnot.
+	let extractor = createExtractor(config, files);
+	log( () => "Emit: config = " + JSON.stringify( cfg ) );
+
+	return linq( files )
+		.SelectMany( f =>
+			formatTemplate( f, extractor.GetDocument( f ).Types, getFileConfigTypes( config, f ), objName ).Concat(
+			formatTemplate( f, extractor.GetDocument( f ).Classes, getFileConfigClasses( config, f ), objName ) ),
+			(f, x) => ({ outputFile: x.outputFileName, content: x.content, inputFile: f }) )
+		.Select( x => { log( () => "Emit: Finished generation: " + x.outputFile ); return x; } )
+		.GroupBy( x => x.outputFile, x => x,
+			(file, content) => <FileContent>{
+				OutputFile: host.ResolveRelativePath( file, cfg.RootDir ), // Calculate output path relative to host.
+				Content: linq( content ).Select( k => k.content ).ToArray().join( '\r\n' ),
+				SourceFiles: linq( content ).Select( k => k.inputFile ).Distinct().ToArray()
+			}
+		)
+		.Select(f => { debug(() => `Emit: returninig ${f.SourceFiles.join()} -> ${f.OutputFile}`); return f; } )
+		.ToArray();
+
+	function formatTemplate<TObject>( sourceFileName: string, objects: TObject[], config: CachedConfigPart[], objectName: ( o: TObject ) => string )
+		: Enumerable.Enumerable<{ outputFileName: string; content: string }> {
+
+		return linq( config )
+			.Where( cfg => !!( cfg.template && cfg.fileName ) )
+			.SelectMany( _ => objects || [], ( cfg, obj ) => ( { cfg: cfg, obj: obj }) )
+			.Where( x => x.cfg.match( objectName( x.obj ) ) )
+			.Select( x => ( {
+				outputFileName: formatFileName( sourceFileName, x.cfg.fileName ),
+				content: x.cfg.template.render( x.obj )
+			}) );
 	}
 
-	/**
-	 * Processes a bunch of input files and outputs resulting text according to given config.
-	 * @param cfg Config to use.
-	 * @param files List of files to process. The paths must be relative to the provided host.
-	 * @param host Abstraction of the environment - mostly file IO operations.
-	 */
-	export function Emit( cfg: Config, files: string[], host: ITsTHost ): FileContent[] {
-		let config = cacheConfig(host, cfg);
-		files = ensureArray(files).map(f => host.MakeRelativePath(".", f)); // This MakeRelative call will "normalize" file names - remove leading dots and whatnot.
-		let extractor = createExtractor(config, files);
-		log( () => "Emit: config = " + JSON.stringify( cfg ) );
+	function formatFileName( sourceFileName: string, template: Template ) {
 
-		return Enumerable.from( files )
-			.selectMany(
-				f =>
-					formatTemplate( f, extractor.GetDocument( f ).Types, getFileConfigTypes( config, f ), objName ).concat(
-					formatTemplate( f, extractor.GetDocument( f ).Classes, getFileConfigClasses( config, f ), objName ) ),
-				( f, x ) => ( { outputFile: x.outputFileName, content: x.content, inputFile: f }) )
-			.doAction( x => log( () => "Emit: Finished generation: " + x.outputFile ) )
-			.groupBy( x => x.outputFile, x => x,
-				(file, content) => <FileContent>{
-					OutputFile: host.ResolveRelativePath( file, cfg.RootDir ), // Calculate output path relative to host.
-					Content: content.select( k => k.content ).toArray().join( '\r\n' ),
-					SourceFiles: Enumerable.from( content ).select( k => k.inputFile ).distinct().toArray()
-				}
-			)
-			.doAction(f => debug(() => `Emit: returninig ${f.SourceFiles.join()} -> ${f.OutputFile}`))
-			.toArray();
+		// On input, sourceFileName is relative to host
+		// But for purposes of templating, we need to make it relative to cfg.RootDir
+		sourceFileName = host.MakeRelativePath(cfg.RootDir, sourceFileName);
+		var dir = host.GetParentDirectory( sourceFileName );
+		if ( dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\' ) dir += '/';
 
-		function formatTemplate<TObject>( sourceFileName: string, objects: TObject[], config: CachedConfigPart[], objectName: ( o: TObject ) => string )
-			: linqjs.IEnumerable<{ outputFileName: string; content: string }> {
+		var name = dir && sourceFileName.substr( 0, dir.length-1 ) === dir.substring( 0, dir.length-1 )
+			? sourceFileName.substring( dir.length )
+			: sourceFileName;
+		var nameParts = name.split( '.' );
 
-			return Enumerable.from( config )
-				.where( cfg => !!( cfg.template && cfg.fileName ) )
-				.selectMany( _ => objects, ( cfg, obj ) => ( { cfg: cfg, obj: obj }) )
-				.where( x => x.cfg.match( objectName( x.obj ) ) )
-				.select( x => ( {
-					outputFileName: formatFileName( sourceFileName, x.cfg.fileName ),
-					content: x.cfg.template.render( x.obj )
-				}) );
-		}
+		var model = {
+			Path: dir || '',
+			Name: nameParts.slice( 0, nameParts.length - 1 ).join( '.' ),
+			Extension: nameParts[nameParts.length - 1]
+		};
 
-		function formatFileName( sourceFileName: string, template: Nunjucks.ITemplate ) {
-
-			// On input, sourceFileName is relative to host
-			// But for purposes of templating, we need to make it relative to cfg.RootDir
-			sourceFileName = host.MakeRelativePath(cfg.RootDir, sourceFileName);
-			var dir = host.GetParentDirectory( sourceFileName );
-			if ( dir && dir[dir.length - 1] !== '/' && dir[dir.length - 1] !== '\\' ) dir += '/';
-
-			var name = dir && sourceFileName.substr( 0, dir.length-1 ) === dir.substring( 0, dir.length-1 )
-				? sourceFileName.substring( dir.length )
-				: sourceFileName;
-			var nameParts = name.split( '.' );
-
-			var model = {
-				Path: dir || '',
-				Name: nameParts.slice( 0, nameParts.length - 1 ).join( '.' ),
-				Extension: nameParts[nameParts.length - 1]
-			};
-
-			debug( () => "formatFileName: model = " + JSON.stringify( model ) );
-			return template.render( model );
-		}
+		debug( () => "formatFileName: model = " + JSON.stringify( model ) );
+		return template.render( model );
 	}
 }

@@ -8,17 +8,10 @@
 		'.': {
 			// Dump all definitions into this file (path relative to RootDir above)
 			// Variables are: {{Path}}, {{Name}}, {{Extension}}
-			FileName: "{{Path}}{{Name}}.cs",
+			FileName: "{{Path}}{{Name}}.fs",
 
 			// Use this template (The '@' symbol in front means 'load from file'. otherwise the string itself will be the template)
-			Template: "@./type.cs.tpl"
-		}
-	},
-
-	Classes: {
-		'.': {
-			FileName: "{{Path}}{{Name}}.cs",
-			Template: "@./class.cs.tpl"
+			Template: "@./type.fs.tpl"
 		}
 	}
 
