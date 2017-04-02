@@ -6,7 +6,8 @@ export function typeNameFn( args: {
 	config: CachedConfig, 
 	primitiveTypeMap: { type: PrimitiveType; name: string }[],
 	objType: string, 
-	makeArray: (type: string) => string
+	makeArray: (type: string) => string,
+	makeGenericParameter: (type: string) => string
 } ) 
 {
 	const primitiveTypeMap = args.primitiveTypeMap.reduce( (obj, x) => { obj[x.type] = x.name; return obj; }, <{ [key: number]: string }>{} );
@@ -19,6 +20,7 @@ export function typeNameFn( args: {
 		if ( e.Kind === ModuleElementKind.Type ) {
 			if ( e.Array ) return args.makeArray( typeName( e.Array(), includeNamespace ) );
 			if ( e.PrimitiveType ) return primitiveTypeMap[e.PrimitiveType] || args.objType;
+			if ( e.GenericParameter ) return args.makeGenericParameter( e.GenericParameter().Name )
 		}
 
 		const n = objName( e );

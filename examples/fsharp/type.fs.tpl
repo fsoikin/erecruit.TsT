@@ -6,15 +6,13 @@
 
 {% macro genericParams(list) %}
     {%- for p in list -%}
-      {{ "<" if loop.first }}'{{ p | typeName }}{{ ">" if loop.last else "," }}
+      {{ "<" if loop.first }}{{ p | fs_typeName }}{{ ">" if loop.last else "," }}
     {%- endfor -%}
 {% endmacro %}
 
 {%- set ns = (this|fs_typeNamespace) -%}
 {%- set intf = Interface() if Interface -%}
 {%- set enum = Enum() if Enum -%}
-
-namespace erecruit.JS{{ "." if ns }}{{ ns }}
 
 {%- if intf and (intf.Properties|nonempty) %}
     type {{ intf.Name }}{{ genericParams(intf.GenericParameters) }} = {

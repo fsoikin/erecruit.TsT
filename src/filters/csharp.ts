@@ -11,7 +11,8 @@ export function markupFilters( config: CachedConfig ): { [key: string]: (...args
 			{ type: PrimitiveType.Boolean, name: "bool" },
 			{ type: PrimitiveType.Number, name: "int" } ],
 		objType: "object",
-		makeArray: t => t + "[]"
+		makeArray: t => t + "[]",
+		makeGenericParameter: t => t
 	} );
 
 	return {

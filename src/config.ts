@@ -57,7 +57,7 @@ function getFileConfig( config: CachedConfig, fileName: string, getParts: ( c: C
 }
 
 export function cacheConfig( host: ITsTHost, config: Config ): CachedConfig {
-	var env = new Environment( createLoader() );
+	var env = new Environment( createLoader(), { autoescape: false } );
 	env.addExtension( "DummyTagExtension", new DummyTagExtension() );
 
 	var res = {
