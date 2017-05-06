@@ -22,7 +22,7 @@ describe( "Extractor", () => {
 			Host: {
 				DirectoryExists: _ => false,
 				FetchFile: name =>
-					( name === 'lib.d.ts' && fs.readFileSync( require.resolve('../src/lib/libdts'), { encoding: 'utf8' } ) ) ||
+					( name === 'lib.d.ts' && fs.readFileSync( require.resolve('../src/lib/libdts.txt'), { encoding: 'utf8' } ) ) ||
 					( name === state.file.name && state.file.contents ) ||
 					state.extraFiles[name] ||
 					fs.existsSync( name ) && fs.readFileSync( name, { encoding: 'utf8' })

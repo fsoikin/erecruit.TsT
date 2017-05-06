@@ -322,7 +322,10 @@ export function createExtractor( config: CachedConfig, fileNames: string[], opti
 	function translateGenericInstantiation( type: ts.TypeReference ): i.GenericInstantiation {
 		return {
 			Definition: translateType( type.target ),
-			Arguments: ( type.typeArguments || [] ).map( translateType )
+			Arguments: 
+				( type.typeArguments || [] )
+				.filter( t => !(<any>t).isThisType ) // TS compiler gives every class a "this" type, which is not a real generic parameter, but it makes this flag "internal" for some reason
+				.map( translateType )
 		};
 	}
 

@@ -1,4 +1,5 @@
 /built
+/bin
 /node_modules
 /packages
 /.fake

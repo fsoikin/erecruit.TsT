@@ -1,14 +1,12 @@
 {
   "name": "erecruit-tst",
-  "version": "0.8.6",
+  "version": "0.0.0",
   "description": "TypeScript Translator: parse type information out of TypeScript files and generate other files (e.g. in another language) based on it.",
-  "main": "./built/src/tstc.js",
-  "bin": {
-    "tstc": "./built/src/tstc.js"
-  },
-  "files": [],
+  "bin": { "tstc": "./bin/tstc.js" },
+  "files": [ "bin/tstc.js" ],
   "scripts": {
-    "build": "node node_modules/typescript/bin/tsc",
+    "build": "tsc",
+    "bundle": "webpack --config ./webpack.config.js",
     "test": "node node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=./tests/support/jasmine.json"
   },
   "license": "MIT",
@@ -23,17 +21,17 @@
     "url": "git://github.com/erecruit/tst.git"
   },
   "preferGlobal": true,
-  "dependencies": {
+  "devDependencies": {
+    "@types/jasmine": "2.5.43",
+    "@types/minimist": "^1.2.0",
+    "@types/nunjucks": "0.0.32",
     "linq-es2015": "^2.4.16",
     "minimist": "^1.2.0",
     "nunjucks": "3.0.0",
-    "typescript": "^2.2.1"
-  },
-  "devDependencies": {
-    "@types/jasmine": "^2.5.43",
-    "@types/minimist": "^1.2.0",
-    "@types/nunjucks": "0.0.32",
-    "jake": "^8.0.15",
-    "jasmine": "^2.5.3"
+    "typescript": "^2.2.1",
+    "jasmine": "2.5.3",
+    "null-loader": "^0.1.1",
+    "raw-loader": "^0.5.1",
+    "webpack": "^2.4.1"
   }
 }

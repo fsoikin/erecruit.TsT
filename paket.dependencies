@@ -1,5 +1,6 @@
 source https://www.nuget.org/api/v2
+nuget Npm.js  # has to be outside of any groups, because NpmHelper will look there
 
-nuget Node.js
-nuget Npm.js
+group build
+source https://www.nuget.org/api/v2
 nuget FAKE

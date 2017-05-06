@@ -7,6 +7,8 @@ import { ITsTHost } from './interfaces'
 import { Emit } from './emitter'
 import Version from './version'
 import { log, debug, enableDebug, suppressOutput } from './utils'
+require( "./node-adaptor" ); // Bind .txt extension to "read file"
+
 var args = <any>minimist( process.argv.slice( 2 ) );
 
 if ( !args.v && !args.verbose ) suppressOutput();
@@ -36,9 +38,11 @@ function main() {
 
 	var host: ITsTHost = {
 		FetchFile: fileName => {
-			if ( fileName === "lib.d.ts" ) fileName = require.resolve("./lib/libdts");
-			else fileName = p(fileName);
-			if (fs.existsSync(fileName) && fs.statSync(fileName).isFile()) return readFile(fileName);
+			if ( fileName === "lib.d.ts" ) return require("./lib/libdts.txt");
+			else {
+				fileName = p(fileName);
+				if (fs.existsSync(fileName) && fs.statSync(fileName).isFile()) return readFile(fileName);
+			}
 			debug( () => `Couldn't find file '${fileName}', returning null` );
 			return null;
 		},
