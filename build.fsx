@@ -9,7 +9,7 @@ let ascii, utf8 = System.Text.Encoding.ASCII, System.Text.Encoding.UTF8
 
 Target "PatchVersion" <| fun() ->
     FileHelper.RegexReplaceInFileWithEncoding """(?<="version":\s*")[\d\.]+(?=",)""" version ascii "package.json"
-    //FileHelper.RegexReplaceInFileWithEncoding """(?<=(AssemblyVersion|AssemblyFileVersion)\(")[\d\.]+(?="\))""" version utf8 "package.json"
+    //FileHelper.RegexReplaceInFileWithEncoding """(?<=(AssemblyVersion|AssemblyFileVersion)\(")[\d\.]+(?="\))""" version utf8 "AssemblyInfo.cs"
 
 Target "NpmInstall" (npm <| Install Standard)
 Target "TestTS" (npmRun "test")
@@ -28,10 +28,9 @@ Target "NpmPublish" (
     ==> "PatchVersion"
     ==> "BuildTS"
     ==> "BundleJS"
-"BuildTS" ==> "TestTS"
+    ==> "TestTS"
 
-"TestTS" ==> "CIBuild"
-"BundleJS" ==> "CIBuild"
-"NpmPublish" ==> "CIBuild"
+"TestTS" ==> "RunTests"
+"TestTS" ==> "NpmPublish" ==> "Publish"
 
-RunTargetOrDefault "BundleJS"
+RunTargetOrDefault "RunTests"
