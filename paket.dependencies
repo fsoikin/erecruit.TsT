@@ -4,3 +4,32 @@ nuget Npm.js  # has to be outside of any groups, because NpmHelper will look the
 group build
 source https://www.nuget.org/api/v2
 nuget FAKE
+
+group dotnet
+source https://www.nuget.org/api/v2
+nuget Microsoft.VisualStudio.CoreUtility ~> 15.0.26201
+nuget Microsoft.VisualStudio.Imaging ~> 15.0.26201
+nuget Microsoft.VisualStudio.OLE.Interop ~> 7.10.6070
+nuget Microsoft.VisualStudio.Shell.15.0 ~> 15.0.26201
+nuget Microsoft.VisualStudio.Shell.Framework ~> 15.0.26201
+nuget Microsoft.VisualStudio.Shell.Interop ~> 7.10.6071
+nuget Microsoft.VisualStudio.Shell.Interop.10.0 ~> 10.0.30319
+nuget Microsoft.VisualStudio.Shell.Interop.11.0 ~> 11.0.61030
+nuget Microsoft.VisualStudio.Shell.Interop.12.0 ~> 12.0.30110
+nuget Microsoft.VisualStudio.Shell.Interop.8.0 ~> 8.0.50727
+nuget Microsoft.VisualStudio.Shell.Interop.9.0 ~> 9.0.30729
+nuget Microsoft.VisualStudio.TextManager.Interop ~> 7.10.6070
+nuget Microsoft.VisualStudio.TextManager.Interop.8.0 ~> 8.0.50727
+nuget Microsoft.VisualStudio.Threading ~> 15.0.240
+nuget Microsoft.VisualStudio.Utilities ~> 15.0.26201
+nuget Microsoft.VisualStudio.Validation ~> 15.0.82
+nuget Microsoft.Build ~> 15.1.1012
+nuget Microsoft.VSSDK.BuildTools ~> 15.0.26201
+nuget Microsoft.VisualStudio.Text.UI ~> 15.0.26201
+nuget Microsoft.VisualStudio.Text.UI.Wpf ~> 15.0.26201
+nuget Rx-Main ~> 2.2.5
+nuget Ix-Main ~> 1.2.5
+nuget JsPool ~> 2.0.1
+nuget JavaScriptEngineSwitcher.V8
+nuget JavaScriptEngineSwitcher.V8.Native.win-x86
+nuget JavaScriptEngineSwitcher.V8.Native.win-x64

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:VSExtension="http://schemas.microsoft.com/wix/VSExtension">
+	<Product Id="*" Name="erecruit TypeScript Translator" Language="1033" Version="0.9.1" Manufacturer="erecruit" UpgradeCode="734a7972-17cf-4ba8-8af7-8f9d3fe3853c">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate EmbedCab="yes" />
+
+		<Feature Id="ProductFeature" Title="erecruit TypeScript Translator" Level="1">
+			<ComponentGroupRef Id="Components" />
+		</Feature>
+	
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="INSTALLFOLDER" Name="Wix" />
+			</Directory>
+		</Directory>
+	</Fragment>
+
+	<Fragment>
+		<Component Id="C_Vsix" Guid="D69DA478-B744-4CB6-A09D-9BACA087E5A1" Directory="INSTALLFOLDER">
+			<VSExtension:VsixPackage File="VsixFile" PackageId="erecruit.TsT.b573e318-8664-44d4-86c1-49ebfa9cc871" Target="professional" TargetVersion="12.0" Vital="yes" Permanent="no" />
+			<File Id="VsixFile" Name="$(var.TsTVS.TargetName).vsix" Source="$(var.TsTVS.TargetDir)$(var.TsTVS.TargetName).vsix" />
+		</Component>
+	</Fragment>
+</Wix>

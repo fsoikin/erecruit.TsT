@@ -21,7 +21,7 @@ Target "BuildTS" <| fun() ->
 
 Target "CIBuild" DoNothing
 Target "NpmPublish" (
-    let cmd = if buildServer = BuildServer.LocalBuild then "pack" else "publish"
+    let cmd = "pack" //if buildServer = LocalBuild then "pack" else "publish"
     npm <| NpmCommand.Custom cmd )
     
 "NpmInstall" 
