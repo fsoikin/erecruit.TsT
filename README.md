@@ -9,7 +9,7 @@ erecruit TypeScript Translator: parse type information out of TypeScript files a
 
 The primary intended use for this tool is generating server-side data transfer objects in strongly typed languages, such as C#.
 
-<img src="https://raw.githubusercontent.com/erecruit/TsT/master/doc/screenshot3.png">
+<img src="https://raw.githubusercontent.com/fsoikin/erecruit.TsT/master/doc/screenshot3.png">
 
 1. [Basics](#basics)
 2. [Configuration file](#config)
@@ -23,13 +23,13 @@ erecruit TS Translator does not have a hard-coded way to generate code based on 
 
 erecruit.TsT uses the [Typescript](http://typescriptlang.org) compiler to pull type information from the source TypeScript files, generates a simplified AST in the form of JavaScript data structure (object tree), and then feeds that data structure to Nunjucks, which ultimately produces the resulting code.
 
-<img src="https://raw.githubusercontent.com/erecruit/TsT/master/doc/diagram.png"/>
+<img src="https://raw.githubusercontent.com/fsoikin/erecruit.TsT/master/doc/diagram.png"/>
 
 There are three ways to run TsT:
 
 1. Node.js console program (`npm install erecruit-tst`)
 2. .NET console program (in `bin/dotNet/tstc.exe` or compile from `dotNet\tstc\erecruit.TsT.Console.csproj`)
-3. [Visual Studio extension](https://github.com/erecruit/TsT/tree/master/dotNet/vs) (available from [Visual Studio Gallery](http://visualstudiogallery.msdn.microsoft.com/c61f8a99-cc0b-4b2e-8913-f00626c92a21) or download from `bin/setup/erecruit.TsT.msi`)
+3. [Visual Studio extension](https://github.com/fsoikin/erecruit.TsT/tree/master/dotNet/vs) (available from [Visual Studio Gallery](http://visualstudiogallery.msdn.microsoft.com/c61f8a99-cc0b-4b2e-8913-f00626c92a21) or download from `bin/setup/erecruit.TsT.msi`)
 
 #<a name="config"></a>Configuration file
 erecruit.TsT has a configuration file (usually named .tstconfig) to help make a few important decisions, such as which types and files should be translated and what templates to use for them.
@@ -232,7 +232,7 @@ Final note: do not be afraid to call the functions multiple times, because they 
 #<a name="filters"></a>TsT-specific Nunjucks extensions
 
 ##Special "this" variable
-A special `this` variable added to Nunjucks (achieved via [monkeypatching](https://github.com/erecruit/TsT/tree/master/src/filters/general.ts#L62)), returns the context object itself.
+A special `this` variable added to Nunjucks (achieved via [monkeypatching](https://github.com/fsoikin/erecruit.TsT/tree/master/src/filters/general.ts#L62)), returns the context object itself.
 For example:
 
 ```
